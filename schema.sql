@@ -71,6 +71,7 @@ CREATE TABLE server (
     merk VARCHAR(100),
     tipe VARCHAR(100),
     serial_number VARCHAR(100),
+    merk_processor VARCHAR(100),
 
     cpu_core INT,
     ram_gb INT,
@@ -163,7 +164,7 @@ CREATE TABLE aplikasi (
 
     status ENUM('aktif','nonaktif','maintenance'),
 
-    -- SLA (WAJIB PSE)
+    -- TARGET SLA (WAJIB PSE)
     sla_persen DECIMAL(5,2),
     jam_operasional VARCHAR(100),
 
@@ -172,14 +173,12 @@ CREATE TABLE aplikasi (
     mengandung_data_pribadi TINYINT(1) DEFAULT 0,
     jenis_data_pribadi TEXT,
     retensi_data VARCHAR(100),
-    lokasi_data VARCHAR(255),
 
     -- PIC
     pic_nama VARCHAR(255),
     pic_kontak VARCHAR(100),
 
     tanggal_go_live DATE,
-    risiko TEXT,
 
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

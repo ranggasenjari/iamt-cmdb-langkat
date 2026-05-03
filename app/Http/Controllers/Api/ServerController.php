@@ -33,7 +33,7 @@ class ServerController extends Controller
         $after = $server->fresh()->toArray();
         $this->audit('update', $server, $before, $after, $request);
         $changeLogger->log('server', $server->id, $server->nama, $before, $after, $request, [
-            'nama', 'dc_id', 'rack_id', 'merk', 'tipe', 'serial_number', 'cpu_core',
+            'nama', 'dc_id', 'rack_id', 'merk', 'tipe', 'serial_number', 'merk_processor', 'cpu_core',
             'ram_gb', 'storage_gb', 'kondisi', 'status', 'tahun', 'penanggung_jawab',
         ]);
 
@@ -58,6 +58,7 @@ class ServerController extends Controller
             'merk' => ['nullable', 'string', 'max:100'],
             'tipe' => ['nullable', 'string', 'max:100'],
             'serial_number' => ['nullable', 'string', 'max:100'],
+            'merk_processor' => ['nullable', 'string', 'max:100'],
             'cpu_core' => ['nullable', 'integer', 'min:1'],
             'ram_gb' => ['nullable', 'integer', 'min:1'],
             'storage_gb' => ['nullable', 'integer', 'min:1'],

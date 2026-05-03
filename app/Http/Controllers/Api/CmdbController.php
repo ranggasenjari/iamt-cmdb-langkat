@@ -66,7 +66,7 @@ class CmdbController extends Controller
                 'kontrol' => [
                     'infrastruktur' => $app->vms->isNotEmpty() || $app->servers->isNotEmpty(),
                     'pic' => filled($app->pic_nama) && filled($app->pic_kontak),
-                    'risiko' => filled($app->risiko),
+                    'klasifikasi_data' => $app->dataAssets->isNotEmpty(),
                     'retensi' => filled($app->retensi_data),
                 ],
             ]),

@@ -15,7 +15,7 @@ class Server extends Model
     protected $table = 'server';
 
     protected $fillable = [
-        'nama', 'dc_id', 'rack_id', 'merk', 'tipe', 'serial_number', 'cpu_core',
+        'nama', 'dc_id', 'rack_id', 'merk', 'tipe', 'serial_number', 'merk_processor', 'cpu_core',
         'ram_gb', 'storage_gb', 'kondisi', 'status', 'tahun', 'penanggung_jawab',
     ];
 

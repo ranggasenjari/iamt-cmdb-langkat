@@ -38,7 +38,7 @@ class AssetChangeLogger
 
     private function changeType(array $fields): string
     {
-        if (array_intersect($fields, ['cpu_core', 'ram_gb', 'storage_gb', 'vcpu', 'os', 'merk', 'tipe', 'serial_number'])) {
+        if (array_intersect($fields, ['cpu_core', 'ram_gb', 'storage_gb', 'vcpu', 'os', 'merk', 'tipe', 'serial_number', 'merk_processor'])) {
             return 'spesifikasi';
         }
 

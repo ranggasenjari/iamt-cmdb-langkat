@@ -25,7 +25,6 @@ class ImpactAnalysisService
                 'status' => $app->status,
                 'opd' => $app->opd?->nama,
                 'jalur' => "VM {$vm->nama}",
-                'risiko' => $app->risiko,
                 'data_pribadi' => $app->dataAssets->contains('contains_personal_data', true),
             ]));
 
@@ -35,8 +34,7 @@ class ImpactAnalysisService
             'status' => $app->status,
             'opd' => $app->opd?->nama,
             'jalur' => 'Relasi langsung server',
-            'risiko' => $app->risiko,
-                'data_pribadi' => $app->dataAssets->contains('contains_personal_data', true),
+            'data_pribadi' => $app->dataAssets->contains('contains_personal_data', true),
         ]);
 
         /** @var Collection $applications */

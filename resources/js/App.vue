@@ -146,6 +146,8 @@ const serverForm = reactive({
   rack_id: '',
   merk: '',
   tipe: '',
+  merk_processor: '',
+  tahun: new Date().getFullYear(),
   cpu_core: 16,
   ram_gb: 64,
   storage_gb: 1024,
@@ -181,7 +183,6 @@ const appForm = reactive({
   kategori_data: 'terbatas',
   pic_nama: '',
   pic_kontak: '',
-  risiko: '',
   vm_ids: [],
   server_ids: [],
   ip_ids: [],
@@ -292,6 +293,7 @@ const changeFieldLabels = {
   merk: 'Merk',
   tipe: 'Tipe',
   serial_number: 'Serial Number',
+  merk_processor: 'Merk Processor',
   cpu_core: 'CPU Core',
   vcpu: 'vCPU',
   ram_gb: 'RAM GB',
@@ -496,6 +498,8 @@ function resetModuleForm(module) {
       rack_id: '',
       merk: '',
       tipe: '',
+      merk_processor: '',
+      tahun: new Date().getFullYear(),
       cpu_core: 16,
       ram_gb: 64,
       storage_gb: 1024,
@@ -533,8 +537,6 @@ function resetModuleForm(module) {
       kategori_data: 'terbatas',
       pic_nama: '',
       pic_kontak: '',
-      lokasi_data: '',
-      risiko: '',
       vm_ids: [],
       server_ids: [],
       ip_ids: [],
@@ -643,6 +645,8 @@ function openEdit(module, row) {
       rack_id: row.rack_id || '',
       merk: row.merk || '',
       tipe: row.tipe || '',
+      merk_processor: row.merk_processor || '',
+      tahun: row.tahun || new Date().getFullYear(),
       cpu_core: row.cpu_core || 16,
       ram_gb: row.ram_gb || 64,
       storage_gb: row.storage_gb || 1024,
@@ -680,8 +684,6 @@ function openEdit(module, row) {
       kategori_data: row.kategori_data || 'terbatas',
       pic_nama: row.pic_nama || '',
       pic_kontak: row.pic_kontak || '',
-      lokasi_data: row.lokasi_data || '',
-      risiko: row.risiko || '',
       vm_ids: (row.vms || []).map((vm) => vm.id),
       server_ids: (row.servers || []).map((server) => server.id),
       ip_ids: (row.ip_addresses || []).map((ip) => ip.id),
@@ -886,7 +888,7 @@ async function createIpAddress() {
 async function createServer() {
   if (!canWrite.value) return;
   await api('/servers', { method: 'POST', body: JSON.stringify(cleanPayload(serverForm)) });
-  Object.assign(serverForm, { nama: '', merk: '', tipe: '', cpu_core: 16, ram_gb: 64, storage_gb: 1024 });
+  Object.assign(serverForm, { nama: '', merk: '', tipe: '', merk_processor: '', tahun: new Date().getFullYear(), cpu_core: 16, ram_gb: 64, storage_gb: 1024 });
   await loadAll();
 }
 
@@ -905,7 +907,6 @@ async function createApplication() {
     url: '',
     tech_stack: '',
     klasifikasi_fungsi: [],
-    risiko: '',
     pic_nama: '',
     pic_kontak: '',
     vm_ids: [],
@@ -1283,6 +1284,10 @@ onMounted(bootstrapAuth);
                 <input v-model="serverForm.merk" placeholder="Merk" />
                 <input v-model="serverForm.tipe" placeholder="Tipe" />
               </div>
+              <div class="two-col">
+                <input v-model="serverForm.merk_processor" placeholder="Merk processor" />
+                <input v-model.number="serverForm.tahun" type="number" min="2000" max="2100" placeholder="Tahun" />
+              </div>
               <div class="three-col">
                 <input v-model.number="serverForm.cpu_core" type="number" min="1" placeholder="Core" />
                 <input v-model.number="serverForm.ram_gb" type="number" min="1" placeholder="RAM GB" />
@@ -1445,9 +1450,9 @@ onMounted(bootstrapAuth);
               </thead>
               <tbody>
                 <tr v-for="server in filteredServers" :key="server.id">
-                  <td><strong>{{ server.nama }}</strong><span>{{ server.merk }} {{ server.tipe }}</span></td>
+                  <td><strong>{{ server.nama }}</strong><span>{{ server.merk }} {{ server.tipe }} / {{ server.tahun || '-' }}</span></td>
                   <td>{{ server.data_center?.nama || '-' }}<span>{{ server.rack?.nama || '-' }}</span></td>
-                  <td>{{ server.cpu_core }} core / {{ server.ram_gb }} GB<span>{{ server.storage_gb }} GB storage</span></td>
+                  <td>{{ server.cpu_core }} core / {{ server.ram_gb }} GB<span>{{ server.merk_processor || 'Processor belum diisi' }} / {{ server.storage_gb }} GB storage</span></td>
                   <td><span :class="statusClass(server.status)">{{ server.status }}</span></td>
                   <td>{{ server.vms?.length || 0 }}</td>
                   <td><button v-if="canWrite" class="icon-button danger" title="Hapus server" @click="removeRow('servers', server.id)"><Trash2 :size="16" /></button></td>
@@ -1587,9 +1592,9 @@ onMounted(bootstrapAuth);
               </thead>
               <tbody>
                 <tr v-for="server in filteredServers" :key="server.id">
-                  <td><strong>{{ server.nama }}</strong><span>{{ server.merk }} {{ server.tipe }}</span></td>
+                  <td><strong>{{ server.nama }}</strong><span>{{ server.merk }} {{ server.tipe }} / {{ server.tahun || '-' }}</span></td>
                   <td>{{ server.data_center?.nama || '-' }}<span>{{ server.rack?.nama || '-' }}</span></td>
-                  <td>{{ server.cpu_core }} core / {{ server.ram_gb }} GB<span>{{ server.storage_gb }} GB storage</span></td>
+                  <td>{{ server.cpu_core }} core / {{ server.ram_gb }} GB<span>{{ server.merk_processor || 'Processor belum diisi' }} / {{ server.storage_gb }} GB storage</span></td>
                   <td><span :class="statusClass(server.kondisi)">{{ server.kondisi || '-' }}</span></td>
                   <td><span :class="statusClass(server.status)">{{ server.status }}</span></td>
                   <td>{{ server.vms?.length || 0 }}</td>
@@ -1747,7 +1752,7 @@ onMounted(bootstrapAuth);
                   <th>Jenis</th>
                   <th>Fungsi</th>
                   <th>Tech Stack</th>
-                  <th>SLA</th>
+                  <th>Target SLA</th>
                   <th>Aset Data</th>
                   <th>Relasi</th>
                   <th>Status</th>
@@ -2102,7 +2107,7 @@ onMounted(bootstrapAuth);
                 <tr>
                   <th>Aplikasi</th>
                   <th>OPD</th>
-                  <th>SLA</th>
+                  <th>Target SLA</th>
                   <th>Kontrol</th>
                   <th>Status</th>
                 </tr>
@@ -2257,6 +2262,10 @@ onMounted(bootstrapAuth);
               <input v-model="serverForm.merk" placeholder="Merk" />
               <input v-model="serverForm.tipe" placeholder="Tipe" />
             </div>
+            <div class="two-col">
+              <input v-model="serverForm.merk_processor" placeholder="Merk processor" />
+              <input v-model.number="serverForm.tahun" type="number" min="2000" max="2100" placeholder="Tahun" />
+            </div>
             <div class="three-col">
               <input v-model.number="serverForm.cpu_core" type="number" min="1" placeholder="Core" />
               <input v-model.number="serverForm.ram_gb" type="number" min="1" placeholder="RAM GB" />
@@ -2361,7 +2370,7 @@ onMounted(bootstrapAuth);
                 <option value="maintenance">Maintenance</option>
                 <option value="nonaktif">Nonaktif</option>
               </select>
-              <input v-model.number="appForm.sla_persen" type="number" min="0" max="100" step="0.01" placeholder="SLA %" />
+              <input v-model.number="appForm.sla_persen" type="number" min="0" max="100" step="0.01" placeholder="Target SLA %" />
             </div>
             <div class="inline-picker">
               <strong>Klasifikasi Fungsi</strong>
@@ -2384,11 +2393,7 @@ onMounted(bootstrapAuth);
               </select>
               <input v-model="appForm.pic_nama" placeholder="PIC" />
             </div>
-            <div class="two-col">
-              <input v-model="appForm.pic_kontak" placeholder="Kontak PIC" />
-              <input v-model="appForm.lokasi_data" placeholder="Lokasi data" />
-            </div>
-            <textarea v-model="appForm.risiko" placeholder="Risiko utama"></textarea>
+            <input v-model="appForm.pic_kontak" placeholder="Kontak PIC" />
             <div class="picker-grid">
               <div>
                 <strong>VM</strong>

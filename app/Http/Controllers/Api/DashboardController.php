@@ -41,7 +41,7 @@ class DashboardController extends Controller
                 ->whereHas('dataAssets', fn ($query) => $query->where('contains_personal_data', true))
                 ->orderByDesc('sla_persen')
                 ->limit(5)
-                ->get(['id', 'nama', 'opd_id', 'sla_persen', 'status', 'risiko']),
+                ->get(['id', 'nama', 'opd_id', 'sla_persen', 'status']),
         ];
     }
 }

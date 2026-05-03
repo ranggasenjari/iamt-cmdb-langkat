@@ -47,6 +47,11 @@ class CmdbApiTest extends TestCase
         $this->getJson('/api/compliance')
             ->assertOk()
             ->assertJsonPath('summary.data_pribadi', 2);
+
+        $this->getJson('/api/references')
+            ->assertOk()
+            ->assertJsonFragment(['nama' => 'Dinas Komunikasi Dan Informatika'])
+            ->assertJsonFragment(['nama' => 'Puskes. Tungkit']);
     }
 
     public function test_server_impact_lists_affected_applications(): void
@@ -231,9 +236,12 @@ class CmdbApiTest extends TestCase
         $this->putJson("/api/servers/{$server->id}", [
             'nama' => $server->nama,
             'ram_gb' => $newRam,
+            'merk_processor' => 'AMD EPYC',
             'change_reason' => 'Upgrade RAM untuk beban layanan meningkat.',
             'changed_by' => 'Admin Infrastruktur',
-        ])->assertOk()->assertJsonPath('ram_gb', $newRam);
+        ])->assertOk()
+            ->assertJsonPath('ram_gb', $newRam)
+            ->assertJsonPath('merk_processor', 'AMD EPYC');
 
         $this->getJson("/api/asset-change-logs?asset_type=server&asset_id={$server->id}")
             ->assertOk()
@@ -243,7 +251,8 @@ class CmdbApiTest extends TestCase
             ->assertJsonPath('0.reason', 'Upgrade RAM untuk beban layanan meningkat.')
             ->assertJsonPath('0.changed_by', 'Admin Infrastruktur')
             ->assertJsonPath('0.changed_fields.ram_gb.before', $server->ram_gb)
-            ->assertJsonPath('0.changed_fields.ram_gb.after', $newRam);
+            ->assertJsonPath('0.changed_fields.ram_gb.after', $newRam)
+            ->assertJsonPath('0.changed_fields.merk_processor.after', 'AMD EPYC');
 
         $vm = \App\Models\VirtualMachine::where('nama', 'VM-PSE-REGISTRY')->firstOrFail();
         $newVcpu = $vm->vcpu + 2;

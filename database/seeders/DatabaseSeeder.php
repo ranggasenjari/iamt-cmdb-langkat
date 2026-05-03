@@ -13,8 +13,102 @@ class DatabaseSeeder extends Seeder
     {
         $now = now();
 
-        $opdDiskominfo = (string) Str::uuid();
-        $opdDukcapil = (string) Str::uuid();
+        $opdNames = [
+            'Sekretariat Daerah',
+            'Sekretariat Dewan Perwakilan Rakyat Daerah',
+            'Dinas Kearsipan Dan Perpustakaan',
+            'Dinas Kebudayaan Dan Pariwisata',
+            'Dinas Kesehatan',
+            'Dinas Kependudukan Dan Pencatatan Sipil',
+            'Dinas Ketenagakerjaan',
+            'Dinas Komunikasi Dan Informatika',
+            'Dinas Koperasi',
+            'Dinas Lingkungan Hidup',
+            'Dinas Pekerjaan Umum Dan Tata Ruang',
+            'Dinas Pemuda Dan Olahraga',
+            'Dinas Pemberdayaan Masyarakat Dan Desa',
+            'Dinas Penanaman Modal Dan Pelayanan Perizinan Terpadu Satu Pintu',
+            'Dinas Pendidikan',
+            'Dinas Pengendalian Penduduk Keluarga Berencana Dan Perempuan Perlindungan Anak',
+            'Dinas Perhubungan',
+            'Dinas Perikanan Dan Kelautan',
+            'Dinas Perindustrian Dan Perdagangan',
+            'Dinas Perumahan Dan Kawasan Permukiman',
+            'Dinas Pertanian Dan Ketahanan Pangan',
+            'Dinas Sosial',
+            'Badan Kepegawaian Daerah',
+            'Badan Kesatuan Bangsa Dan Politik',
+            'Badan Pendapatan Daerah',
+            'Badan Penanggulangan Bencana Daerah',
+            'Badan Pengelolaan Keuangan Dan Asset Daerah',
+            'Badan Perencanaan Pembangunan Daerah Penelitian Dan Pengembangan',
+            'Inspektorat',
+            'Satuan Polisi Pamong Praja',
+            'UPT Rumah Sakit Umum Daerah Tanjung Pura',
+            'Kecamatan Babalan',
+            'Kecamatan Bahorok',
+            'Kecamatan Batang Serangan',
+            'Kecamatan Besitang',
+            'Kecamatan Binjai',
+            'Kecamatan Brandan Barat',
+            'Kecamatan Gebang',
+            'Kecamatan Hinai',
+            'Kecamatan Kuala',
+            'Kecamatan Kutambaru',
+            'Kecamatan Padang Tualang',
+            'Kecamatan Pangkalan Susu',
+            'Kecamatan Pematang Jaya',
+            'Kecamatan Salapian',
+            'Kecamatan Sawit Seberang',
+            'Kecamatan Secanggang',
+            'Kecamatan Sei Bingai',
+            'Kecamatan Sei Lepan',
+            'Kecamatan Selesai',
+            'Kecamatan Sirapit',
+            'Kecamatan Stabat',
+            'Kecamatan Tanjung Pura',
+            'Kecamatan Wampu',
+            'Puskes. Bahorok',
+            'Puskes. Beras Basah',
+            'Puskes. Besitang',
+            'Puskes. Bukit Lawang',
+            'Puskes. Desa Lama',
+            'Puskes. Desa Teluk',
+            'Puskes. Gebang',
+            'Puskes. Hinai Kiri',
+            'Puskes. Karang Rejo',
+            'Puskes. Kuala',
+            'Puskes. Marike',
+            'Puskes. Namu Ukur',
+            'Puskes. Namutrasi',
+            'Puskes. Pangkalan Brandan',
+            'Puskes. Pangkalan Susu',
+            'Puskes. Pantai Cermin',
+            'Puskes. Pematang Cengal',
+            'Puskes. Pematang Jaya',
+            'Puskes. Sambirejo Binjai',
+            'Puskes. Sawit Seberang',
+            'Puskes. Secanggang',
+            'Puskes. Securai',
+            'Puskes. Sei Bamban',
+            'Puskes. Selesai',
+            'Puskes. Sirapit',
+            'Puskes. Stabat',
+            'Puskes. Stabat Lama',
+            'Puskes. Tangkahan Durian',
+            'Puskes. Tanjung Beringin',
+            'Puskes. Tanjung Langkat',
+            'Puskes. Tanjung Selamat',
+            'Puskes. Tungkit',
+        ];
+        $opdIds = [];
+
+        foreach ($opdNames as $opdName) {
+            $opdIds[$opdName] = (string) Str::uuid();
+        }
+
+        $opdDiskominfo = $opdIds['Dinas Komunikasi Dan Informatika'];
+        $opdDukcapil = $opdIds['Dinas Kependudukan Dan Pencatatan Sipil'];
         $dcUtama = (string) Str::uuid();
         $rackA = (string) Str::uuid();
         $serverMain = (string) Str::uuid();
@@ -33,10 +127,12 @@ class DatabaseSeeder extends Seeder
         $backupPolicy = (string) Str::uuid();
         $backupTarget = (string) Str::uuid();
 
-        DB::table('opd')->insert([
-            ['id' => $opdDiskominfo, 'nama' => 'Dinas Komunikasi dan Informatika Kabupaten Langkat', 'kontak' => 'diskominfo@langkatkab.go.id', 'created_at' => $now],
-            ['id' => $opdDukcapil, 'nama' => 'Dinas Kependudukan dan Pencatatan Sipil', 'kontak' => 'dukcapil@langkatkab.go.id', 'created_at' => $now],
-        ]);
+        DB::table('opd')->insert(array_map(fn (string $opdName) => [
+            'id' => $opdIds[$opdName],
+            'nama' => $opdName,
+            'kontak' => $opdName === 'Dinas Komunikasi Dan Informatika' ? 'diskominfo@langkatkab.go.id' : null,
+            'created_at' => $now,
+        ], $opdNames));
 
         DB::table('pengguna')->insert([
             ['id' => (string) Str::uuid(), 'nama' => 'Administrator CMDB', 'email' => 'admin@langkatkab.go.id', 'password' => Hash::make('password'), 'opd_id' => $opdDiskominfo, 'role' => 'full', 'status' => 'aktif', 'created_at' => $now, 'updated_at' => $now],
@@ -52,8 +148,8 @@ class DatabaseSeeder extends Seeder
         ]);
 
         DB::table('server')->insert([
-            ['id' => $serverMain, 'nama' => 'SRV-PROD-01', 'dc_id' => $dcUtama, 'rack_id' => $rackA, 'merk' => 'Dell', 'tipe' => 'PowerEdge R750', 'serial_number' => 'LKT-PRD-001', 'cpu_core' => 48, 'ram_gb' => 256, 'storage_gb' => 8192, 'kondisi' => 'baik', 'status' => 'aktif', 'tahun' => 2024, 'penanggung_jawab' => 'Bidang Infrastruktur TIK', 'created_at' => $now],
-            ['id' => $serverBackup, 'nama' => 'SRV-BACKUP-01', 'dc_id' => $dcUtama, 'rack_id' => $rackA, 'merk' => 'HPE', 'tipe' => 'DL380 Gen10', 'serial_number' => 'LKT-BCK-001', 'cpu_core' => 32, 'ram_gb' => 128, 'storage_gb' => 16384, 'kondisi' => 'baik', 'status' => 'maintenance', 'tahun' => 2022, 'penanggung_jawab' => 'Bidang Infrastruktur TIK', 'created_at' => $now],
+            ['id' => $serverMain, 'nama' => 'SRV-PROD-01', 'dc_id' => $dcUtama, 'rack_id' => $rackA, 'merk' => 'Dell', 'tipe' => 'PowerEdge R750', 'serial_number' => 'LKT-PRD-001', 'merk_processor' => 'Intel Xeon Silver', 'cpu_core' => 48, 'ram_gb' => 256, 'storage_gb' => 8192, 'kondisi' => 'baik', 'status' => 'aktif', 'tahun' => 2024, 'penanggung_jawab' => 'Bidang Infrastruktur TIK', 'created_at' => $now],
+            ['id' => $serverBackup, 'nama' => 'SRV-BACKUP-01', 'dc_id' => $dcUtama, 'rack_id' => $rackA, 'merk' => 'HPE', 'tipe' => 'DL380 Gen10', 'serial_number' => 'LKT-BCK-001', 'merk_processor' => 'Intel Xeon Gold', 'cpu_core' => 32, 'ram_gb' => 128, 'storage_gb' => 16384, 'kondisi' => 'baik', 'status' => 'maintenance', 'tahun' => 2022, 'penanggung_jawab' => 'Bidang Infrastruktur TIK', 'created_at' => $now],
         ]);
 
         DB::table('vm')->insert([
@@ -77,8 +173,8 @@ class DatabaseSeeder extends Seeder
         ]);
 
         DB::table('aplikasi')->insert([
-            ['id' => $appPse, 'nama' => 'Register PSE Langkat', 'url' => 'https://pse.langkatkab.go.id', 'opd_id' => $opdDiskominfo, 'deskripsi' => 'Portal pendataan dan kepatuhan layanan elektronik daerah.', 'jenis_aplikasi' => 'web', 'status' => 'aktif', 'sla_persen' => 99.50, 'jam_operasional' => '24x7', 'kategori_data' => 'terbatas', 'mengandung_data_pribadi' => true, 'jenis_data_pribadi' => 'Nama, NIK, email, nomor telepon PIC', 'retensi_data' => '5 tahun', 'lokasi_data' => 'Data Center Pemkab Langkat', 'pic_nama' => 'Admin PSE', 'pic_kontak' => '0812-0000-0001', 'tanggal_go_live' => '2025-01-10', 'risiko' => 'Paparan data pribadi dan downtime layanan kepatuhan.', 'created_at' => $now, 'updated_at' => $now],
-            ['id' => $appPortal, 'nama' => 'Portal Kabupaten Langkat', 'url' => 'https://langkatkab.go.id', 'opd_id' => $opdDiskominfo, 'deskripsi' => 'Portal informasi publik dan layanan dasar Pemkab Langkat.', 'jenis_aplikasi' => 'web', 'status' => 'aktif', 'sla_persen' => 99.00, 'jam_operasional' => '24x7', 'kategori_data' => 'publik', 'mengandung_data_pribadi' => false, 'jenis_data_pribadi' => null, 'retensi_data' => 'Arsip berkala', 'lokasi_data' => 'Data Center Pemkab Langkat', 'pic_nama' => 'Webmaster', 'pic_kontak' => '0812-0000-0002', 'tanggal_go_live' => '2024-06-15', 'risiko' => 'Defacement dan gangguan informasi publik.', 'created_at' => $now, 'updated_at' => $now],
+            ['id' => $appPse, 'nama' => 'Register PSE Langkat', 'url' => 'https://pse.langkatkab.go.id', 'opd_id' => $opdDiskominfo, 'deskripsi' => 'Portal pendataan dan kepatuhan layanan elektronik daerah.', 'jenis_aplikasi' => 'web', 'status' => 'aktif', 'sla_persen' => 99.50, 'jam_operasional' => '24x7', 'kategori_data' => 'terbatas', 'mengandung_data_pribadi' => true, 'jenis_data_pribadi' => 'Nama, NIK, email, nomor telepon PIC', 'retensi_data' => '5 tahun', 'pic_nama' => 'Admin PSE', 'pic_kontak' => '0812-0000-0001', 'tanggal_go_live' => '2025-01-10', 'created_at' => $now, 'updated_at' => $now],
+            ['id' => $appPortal, 'nama' => 'Portal Kabupaten Langkat', 'url' => 'https://langkatkab.go.id', 'opd_id' => $opdDiskominfo, 'deskripsi' => 'Portal informasi publik dan layanan dasar Pemkab Langkat.', 'jenis_aplikasi' => 'web', 'status' => 'aktif', 'sla_persen' => 99.00, 'jam_operasional' => '24x7', 'kategori_data' => 'publik', 'mengandung_data_pribadi' => false, 'jenis_data_pribadi' => null, 'retensi_data' => 'Arsip berkala', 'pic_nama' => 'Webmaster', 'pic_kontak' => '0812-0000-0002', 'tanggal_go_live' => '2024-06-15', 'created_at' => $now, 'updated_at' => $now],
         ]);
 
         DB::table('aplikasi_vm')->insert([
