@@ -1,0 +1,23 @@
+<?php
+
+namespace App\Models;
+
+use App\Models\Concerns\UsesUuid;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
+class Isp extends Model
+{
+    use UsesUuid;
+
+    protected $table = 'isp';
+
+    protected $fillable = ['nama', 'tipe', 'bandwidth', 'kontak'];
+
+    public $timestamps = false;
+
+    public function ipAddresses(): HasMany
+    {
+        return $this->hasMany(IpAddress::class, 'isp_id');
+    }
+}

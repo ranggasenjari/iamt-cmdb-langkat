@@ -1,0 +1,313 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\Server;
+use Database\Seeders\DatabaseSeeder;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Tests\TestCase;
+
+class CmdbApiTest extends TestCase
+{
+    use RefreshDatabase;
+
+    private function authenticateAs(string $role = 'full'): void
+    {
+        $email = $role === 'full' ? 'admin@langkatkab.go.id' : 'viewer@langkatkab.go.id';
+
+        $token = $this->postJson('/api/auth/login', [
+            'email' => $email,
+            'password' => 'password',
+        ])->assertOk()->json('token');
+
+        $this->withHeader('Authorization', "Bearer {$token}");
+    }
+
+    public function test_dashboard_returns_cmdb_metrics(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+        $this->authenticateAs();
+
+        $this->getJson('/api/dashboard')
+            ->assertOk()
+            ->assertJsonPath('metrics.0.label', 'Server')
+            ->assertJsonPath('capacity.cpu_core', 80);
+    }
+
+    public function test_dependency_map_and_compliance_are_available(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+        $this->authenticateAs();
+
+        $this->getJson('/api/dependency-map')
+            ->assertOk()
+            ->assertJsonCount(2);
+
+        $this->getJson('/api/compliance')
+            ->assertOk()
+            ->assertJsonPath('summary.data_pribadi', 2);
+    }
+
+    public function test_server_impact_lists_affected_applications(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+        $this->authenticateAs();
+        $server = Server::where('nama', 'SRV-PROD-01')->firstOrFail();
+
+        $this->getJson("/api/impact/server/{$server->id}")
+            ->assertOk()
+            ->assertJsonPath('summary.total_aplikasi', 2)
+            ->assertJsonPath('summary.risk_level', 'tinggi');
+    }
+
+    public function test_infrastructure_master_data_can_be_managed(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+        $this->authenticateAs();
+
+        $dcId = $this->postJson('/api/data-centers', [
+            'nama' => 'DR Center Langkat',
+            'lokasi' => 'Tanjung Pura',
+            'tipe' => 'dr',
+        ])->assertCreated()->json('id');
+
+        $this->postJson('/api/racks', [
+            'dc_id' => $dcId,
+            'nama' => 'Rack DR-01',
+            'kapasitas_u' => 24,
+        ])->assertCreated()->assertJsonPath('nama', 'Rack DR-01');
+
+        $ispId = $this->postJson('/api/isps', [
+            'nama' => 'Metro Langkat Backup',
+            'tipe' => 'Wireless',
+            'bandwidth' => '100 Mbps',
+            'kontak' => 'noc@example.test',
+        ])->assertCreated()->json('id');
+
+        $this->postJson('/api/ip-addresses', [
+            'ip' => '10.99.10.12',
+            'jenis' => 'private',
+            'isp_id' => $ispId,
+        ])->assertCreated()->assertJsonPath('ip', '10.99.10.12');
+
+        $this->getJson('/api/data-centers')->assertOk()->assertJsonFragment(['nama' => 'DR Center Langkat']);
+        $this->getJson('/api/racks')->assertOk()->assertJsonFragment(['nama' => 'Rack DR-01']);
+        $this->getJson('/api/isps')->assertOk()->assertJsonFragment(['nama' => 'Metro Langkat Backup']);
+        $this->getJson('/api/ip-addresses')->assertOk()->assertJsonFragment(['ip' => '10.99.10.12']);
+    }
+
+    public function test_application_data_assets_can_be_classified(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+        $this->authenticateAs();
+
+        $applicationId = \App\Models\Aplikasi::where('nama', 'Register PSE Langkat')->firstOrFail()->id;
+        $classificationId = \App\Models\DataClassification::where('code', 'RESTRICTED')->firstOrFail()->id;
+
+        $assetId = $this->postJson('/api/data-assets', [
+            'aplikasi_id' => $applicationId,
+            'classification_id' => $classificationId,
+            'name' => 'users.email',
+            'type' => 'COLUMN',
+            'attributes' => "Nama\nEmail",
+            'owner_agency' => 'Diskominfo Kabupaten Langkat',
+            'confidentiality_score' => 3,
+            'integrity_score' => 3,
+            'availability_score' => 3,
+            'table_name' => 'users',
+            'column_name' => 'email',
+            'contains_personal_data' => true,
+            'personal_data_type' => 'Email pengguna',
+            'processing_purpose' => 'Autentikasi dan notifikasi',
+            'retention_period' => '5 tahun',
+            'storage_location' => 'Database produksi',
+            'data_owner' => 'Diskominfo Kabupaten Langkat',
+            'access_policy' => 'Admin aplikasi dan audit log wajib.',
+        ])->assertCreated()->assertJsonPath('name', 'users.email')->json('id');
+
+        $this->getJson('/api/data-assets')
+            ->assertOk()
+            ->assertJsonFragment(['name' => 'users.email'])
+            ->assertJsonFragment(['code' => 'RESTRICTED']);
+
+        $this->putJson("/api/data-assets/{$assetId}", [
+            'aplikasi_id' => $applicationId,
+            'classification_id' => $classificationId,
+            'name' => 'users.email',
+            'type' => 'COLUMN',
+            'confidentiality_score' => 3,
+            'integrity_score' => 5,
+            'availability_score' => 3,
+            'contains_personal_data' => true,
+            'retention_period' => 'Selama akun aktif',
+        ])->assertOk()->assertJsonPath('retention_period', 'Selama akun aktif');
+    }
+
+    public function test_application_documents_integrations_and_backup_can_be_managed(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+        $this->authenticateAs();
+
+        $sourceApp = \App\Models\Aplikasi::where('nama', 'Register PSE Langkat')->firstOrFail();
+        $targetApp = \App\Models\Aplikasi::where('nama', 'Portal Kabupaten Langkat')->firstOrFail();
+        $dataAsset = \App\Models\DataAsset::where('aplikasi_id', $sourceApp->id)->firstOrFail();
+
+        $this->post('/api/application-documents', [
+            'aplikasi_id' => $sourceApp->id,
+            'document_category' => 'keamanan',
+            'files' => [UploadedFile::fake()->create('sop-keamanan.pdf', 64, 'application/pdf')],
+        ])->assertCreated()->assertJsonFragment(['document_category' => 'keamanan']);
+
+        $this->post('/api/app-integrations', [
+            'aplikasi_id' => $sourceApp->id,
+            'deskripsi' => 'Integrasi status layanan ke portal.',
+            'jenis_integrasi' => 'berbagi_data',
+            'metode_integrasi' => 'spl',
+            'external_endpoints' => 'https://api.example.test/status',
+            'target_application_ids' => [$targetApp->id],
+            'data_asset_ids' => [$dataAsset->id],
+            'documents' => [UploadedFile::fake()->create('desain-integrasi.pdf', 32, 'application/pdf')],
+        ])->assertCreated()->assertJsonPath('jenis_integrasi', 'berbagi_data');
+
+        $mediaId = $this->postJson('/api/backup-media', [
+            'nama' => 'NAS Backup DC',
+            'location' => 'local',
+            'jenis_media' => 'NAS',
+            'kapasitas_gb' => 4096,
+            'address_url' => '10.30.10.20',
+        ])->assertCreated()->json('id');
+
+        $this->postJson('/api/backup-jobs', [
+            'aplikasi_id' => $sourceApp->id,
+            'backup_media_id' => $mediaId,
+            'retensi_n' => 30,
+            'retensi_unit' => 'hari',
+            'repetisi_n' => 1,
+            'repetisi_unit' => 'hari',
+        ])->assertCreated()->assertJsonPath('retensi_unit', 'hari');
+    }
+
+    public function test_ups_and_soc_modules_can_be_managed(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+        $this->authenticateAs();
+
+        $dc = \App\Models\DataCenter::firstOrFail();
+        $server = \App\Models\Server::firstOrFail();
+        $vm = \App\Models\VirtualMachine::firstOrFail();
+        $app = \App\Models\Aplikasi::firstOrFail();
+
+        $this->postJson('/api/ups-devices', [
+            'nama' => 'UPS Rack A01',
+            'kapasitas_va' => 3000,
+            'kondisi' => 'baik',
+            'dc_id' => $dc->id,
+        ])->assertCreated()->assertJsonPath('nama', 'UPS Rack A01');
+
+        $this->postJson('/api/soc-tools', [
+            'nama' => 'SIEM Kabupaten Langkat',
+            'deskripsi_fungsi' => 'Korelasi log keamanan infrastruktur.',
+            'jenis' => 'SIEM',
+            'dc_ids' => [$dc->id],
+            'server_ids' => [$server->id],
+            'vm_ids' => [$vm->id],
+            'application_ids' => [$app->id],
+        ])->assertCreated()->assertJsonPath('jenis', 'SIEM');
+
+        $this->getJson('/api/soc-tools')
+            ->assertOk()
+            ->assertJsonFragment(['nama' => 'SIEM Kabupaten Langkat']);
+    }
+
+    public function test_server_and_vm_specification_changes_are_logged_with_reason(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+        $this->authenticateAs();
+
+        $server = Server::where('nama', 'SRV-PROD-01')->firstOrFail();
+        $newRam = $server->ram_gb + 16;
+
+        $this->putJson("/api/servers/{$server->id}", [
+            'nama' => $server->nama,
+            'ram_gb' => $newRam,
+            'change_reason' => 'Upgrade RAM untuk beban layanan meningkat.',
+            'changed_by' => 'Admin Infrastruktur',
+        ])->assertOk()->assertJsonPath('ram_gb', $newRam);
+
+        $this->getJson("/api/asset-change-logs?asset_type=server&asset_id={$server->id}")
+            ->assertOk()
+            ->assertJsonPath('0.asset_type', 'server')
+            ->assertJsonPath('0.asset_name', 'SRV-PROD-01')
+            ->assertJsonPath('0.change_type', 'spesifikasi')
+            ->assertJsonPath('0.reason', 'Upgrade RAM untuk beban layanan meningkat.')
+            ->assertJsonPath('0.changed_by', 'Admin Infrastruktur')
+            ->assertJsonPath('0.changed_fields.ram_gb.before', $server->ram_gb)
+            ->assertJsonPath('0.changed_fields.ram_gb.after', $newRam);
+
+        $vm = \App\Models\VirtualMachine::where('nama', 'VM-PSE-REGISTRY')->firstOrFail();
+        $newVcpu = $vm->vcpu + 2;
+
+        $this->putJson("/api/vms/{$vm->id}", [
+            'nama' => $vm->nama,
+            'vcpu' => $newVcpu,
+            'status' => 'maintenance',
+            'change_reason' => 'Penyesuaian resource saat maintenance aplikasi.',
+            'changed_by' => 'Admin Virtualisasi',
+        ])->assertOk()->assertJsonPath('vcpu', $newVcpu);
+
+        $this->getJson("/api/asset-change-logs?asset_type=vm&asset_id={$vm->id}")
+            ->assertOk()
+            ->assertJsonPath('0.asset_type', 'vm')
+            ->assertJsonPath('0.asset_name', 'VM-PSE-REGISTRY')
+            ->assertJsonPath('0.change_type', 'spesifikasi')
+            ->assertJsonPath('0.reason', 'Penyesuaian resource saat maintenance aplikasi.')
+            ->assertJsonPath('0.changed_by', 'Admin Virtualisasi')
+            ->assertJsonPath('0.changed_fields.vcpu.before', $vm->vcpu)
+            ->assertJsonPath('0.changed_fields.vcpu.after', $newVcpu);
+    }
+
+    public function test_authentication_and_read_only_role_enforcement(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $this->getJson('/api/dashboard')->assertUnauthorized();
+
+        $this->authenticateAs('read_only');
+
+        $this->getJson('/api/dashboard')
+            ->assertOk()
+            ->assertJsonPath('metrics.0.label', 'Server');
+
+        $this->postJson('/api/data-centers', [
+            'nama' => 'DC Read Only',
+            'lokasi' => 'Stabat',
+            'tipe' => 'utama',
+        ])->assertForbidden();
+    }
+
+    public function test_full_access_user_can_manage_auth_users(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+        $this->authenticateAs();
+
+        $userId = $this->postJson('/api/users', [
+            'nama' => 'Auditor CMDB',
+            'email' => 'auditor@langkatkab.go.id',
+            'password' => 'password',
+            'role' => 'read_only',
+            'status' => 'aktif',
+        ])->assertCreated()->assertJsonPath('role', 'read_only')->json('id');
+
+        $this->putJson("/api/users/{$userId}", [
+            'nama' => 'Auditor CMDB',
+            'email' => 'auditor@langkatkab.go.id',
+            'role' => 'full',
+            'status' => 'aktif',
+        ])->assertOk()->assertJsonPath('role', 'full');
+
+        $this->getJson('/api/users')
+            ->assertOk()
+            ->assertJsonFragment(['email' => 'auditor@langkatkab.go.id']);
+    }
+}
