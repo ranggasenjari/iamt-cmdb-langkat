@@ -85,3 +85,22 @@ DB_DATABASE=iamt_refactor
 ```
 
 Pastikan database MySQL sudah tersedia sebelum menjalankan migration.
+
+## Catatan Deploy Apache
+
+Untuk Apache, arahkan document root virtual host ke folder `public`.
+
+```apache
+DocumentRoot /path/to/iamt-cmdb-langkat/public
+```
+
+Pastikan `mod_rewrite` aktif dan konfigurasi directory mengizinkan `.htaccess`:
+
+```apache
+<Directory /path/to/iamt-cmdb-langkat/public>
+    AllowOverride All
+    Require all granted
+</Directory>
+```
+
+Jika rewrite aktif, URL aplikasi tidak perlu memakai `index.php`.
