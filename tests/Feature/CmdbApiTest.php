@@ -4,8 +4,11 @@ namespace Tests\Feature;
 
 use App\Models\Server;
 use Database\Seeders\DatabaseSeeder;
+use Database\Seeders\OpdSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class CmdbApiTest extends TestCase
@@ -318,6 +321,25 @@ class CmdbApiTest extends TestCase
         $this->getJson('/api/users')
             ->assertOk()
             ->assertJsonFragment(['email' => 'auditor@langkatkab.go.id']);
+    }
+
+    public function test_opd_seeder_only_adds_missing_opd_records(): void
+    {
+        DB::table('opd')->insert([
+            'id' => (string) Str::uuid(),
+            'nama' => 'Dinas Kesehatan',
+            'kontak' => 'existing@example.test',
+            'created_at' => now(),
+        ]);
+
+        $this->seed(OpdSeeder::class);
+        $firstCount = DB::table('opd')->count();
+
+        $this->seed(OpdSeeder::class);
+
+        $this->assertSame($firstCount, DB::table('opd')->count());
+        $this->assertSame('existing@example.test', DB::table('opd')->where('nama', 'Dinas Kesehatan')->value('kontak'));
+        $this->assertDatabaseHas('opd', ['nama' => 'Puskes. Tungkit']);
     }
 
     public function test_delete_returns_clear_message_when_entity_has_child_records(): void

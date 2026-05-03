@@ -76,6 +76,17 @@ Read only   : viewer@langkatkab.go.id / password
 
 Role `full` dapat membaca dan mengubah data. Role `read_only` hanya dapat membaca dashboard, tabel, mapping, compliance, dan audit.
 
+## Seeder OPD Production
+
+Jika database production sudah berisi data aset, jangan jalankan `migrate:fresh --seed`.
+Untuk menambahkan daftar OPD awal saja tanpa menghapus atau mengubah data production, jalankan:
+
+```bash
+php artisan db:seed --class=OpdSeeder
+```
+
+Seeder ini hanya menambahkan nama OPD yang belum ada. OPD yang sudah ada akan dilewati.
+
 ## Catatan Database
 
 Nama database default mengikuti acuan awal:

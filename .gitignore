@@ -1,5 +1,5 @@
 /vendor
-/db
+/public/db
 /node_modules
 /public/build
 /bootstrap/cache/*.php
