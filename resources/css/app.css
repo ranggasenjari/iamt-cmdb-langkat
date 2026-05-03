@@ -933,6 +933,24 @@ th {
   border-top: 1px solid var(--slate-200);
 }
 
+.alert-backdrop {
+  z-index: 50;
+}
+
+.alert-modal-card {
+  width: min(520px, 100%);
+}
+
+.alert-modal-card .modal-header svg {
+  color: var(--red-500);
+}
+
+.alert-modal-message {
+  margin: 0;
+  color: var(--slate-600);
+  line-height: 1.6;
+}
+
 .spin {
   animation: spin 0.9s linear infinite;
 }

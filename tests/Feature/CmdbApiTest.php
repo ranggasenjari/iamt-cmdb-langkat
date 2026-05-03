@@ -310,4 +310,17 @@ class CmdbApiTest extends TestCase
             ->assertOk()
             ->assertJsonFragment(['email' => 'auditor@langkatkab.go.id']);
     }
+
+    public function test_delete_returns_clear_message_when_entity_has_child_records(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+        $this->authenticateAs();
+
+        $server = Server::where('nama', 'SRV-PROD-01')->firstOrFail();
+
+        $this->deleteJson("/api/servers/{$server->id}")
+            ->assertStatus(409)
+            ->assertJsonPath('type', 'constraint_violation')
+            ->assertJsonPath('message', 'Terdapat data dibawah entitas ini. Hapus atau lepaskan relasi data terkait terlebih dahulu sebelum menghapus data utama.');
+    }
 }

@@ -84,6 +84,11 @@ const modal = reactive({
   mode: 'create',
   id: null,
 });
+const alertModal = reactive({
+  open: false,
+  title: '',
+  message: '',
+});
 
 const dashboard = ref(null);
 const references = ref({ opd: [], classifications: [], data_centers: [], racks: [], isps: [], servers: [], vms: [], ips: [] });
@@ -316,7 +321,10 @@ async function api(path, options = {}) {
   if (!response.ok) {
     const body = await response.json().catch(() => ({}));
     if (response.status === 401) clearAuth();
-    throw new Error(body.message || `API error ${response.status}`);
+    const apiError = new Error(body.message || `API error ${response.status}`);
+    apiError.status = response.status;
+    apiError.type = body.type || null;
+    throw apiError;
   }
 
   if (response.status === 204) return null;
@@ -340,7 +348,10 @@ async function apiForm(path, formData, method = 'POST') {
   if (!response.ok) {
     const body = await response.json().catch(() => ({}));
     if (response.status === 401) clearAuth();
-    throw new Error(body.message || `API error ${response.status}`);
+    const apiError = new Error(body.message || `API error ${response.status}`);
+    apiError.status = response.status;
+    apiError.type = body.type || null;
+    throw apiError;
   }
 
   if (response.status === 204) return null;
@@ -773,6 +784,14 @@ function closeModal() {
   Object.assign(modal, { open: false, module: '', mode: 'create', id: null });
 }
 
+function showAlert(title, message) {
+  Object.assign(alertModal, { open: true, title, message });
+}
+
+function closeAlert() {
+  Object.assign(alertModal, { open: false, title: '', message: '' });
+}
+
 async function saveModal() {
   if (!canWrite.value) {
     error.value = 'Akses read only tidak dapat mengubah data.';
@@ -902,13 +921,17 @@ async function removeRow(kind, id) {
     return;
   }
   error.value = '';
-  try {
-    await api(`/${kind}/${id}`, { method: 'DELETE' });
-    await loadAll();
-  } catch (err) {
-    error.value = err.message;
+    try {
+      await api(`/${kind}/${id}`, { method: 'DELETE' });
+      await loadAll();
+    } catch (err) {
+      if (err.status === 409 || err.type === 'constraint_violation') {
+        showAlert('Data tidak dapat dihapus', err.message);
+        return;
+      }
+      error.value = err.message;
+    }
   }
-}
 
 function cleanPayload(source) {
   return Object.fromEntries(
@@ -2662,6 +2685,22 @@ onMounted(bootstrapAuth);
             <button class="action-button" type="submit">{{ modal.mode === 'edit' ? 'Simpan Perubahan' : 'Simpan Data' }}</button>
           </footer>
         </form>
+      </div>
+
+      <div v-if="alertModal.open" class="modal-backdrop alert-backdrop" @click.self="closeAlert">
+        <section class="modal-card alert-modal-card">
+          <header class="modal-header">
+            <div>
+              <p class="eyebrow">Perhatian</p>
+              <h3>{{ alertModal.title }}</h3>
+            </div>
+            <AlertTriangle :size="28" />
+          </header>
+          <p class="alert-modal-message">{{ alertModal.message }}</p>
+          <footer class="modal-actions">
+            <button class="action-button" type="button" @click="closeAlert">Mengerti</button>
+          </footer>
+        </section>
       </div>
     </main>
   </div>
