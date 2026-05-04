@@ -46,7 +46,7 @@ class AssetChangeLogger
             return 'status';
         }
 
-        if (array_intersect($fields, ['dc_id', 'rack_id', 'server_id'])) {
+        if (array_intersect($fields, ['dc_id', 'rack_id', 'rack_size_u', 'server_id'])) {
             return 'lokasi_relasi';
         }
 

@@ -36,6 +36,10 @@ class CmdbApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('metrics.0.label', 'Server')
             ->assertJsonPath('capacity.cpu_core', 80);
+
+        $this->getJson('/api/servers')
+            ->assertOk()
+            ->assertJsonPath('0.rack_size_u', 2);
     }
 
     public function test_dependency_map_and_compliance_are_available(): void
@@ -110,8 +114,21 @@ class CmdbApiTest extends TestCase
         $this->seed(DatabaseSeeder::class);
         $this->authenticateAs();
 
-        $applicationId = \App\Models\Aplikasi::where('nama', 'Register PSE Langkat')->firstOrFail()->id;
+        $application = \App\Models\Aplikasi::where('nama', 'Register PSE Langkat')->firstOrFail();
+        $applicationId = $application->id;
         $classificationId = \App\Models\DataClassification::where('code', 'RESTRICTED')->firstOrFail()->id;
+
+        $this->putJson("/api/applications/{$applicationId}", [
+            'nama' => $application->nama,
+            'url' => $application->url,
+            'opd_id' => $application->opd_id,
+            'jenis_aplikasi' => 'web',
+            'pengembang' => 'pihak_ketiga',
+            'tech_stack' => 'Laravel, Vue, MariaDB',
+            'status' => 'aktif',
+        ])->assertOk()
+            ->assertJsonPath('pengembang', 'pihak_ketiga')
+            ->assertJsonPath('tech_stack', 'Laravel, Vue, MariaDB');
 
         $assetId = $this->postJson('/api/data-assets', [
             'aplikasi_id' => $applicationId,
@@ -240,11 +257,13 @@ class CmdbApiTest extends TestCase
             'nama' => $server->nama,
             'ram_gb' => $newRam,
             'merk_processor' => 'AMD EPYC',
+            'rack_size_u' => 4,
             'change_reason' => 'Upgrade RAM untuk beban layanan meningkat.',
             'changed_by' => 'Admin Infrastruktur',
         ])->assertOk()
             ->assertJsonPath('ram_gb', $newRam)
-            ->assertJsonPath('merk_processor', 'AMD EPYC');
+            ->assertJsonPath('merk_processor', 'AMD EPYC')
+            ->assertJsonPath('rack_size_u', 4);
 
         $this->getJson("/api/asset-change-logs?asset_type=server&asset_id={$server->id}")
             ->assertOk()
@@ -255,7 +274,8 @@ class CmdbApiTest extends TestCase
             ->assertJsonPath('0.changed_by', 'Admin Infrastruktur')
             ->assertJsonPath('0.changed_fields.ram_gb.before', $server->ram_gb)
             ->assertJsonPath('0.changed_fields.ram_gb.after', $newRam)
-            ->assertJsonPath('0.changed_fields.merk_processor.after', 'AMD EPYC');
+            ->assertJsonPath('0.changed_fields.merk_processor.after', 'AMD EPYC')
+            ->assertJsonPath('0.changed_fields.rack_size_u.after', 4);
 
         $vm = \App\Models\VirtualMachine::where('nama', 'VM-PSE-REGISTRY')->firstOrFail();
         $newVcpu = $vm->vcpu + 2;

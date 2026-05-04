@@ -69,6 +69,7 @@ const menuSections = [
 
 const activeTab = ref('dashboard');
 const loading = ref(false);
+const saving = ref(false);
 const error = ref('');
 const query = ref('');
 const selectedServerId = ref('');
@@ -117,26 +118,26 @@ const canWrite = computed(() => Boolean(currentUser.value?.can_write));
 
 const dataCenterForm = reactive({
   nama: '',
-  lokasi: 'Stabat',
-  tipe: 'utama',
+  lokasi: '',
+  tipe: '',
 });
 
 const rackForm = reactive({
   dc_id: '',
   nama: '',
-  kapasitas_u: 42,
+  kapasitas_u: null,
 });
 
 const ispForm = reactive({
   nama: '',
-  tipe: 'Fiber Dedicated',
+  tipe: '',
   bandwidth: '',
   kontak: '',
 });
 
 const ipAddressForm = reactive({
   ip: '',
-  jenis: 'private',
+  jenis: '',
   isp_id: '',
 });
 
@@ -144,16 +145,17 @@ const serverForm = reactive({
   nama: '',
   dc_id: '',
   rack_id: '',
+  rack_size_u: null,
   merk: '',
   tipe: '',
   merk_processor: '',
-  tahun: new Date().getFullYear(),
-  cpu_core: 16,
-  ram_gb: 64,
-  storage_gb: 1024,
-  kondisi: 'baik',
-  status: 'aktif',
-  penanggung_jawab: 'Bidang Infrastruktur TIK',
+  tahun: null,
+  cpu_core: null,
+  ram_gb: null,
+  storage_gb: null,
+  kondisi: '',
+  status: '',
+  penanggung_jawab: '',
   change_reason: '',
   changed_by: '',
 });
@@ -161,11 +163,11 @@ const serverForm = reactive({
 const vmForm = reactive({
   nama: '',
   server_id: '',
-  os: 'Ubuntu Server 24.04 LTS',
-  vcpu: 4,
-  ram_gb: 8,
-  storage_gb: 120,
-  status: 'running',
+  os: '',
+  vcpu: null,
+  ram_gb: null,
+  storage_gb: null,
+  status: '',
   ip_ids: [],
   change_reason: '',
   changed_by: '',
@@ -174,13 +176,14 @@ const vmForm = reactive({
 const appForm = reactive({
   nama: '',
   url: '',
-      opd_id: '',
-      jenis_aplikasi: 'web',
-      klasifikasi_fungsi: [],
-      tech_stack: '',
-  status: 'aktif',
-  sla_persen: 99,
-  kategori_data: 'terbatas',
+  opd_id: '',
+  jenis_aplikasi: '',
+  pengembang: '',
+  klasifikasi_fungsi: [],
+  tech_stack: '',
+  status: '',
+  sla_persen: null,
+  kategori_data: '',
   pic_nama: '',
   pic_kontak: '',
   vm_ids: [],
@@ -190,15 +193,15 @@ const appForm = reactive({
 
 const applicationDocumentForm = reactive({
   aplikasi_id: '',
-  document_category: 'petunjuk_teknis',
+  document_category: '',
   files: [],
 });
 
 const appIntegrationForm = reactive({
   aplikasi_id: '',
   deskripsi: '',
-  jenis_integrasi: 'berbagi_data',
-  metode_integrasi: 'spl',
+  jenis_integrasi: '',
+  metode_integrasi: '',
   target_application_ids: [],
   external_endpoints: '',
   data_asset_ids: [],
@@ -207,32 +210,32 @@ const appIntegrationForm = reactive({
 
 const backupMediaForm = reactive({
   nama: '',
-  location: 'local',
-  jenis_media: 'NAS',
-  kapasitas_gb: 1024,
+  location: '',
+  jenis_media: '',
+  kapasitas_gb: null,
   address_url: '',
 });
 
 const backupJobForm = reactive({
   aplikasi_id: '',
   backup_media_id: '',
-  retensi_n: 30,
-  retensi_unit: 'hari',
-  repetisi_n: 1,
-  repetisi_unit: 'hari',
+  retensi_n: null,
+  retensi_unit: '',
+  repetisi_n: null,
+  repetisi_unit: '',
 });
 
 const upsDeviceForm = reactive({
   nama: '',
-  kapasitas_va: 3000,
-  kondisi: 'baik',
+  kapasitas_va: null,
+  kondisi: '',
   dc_id: '',
 });
 
 const socToolForm = reactive({
   nama: '',
   deskripsi_fungsi: '',
-  jenis: 'Firewall',
+  jenis: '',
   dc_ids: [],
   server_ids: [],
   vm_ids: [],
@@ -244,20 +247,20 @@ const userForm = reactive({
   email: '',
   password: '',
   opd_id: '',
-  role: 'read_only',
-  status: 'aktif',
+  role: '',
+  status: '',
 });
 
 const dataAssetForm = reactive({
   aplikasi_id: '',
   classification_id: '',
   name: '',
-  type: 'COLUMN',
+  type: '',
   attributes: '',
   owner_agency: '',
-  confidentiality_score: 1,
-  integrity_score: 1,
-  availability_score: 1,
+  confidentiality_score: null,
+  integrity_score: null,
+  availability_score: null,
   table_name: '',
   column_name: '',
   contains_personal_data: false,
@@ -265,7 +268,7 @@ const dataAssetForm = reactive({
   processing_purpose: '',
   retention_period: '',
   storage_location: '',
-  data_owner: 'Diskominfo Kabupaten Langkat',
+  data_owner: '',
   access_policy: '',
   description: '',
 });
@@ -281,14 +284,27 @@ const functionClassificationOptions = [
   { value: 'kolaborasi_knowledge_base', label: 'Kolaborasi / Knowledge Base' },
 ];
 
+const developerOptions = [
+  { value: 'instansi_pusat', label: 'Instansi Pusat' },
+  { value: 'diskominfo_langkat', label: 'Diskominfo Langkat' },
+  { value: 'unit_penyelenggara', label: 'Unit Penyelenggara' },
+  { value: 'pihak_ketiga', label: 'Pihak Ketiga' },
+  { value: 'in_house', label: 'In-House' },
+];
+
 function functionClassificationLabel(value) {
   return functionClassificationOptions.find((option) => option.value === value)?.label || value;
+}
+
+function developerLabel(value) {
+  return developerOptions.find((option) => option.value === value)?.label || value;
 }
 
 const changeFieldLabels = {
   nama: 'Nama',
   dc_id: 'Gedung / Ruang DC',
   rack_id: 'Rack',
+  rack_size_u: 'Rack Size (U)',
   server_id: 'Host Server',
   merk: 'Merk',
   tipe: 'Tipe',
@@ -487,25 +503,26 @@ const moduleLabels = {
 const activeModuleLabel = computed(() => moduleLabels[modal.module] || 'Data');
 
 function resetModuleForm(module) {
-  if (module === 'data-centers') Object.assign(dataCenterForm, { nama: '', lokasi: 'Stabat', tipe: 'utama' });
-  if (module === 'racks') Object.assign(rackForm, { dc_id: '', nama: '', kapasitas_u: 42 });
-  if (module === 'isps') Object.assign(ispForm, { nama: '', tipe: 'Fiber Dedicated', bandwidth: '', kontak: '' });
-  if (module === 'ip-addresses') Object.assign(ipAddressForm, { ip: '', jenis: 'private', isp_id: '' });
+  if (module === 'data-centers') Object.assign(dataCenterForm, { nama: '', lokasi: '', tipe: '' });
+  if (module === 'racks') Object.assign(rackForm, { dc_id: '', nama: '', kapasitas_u: null });
+  if (module === 'isps') Object.assign(ispForm, { nama: '', tipe: '', bandwidth: '', kontak: '' });
+  if (module === 'ip-addresses') Object.assign(ipAddressForm, { ip: '', jenis: '', isp_id: '' });
   if (module === 'servers') {
     Object.assign(serverForm, {
       nama: '',
       dc_id: '',
       rack_id: '',
+      rack_size_u: null,
       merk: '',
       tipe: '',
       merk_processor: '',
-      tahun: new Date().getFullYear(),
-      cpu_core: 16,
-      ram_gb: 64,
-      storage_gb: 1024,
-      kondisi: 'baik',
-      status: 'aktif',
-      penanggung_jawab: 'Bidang Infrastruktur TIK',
+      tahun: null,
+      cpu_core: null,
+      ram_gb: null,
+      storage_gb: null,
+      kondisi: '',
+      status: '',
+      penanggung_jawab: '',
       change_reason: '',
       changed_by: '',
     });
@@ -514,11 +531,11 @@ function resetModuleForm(module) {
     Object.assign(vmForm, {
       nama: '',
       server_id: '',
-      os: 'Ubuntu Server 24.04 LTS',
-      vcpu: 4,
-      ram_gb: 8,
-      storage_gb: 120,
-      status: 'running',
+      os: '',
+      vcpu: null,
+      ram_gb: null,
+      storage_gb: null,
+      status: '',
       ip_ids: [],
       change_reason: '',
       changed_by: '',
@@ -529,12 +546,13 @@ function resetModuleForm(module) {
       nama: '',
       url: '',
       opd_id: '',
-  jenis_aplikasi: 'web',
-  klasifikasi_fungsi: [],
-  tech_stack: '',
-      status: 'aktif',
-      sla_persen: 99,
-      kategori_data: 'terbatas',
+      jenis_aplikasi: '',
+      pengembang: '',
+      klasifikasi_fungsi: [],
+      tech_stack: '',
+      status: '',
+      sla_persen: null,
+      kategori_data: '',
       pic_nama: '',
       pic_kontak: '',
       vm_ids: [],
@@ -545,14 +563,14 @@ function resetModuleForm(module) {
   if (module === 'data-assets') {
     Object.assign(dataAssetForm, {
       aplikasi_id: '',
-      classification_id: references.value.classifications[0]?.id || '',
+      classification_id: '',
       name: '',
-      type: 'COLUMN',
+      type: '',
       attributes: '',
       owner_agency: '',
-      confidentiality_score: 1,
-      integrity_score: 1,
-      availability_score: 1,
+      confidentiality_score: null,
+      integrity_score: null,
+      availability_score: null,
       table_name: '',
       column_name: '',
       contains_personal_data: false,
@@ -560,20 +578,20 @@ function resetModuleForm(module) {
       processing_purpose: '',
       retention_period: '',
       storage_location: '',
-      data_owner: 'Diskominfo Kabupaten Langkat',
+      data_owner: '',
       access_policy: '',
       description: '',
     });
   }
   if (module === 'application-documents') {
-    Object.assign(applicationDocumentForm, { aplikasi_id: '', document_category: 'petunjuk_teknis', files: [] });
+    Object.assign(applicationDocumentForm, { aplikasi_id: '', document_category: '', files: [] });
   }
   if (module === 'app-integrations') {
     Object.assign(appIntegrationForm, {
       aplikasi_id: '',
       deskripsi: '',
-      jenis_integrasi: 'berbagi_data',
-      metode_integrasi: 'spl',
+      jenis_integrasi: '',
+      metode_integrasi: '',
       target_application_ids: [],
       external_endpoints: '',
       data_asset_ids: [],
@@ -581,19 +599,19 @@ function resetModuleForm(module) {
     });
   }
   if (module === 'backup-media') {
-    Object.assign(backupMediaForm, { nama: '', location: 'local', jenis_media: 'NAS', kapasitas_gb: 1024, address_url: '' });
+    Object.assign(backupMediaForm, { nama: '', location: '', jenis_media: '', kapasitas_gb: null, address_url: '' });
   }
   if (module === 'backup-jobs') {
-    Object.assign(backupJobForm, { aplikasi_id: '', backup_media_id: '', retensi_n: 30, retensi_unit: 'hari', repetisi_n: 1, repetisi_unit: 'hari' });
+    Object.assign(backupJobForm, { aplikasi_id: '', backup_media_id: '', retensi_n: null, retensi_unit: '', repetisi_n: null, repetisi_unit: '' });
   }
   if (module === 'ups-devices') {
-    Object.assign(upsDeviceForm, { nama: '', kapasitas_va: 3000, kondisi: 'baik', dc_id: '' });
+    Object.assign(upsDeviceForm, { nama: '', kapasitas_va: null, kondisi: '', dc_id: '' });
   }
   if (module === 'soc-tools') {
-    Object.assign(socToolForm, { nama: '', deskripsi_fungsi: '', jenis: 'Firewall', dc_ids: [], server_ids: [], vm_ids: [], application_ids: [] });
+    Object.assign(socToolForm, { nama: '', deskripsi_fungsi: '', jenis: '', dc_ids: [], server_ids: [], vm_ids: [], application_ids: [] });
   }
   if (module === 'users') {
-    Object.assign(userForm, { nama: '', email: '', password: '', opd_id: '', role: 'read_only', status: 'aktif' });
+    Object.assign(userForm, { nama: '', email: '', password: '', opd_id: '', role: '', status: '' });
   }
 }
 
@@ -627,31 +645,32 @@ function openEdit(module, row) {
   if (!canWrite.value) return;
   resetModuleForm(module);
   if (module === 'data-centers') {
-    Object.assign(dataCenterForm, { nama: row.nama || '', lokasi: row.lokasi || '', tipe: row.tipe || 'utama' });
+    Object.assign(dataCenterForm, { nama: row.nama || '', lokasi: row.lokasi || '', tipe: row.tipe || '' });
   }
   if (module === 'racks') {
-    Object.assign(rackForm, { dc_id: row.dc_id || '', nama: row.nama || '', kapasitas_u: row.kapasitas_u || 42 });
+    Object.assign(rackForm, { dc_id: row.dc_id || '', nama: row.nama || '', kapasitas_u: row.kapasitas_u ?? null });
   }
   if (module === 'isps') {
     Object.assign(ispForm, { nama: row.nama || '', tipe: row.tipe || '', bandwidth: row.bandwidth || '', kontak: row.kontak || '' });
   }
   if (module === 'ip-addresses') {
-    Object.assign(ipAddressForm, { ip: row.ip || '', jenis: row.jenis || 'private', isp_id: row.isp_id || '' });
+    Object.assign(ipAddressForm, { ip: row.ip || '', jenis: row.jenis || '', isp_id: row.isp_id || '' });
   }
   if (module === 'servers') {
     Object.assign(serverForm, {
       nama: row.nama || '',
       dc_id: row.dc_id || '',
       rack_id: row.rack_id || '',
+      rack_size_u: row.rack_size_u ?? null,
       merk: row.merk || '',
       tipe: row.tipe || '',
       merk_processor: row.merk_processor || '',
-      tahun: row.tahun || new Date().getFullYear(),
-      cpu_core: row.cpu_core || 16,
-      ram_gb: row.ram_gb || 64,
-      storage_gb: row.storage_gb || 1024,
-      kondisi: row.kondisi || 'baik',
-      status: row.status || 'aktif',
+      tahun: row.tahun ?? null,
+      cpu_core: row.cpu_core ?? null,
+      ram_gb: row.ram_gb ?? null,
+      storage_gb: row.storage_gb ?? null,
+      kondisi: row.kondisi || '',
+      status: row.status || '',
       penanggung_jawab: row.penanggung_jawab || '',
       change_reason: '',
       changed_by: '',
@@ -662,10 +681,10 @@ function openEdit(module, row) {
       nama: row.nama || '',
       server_id: row.server_id || '',
       os: row.os || '',
-      vcpu: row.vcpu || 4,
-      ram_gb: row.ram_gb || 8,
-      storage_gb: row.storage_gb || 120,
-      status: row.status || 'running',
+      vcpu: row.vcpu ?? null,
+      ram_gb: row.ram_gb ?? null,
+      storage_gb: row.storage_gb ?? null,
+      status: row.status || '',
       ip_ids: (row.ip_addresses || []).map((ip) => ip.id),
       change_reason: '',
       changed_by: '',
@@ -676,12 +695,13 @@ function openEdit(module, row) {
       nama: row.nama || '',
       url: row.url || '',
       opd_id: row.opd_id || '',
-      jenis_aplikasi: row.jenis_aplikasi || 'web',
+      jenis_aplikasi: row.jenis_aplikasi || '',
+      pengembang: row.pengembang || '',
       klasifikasi_fungsi: row.klasifikasi_fungsi || [],
       tech_stack: row.tech_stack || '',
-      status: row.status || 'aktif',
-      sla_persen: Number(row.sla_persen || 99),
-      kategori_data: row.kategori_data || 'terbatas',
+      status: row.status || '',
+      sla_persen: row.sla_persen === null || row.sla_persen === undefined ? null : Number(row.sla_persen),
+      kategori_data: row.kategori_data || '',
       pic_nama: row.pic_nama || '',
       pic_kontak: row.pic_kontak || '',
       vm_ids: (row.vms || []).map((vm) => vm.id),
@@ -692,7 +712,7 @@ function openEdit(module, row) {
   if (module === 'application-documents') {
     Object.assign(applicationDocumentForm, {
       aplikasi_id: row.aplikasi_id || '',
-      document_category: row.document_category || 'petunjuk_teknis',
+      document_category: row.document_category || '',
       files: [],
     });
   }
@@ -700,8 +720,8 @@ function openEdit(module, row) {
     Object.assign(appIntegrationForm, {
       aplikasi_id: row.aplikasi_id || '',
       deskripsi: row.deskripsi || '',
-      jenis_integrasi: row.jenis_integrasi || 'berbagi_data',
-      metode_integrasi: row.metode_integrasi || 'spl',
+      jenis_integrasi: row.jenis_integrasi || '',
+      metode_integrasi: row.metode_integrasi || '',
       target_application_ids: (row.target_applications || []).map((app) => app.id),
       external_endpoints: row.external_endpoints || '',
       data_asset_ids: (row.data_assets || []).map((asset) => asset.id),
@@ -711,9 +731,9 @@ function openEdit(module, row) {
   if (module === 'backup-media') {
     Object.assign(backupMediaForm, {
       nama: row.nama || '',
-      location: row.location || 'local',
-      jenis_media: row.jenis_media || 'NAS',
-      kapasitas_gb: row.kapasitas_gb || 1024,
+      location: row.location || '',
+      jenis_media: row.jenis_media || '',
+      kapasitas_gb: row.kapasitas_gb ?? null,
       address_url: row.address_url || '',
     });
   }
@@ -721,17 +741,17 @@ function openEdit(module, row) {
     Object.assign(backupJobForm, {
       aplikasi_id: row.aplikasi_id || '',
       backup_media_id: row.backup_media_id || '',
-      retensi_n: row.retensi_n || 30,
-      retensi_unit: row.retensi_unit || 'hari',
-      repetisi_n: row.repetisi_n || 1,
-      repetisi_unit: row.repetisi_unit || 'hari',
+      retensi_n: row.retensi_n ?? null,
+      retensi_unit: row.retensi_unit || '',
+      repetisi_n: row.repetisi_n ?? null,
+      repetisi_unit: row.repetisi_unit || '',
     });
   }
   if (module === 'ups-devices') {
     Object.assign(upsDeviceForm, {
       nama: row.nama || '',
-      kapasitas_va: row.kapasitas_va || 3000,
-      kondisi: row.kondisi || 'baik',
+      kapasitas_va: row.kapasitas_va ?? null,
+      kondisi: row.kondisi || '',
       dc_id: row.dc_id || '',
     });
   }
@@ -739,7 +759,7 @@ function openEdit(module, row) {
     Object.assign(socToolForm, {
       nama: row.nama || '',
       deskripsi_fungsi: row.deskripsi_fungsi || '',
-      jenis: row.jenis || 'Firewall',
+      jenis: row.jenis || '',
       dc_ids: (row.data_centers || []).map((dc) => dc.id),
       server_ids: (row.servers || []).map((server) => server.id),
       vm_ids: (row.vms || []).map((vm) => vm.id),
@@ -752,8 +772,8 @@ function openEdit(module, row) {
       email: row.email || '',
       password: '',
       opd_id: row.opd_id || '',
-      role: row.role || 'read_only',
-      status: row.status || 'aktif',
+      role: row.role || '',
+      status: row.status || '',
     });
   }
   if (module === 'data-assets') {
@@ -761,12 +781,12 @@ function openEdit(module, row) {
       aplikasi_id: row.aplikasi_id || '',
       classification_id: row.classification_id || '',
       name: row.name || '',
-      type: row.type || 'COLUMN',
+      type: row.type || '',
       attributes: row.attributes || '',
       owner_agency: row.owner_agency || '',
-      confidentiality_score: row.confidentiality_score || 1,
-      integrity_score: row.integrity_score || 1,
-      availability_score: row.availability_score || 1,
+      confidentiality_score: row.confidentiality_score ?? null,
+      integrity_score: row.integrity_score ?? null,
+      availability_score: row.availability_score ?? null,
       table_name: row.table_name || '',
       column_name: row.column_name || '',
       contains_personal_data: Boolean(row.contains_personal_data),
@@ -795,11 +815,13 @@ function closeAlert() {
 }
 
 async function saveModal() {
+  if (saving.value) return;
   if (!canWrite.value) {
     error.value = 'Akses read only tidak dapat mengubah data.';
     return;
   }
   error.value = '';
+  saving.value = true;
   try {
     if (['application-documents', 'app-integrations'].includes(modal.module)) {
       const formData = formDataFor(modal.module);
@@ -819,6 +841,8 @@ async function saveModal() {
     await loadAll();
   } catch (err) {
     error.value = err.message;
+  } finally {
+    saving.value = false;
   }
 }
 
@@ -858,62 +882,101 @@ function formatChangeFields(fields) {
 }
 
 async function createDataCenter() {
-  if (!canWrite.value) return;
-  await api('/data-centers', { method: 'POST', body: JSON.stringify(cleanPayload(dataCenterForm)) });
-  Object.assign(dataCenterForm, { nama: '', lokasi: 'Stabat', tipe: 'utama' });
-  await loadAll();
+  if (!canWrite.value || saving.value) return;
+  saving.value = true;
+  try {
+    await api('/data-centers', { method: 'POST', body: JSON.stringify(cleanPayload(dataCenterForm)) });
+    resetModuleForm('data-centers');
+    await loadAll();
+  } catch (err) {
+    error.value = err.message;
+  } finally {
+    saving.value = false;
+  }
 }
 
 async function createRack() {
-  if (!canWrite.value) return;
-  await api('/racks', { method: 'POST', body: JSON.stringify(cleanPayload(rackForm)) });
-  Object.assign(rackForm, { dc_id: '', nama: '', kapasitas_u: 42 });
-  await loadAll();
+  if (!canWrite.value || saving.value) return;
+  saving.value = true;
+  try {
+    await api('/racks', { method: 'POST', body: JSON.stringify(cleanPayload(rackForm)) });
+    resetModuleForm('racks');
+    await loadAll();
+  } catch (err) {
+    error.value = err.message;
+  } finally {
+    saving.value = false;
+  }
 }
 
 async function createIsp() {
-  if (!canWrite.value) return;
-  await api('/isps', { method: 'POST', body: JSON.stringify(cleanPayload(ispForm)) });
-  Object.assign(ispForm, { nama: '', tipe: 'Fiber Dedicated', bandwidth: '', kontak: '' });
-  await loadAll();
+  if (!canWrite.value || saving.value) return;
+  saving.value = true;
+  try {
+    await api('/isps', { method: 'POST', body: JSON.stringify(cleanPayload(ispForm)) });
+    resetModuleForm('isps');
+    await loadAll();
+  } catch (err) {
+    error.value = err.message;
+  } finally {
+    saving.value = false;
+  }
 }
 
 async function createIpAddress() {
-  if (!canWrite.value) return;
-  await api('/ip-addresses', { method: 'POST', body: JSON.stringify(cleanPayload(ipAddressForm)) });
-  Object.assign(ipAddressForm, { ip: '', jenis: 'private', isp_id: '' });
-  await loadAll();
+  if (!canWrite.value || saving.value) return;
+  saving.value = true;
+  try {
+    await api('/ip-addresses', { method: 'POST', body: JSON.stringify(cleanPayload(ipAddressForm)) });
+    resetModuleForm('ip-addresses');
+    await loadAll();
+  } catch (err) {
+    error.value = err.message;
+  } finally {
+    saving.value = false;
+  }
 }
 
 async function createServer() {
-  if (!canWrite.value) return;
-  await api('/servers', { method: 'POST', body: JSON.stringify(cleanPayload(serverForm)) });
-  Object.assign(serverForm, { nama: '', merk: '', tipe: '', merk_processor: '', tahun: new Date().getFullYear(), cpu_core: 16, ram_gb: 64, storage_gb: 1024 });
-  await loadAll();
+  if (!canWrite.value || saving.value) return;
+  saving.value = true;
+  try {
+    await api('/servers', { method: 'POST', body: JSON.stringify(cleanPayload(serverForm)) });
+    resetModuleForm('servers');
+    await loadAll();
+  } catch (err) {
+    error.value = err.message;
+  } finally {
+    saving.value = false;
+  }
 }
 
 async function createVm() {
-  if (!canWrite.value) return;
-  await api('/vms', { method: 'POST', body: JSON.stringify(cleanPayload(vmForm)) });
-  Object.assign(vmForm, { nama: '', server_id: '', vcpu: 4, ram_gb: 8, storage_gb: 120, ip_ids: [] });
-  await loadAll();
+  if (!canWrite.value || saving.value) return;
+  saving.value = true;
+  try {
+    await api('/vms', { method: 'POST', body: JSON.stringify(cleanPayload(vmForm)) });
+    resetModuleForm('vms');
+    await loadAll();
+  } catch (err) {
+    error.value = err.message;
+  } finally {
+    saving.value = false;
+  }
 }
 
 async function createApplication() {
-  if (!canWrite.value) return;
-  await api('/applications', { method: 'POST', body: JSON.stringify(cleanPayload(appForm)) });
-  Object.assign(appForm, {
-    nama: '',
-    url: '',
-    tech_stack: '',
-    klasifikasi_fungsi: [],
-    pic_nama: '',
-    pic_kontak: '',
-    vm_ids: [],
-    server_ids: [],
-    ip_ids: [],
-  });
-  await loadAll();
+  if (!canWrite.value || saving.value) return;
+  saving.value = true;
+  try {
+    await api('/applications', { method: 'POST', body: JSON.stringify(cleanPayload(appForm)) });
+    resetModuleForm('applications');
+    await loadAll();
+  } catch (err) {
+    error.value = err.message;
+  } finally {
+    saving.value = false;
+  }
 }
 
 async function removeRow(kind, id) {
@@ -1246,11 +1309,12 @@ onMounted(bootstrapAuth);
               <input v-model="dataCenterForm.nama" required placeholder="Nama data center" />
               <input v-model="dataCenterForm.lokasi" placeholder="Lokasi" />
               <select v-model="dataCenterForm.tipe" required>
+                <option value="">Tipe data center</option>
                 <option value="utama">Utama</option>
                 <option value="dr">Disaster Recovery</option>
                 <option value="cloud">Cloud</option>
               </select>
-              <button class="action-button" type="submit"><Plus :size="17" /> Tambah Data Center</button>
+              <button class="action-button" type="submit" :disabled="saving"><Plus :size="17" /> Tambah Data Center</button>
             </form>
 
             <form class="form-panel" @submit.prevent="createRack">
@@ -1261,7 +1325,7 @@ onMounted(bootstrapAuth);
                 <option v-for="dc in references.data_centers" :key="dc.id" :value="dc.id">{{ dc.nama }}</option>
               </select>
               <input v-model.number="rackForm.kapasitas_u" required type="number" min="1" max="60" placeholder="Kapasitas U" />
-              <button class="action-button secondary" type="submit"><Plus :size="17" /> Tambah Rack</button>
+              <button class="action-button secondary" type="submit" :disabled="saving"><Plus :size="17" /> Tambah Rack</button>
             </form>
 
             <form class="form-panel" @submit.prevent="createIsp">
@@ -1272,7 +1336,7 @@ onMounted(bootstrapAuth);
                 <input v-model="ispForm.bandwidth" placeholder="Bandwidth" />
               </div>
               <input v-model="ispForm.kontak" placeholder="Kontak NOC / PIC" />
-              <button class="action-button" type="submit"><Plus :size="17" /> Tambah ISP</button>
+              <button class="action-button" type="submit" :disabled="saving"><Plus :size="17" /> Tambah ISP</button>
             </form>
 
             <form class="form-panel" @submit.prevent="createIpAddress">
@@ -1280,6 +1344,7 @@ onMounted(bootstrapAuth);
               <input v-model="ipAddressForm.ip" required placeholder="Alamat IP" />
               <div class="two-col">
                 <select v-model="ipAddressForm.jenis" required>
+                  <option value="">Jenis IP</option>
                   <option value="private">Private</option>
                   <option value="publik">Publik</option>
                 </select>
@@ -1288,7 +1353,7 @@ onMounted(bootstrapAuth);
                   <option v-for="isp in references.isps" :key="isp.id" :value="isp.id">{{ isp.nama }}</option>
                 </select>
               </div>
-              <button class="action-button secondary" type="submit"><Plus :size="17" /> Tambah IP</button>
+              <button class="action-button secondary" type="submit" :disabled="saving"><Plus :size="17" /> Tambah IP</button>
             </form>
           </div>
 
@@ -1306,6 +1371,7 @@ onMounted(bootstrapAuth);
                   <option v-for="rack in references.racks" :key="rack.id" :value="rack.id">{{ rack.nama }}</option>
                 </select>
               </div>
+              <input v-model.number="serverForm.rack_size_u" type="number" min="1" max="60" placeholder="Rack Size (U)" />
               <div class="two-col">
                 <input v-model="serverForm.merk" placeholder="Merk" />
                 <input v-model="serverForm.tipe" placeholder="Tipe" />
@@ -1319,7 +1385,7 @@ onMounted(bootstrapAuth);
                 <input v-model.number="serverForm.ram_gb" type="number" min="1" placeholder="RAM GB" />
                 <input v-model.number="serverForm.storage_gb" type="number" min="1" placeholder="Storage GB" />
               </div>
-              <button class="action-button" type="submit"><Plus :size="17" /> Tambah Server</button>
+              <button class="action-button" type="submit" :disabled="saving"><Plus :size="17" /> Tambah Server</button>
             </form>
 
             <form class="form-panel" @submit.prevent="createVm">
@@ -1348,7 +1414,7 @@ onMounted(bootstrapAuth);
                   {{ ip.ip }}
                 </button>
               </div>
-              <button class="action-button secondary" type="submit"><Plus :size="17" /> Tambah VM</button>
+              <button class="action-button secondary" type="submit" :disabled="saving"><Plus :size="17" /> Tambah VM</button>
             </form>
           </div>
         </section>
@@ -1477,7 +1543,7 @@ onMounted(bootstrapAuth);
               <tbody>
                 <tr v-for="server in filteredServers" :key="server.id">
                   <td><strong>{{ server.nama }}</strong><span>{{ server.merk }} {{ server.tipe }} / {{ server.tahun || '-' }}</span></td>
-                  <td>{{ server.data_center?.nama || '-' }}<span>{{ server.rack?.nama || '-' }}</span></td>
+                  <td>{{ server.data_center?.nama || '-' }}<span>{{ server.rack?.nama || '-' }}{{ server.rack_size_u ? ` / ${server.rack_size_u}U` : '' }}</span></td>
                   <td>{{ server.cpu_core }} core / {{ server.ram_gb }} GB<span>{{ server.merk_processor || 'Processor belum diisi' }} / {{ server.storage_gb }} GB storage</span></td>
                   <td><span :class="statusClass(server.status)">{{ server.status }}</span></td>
                   <td>{{ server.vms?.length || 0 }}</td>
@@ -1619,7 +1685,7 @@ onMounted(bootstrapAuth);
               <tbody>
                 <tr v-for="server in filteredServers" :key="server.id">
                   <td><strong>{{ server.nama }}</strong><span>{{ server.merk }} {{ server.tipe }} / {{ server.tahun || '-' }}</span></td>
-                  <td>{{ server.data_center?.nama || '-' }}<span>{{ server.rack?.nama || '-' }}</span></td>
+                  <td>{{ server.data_center?.nama || '-' }}<span>{{ server.rack?.nama || '-' }}{{ server.rack_size_u ? ` / ${server.rack_size_u}U` : '' }}</span></td>
                   <td>{{ server.cpu_core }} core / {{ server.ram_gb }} GB<span>{{ server.merk_processor || 'Processor belum diisi' }} / {{ server.storage_gb }} GB storage</span></td>
                   <td><span :class="statusClass(server.kondisi)">{{ server.kondisi || '-' }}</span></td>
                   <td><span :class="statusClass(server.status)">{{ server.status }}</span></td>
@@ -1776,6 +1842,7 @@ onMounted(bootstrapAuth);
                   <th>Aplikasi</th>
                   <th>OPD</th>
                   <th>Jenis</th>
+                  <th>Pengembang</th>
                   <th>Fungsi</th>
                   <th>Tech Stack</th>
                   <th>Target SLA</th>
@@ -1790,6 +1857,7 @@ onMounted(bootstrapAuth);
                   <td><strong>{{ app.nama }}</strong><span>{{ app.url || '-' }}</span></td>
                   <td>{{ app.opd?.nama || '-' }}</td>
                   <td><span class="status">{{ app.jenis_aplikasi || '-' }}</span></td>
+                  <td>{{ app.pengembang ? developerLabel(app.pengembang) : '-' }}</td>
                   <td>{{ (app.klasifikasi_fungsi || []).map(functionClassificationLabel).join(', ') || '-' }}</td>
                   <td>{{ app.tech_stack || '-' }}</td>
                   <td>{{ app.sla_persen || 0 }}%</td>
@@ -2257,6 +2325,7 @@ onMounted(bootstrapAuth);
             <input v-model="dataCenterForm.nama" required placeholder="Nama data center" />
             <input v-model="dataCenterForm.lokasi" placeholder="Lokasi" />
             <select v-model="dataCenterForm.tipe" required>
+              <option value="">Tipe data center</option>
               <option value="utama">Utama</option>
               <option value="dr">Disaster Recovery</option>
               <option value="cloud">Cloud</option>
@@ -2284,6 +2353,7 @@ onMounted(bootstrapAuth);
                 <option v-for="rack in references.racks" :key="rack.id" :value="rack.id">{{ rack.nama }}</option>
               </select>
             </div>
+            <input v-model.number="serverForm.rack_size_u" type="number" min="1" max="60" placeholder="Rack Size (U)" />
             <div class="two-col">
               <input v-model="serverForm.merk" placeholder="Merk" />
               <input v-model="serverForm.tipe" placeholder="Tipe" />
@@ -2299,10 +2369,12 @@ onMounted(bootstrapAuth);
             </div>
             <div class="two-col">
               <select v-model="serverForm.kondisi">
+                <option value="">Kondisi server</option>
                 <option value="baik">Baik</option>
                 <option value="rusak">Rusak</option>
               </select>
               <select v-model="serverForm.status">
+                <option value="">Status server</option>
                 <option value="aktif">Aktif</option>
                 <option value="maintenance">Maintenance</option>
                 <option value="nonaktif">Nonaktif</option>
@@ -2328,6 +2400,7 @@ onMounted(bootstrapAuth);
               <input v-model.number="vmForm.storage_gb" type="number" min="1" placeholder="Storage GB" />
             </div>
             <select v-model="vmForm.status">
+              <option value="">Status VM</option>
               <option value="running">Running</option>
               <option value="stopped">Stopped</option>
               <option value="suspended">Suspended</option>
@@ -2356,6 +2429,7 @@ onMounted(bootstrapAuth);
             <input v-model="ipAddressForm.ip" required placeholder="Alamat IP" />
             <div class="two-col">
               <select v-model="ipAddressForm.jenis" required>
+                <option value="">Jenis IP</option>
                 <option value="private">Private</option>
                 <option value="publik">Publik</option>
               </select>
@@ -2385,18 +2459,32 @@ onMounted(bootstrapAuth);
             </select>
             <div class="three-col">
               <select v-model="appForm.jenis_aplikasi" required>
+                <option value="">Jenis aplikasi</option>
                 <option value="web">Web</option>
                 <option value="mobile">Mobile</option>
                 <option value="desktop">Desktop</option>
                 <option value="service">Service</option>
                 <option value="lainnya">Lainnya</option>
               </select>
+              <select v-model="appForm.pengembang" required>
+                <option value="">Pengembang</option>
+                <option v-for="option in developerOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
+              </select>
               <select v-model="appForm.status">
+                <option value="">Status aplikasi</option>
                 <option value="aktif">Aktif</option>
                 <option value="maintenance">Maintenance</option>
                 <option value="nonaktif">Nonaktif</option>
               </select>
+            </div>
+            <div class="two-col">
               <input v-model.number="appForm.sla_persen" type="number" min="0" max="100" step="0.01" placeholder="Target SLA %" />
+              <select v-model="appForm.kategori_data">
+                <option value="">Kategori data</option>
+                <option value="publik">Publik</option>
+                <option value="terbatas">Terbatas</option>
+                <option value="rahasia">Rahasia</option>
+              </select>
             </div>
             <div class="inline-picker">
               <strong>Klasifikasi Fungsi</strong>
@@ -2411,14 +2499,7 @@ onMounted(bootstrapAuth);
                 {{ option.label }}
               </button>
             </div>
-            <div class="two-col">
-              <select v-model="appForm.kategori_data">
-                <option value="publik">Publik</option>
-                <option value="terbatas">Terbatas</option>
-                <option value="rahasia">Rahasia</option>
-              </select>
-              <input v-model="appForm.pic_nama" placeholder="PIC" />
-            </div>
+            <input v-model="appForm.pic_nama" placeholder="PIC" />
             <input v-model="appForm.pic_kontak" placeholder="Kontak PIC" />
             <div class="picker-grid">
               <div>
@@ -2485,6 +2566,7 @@ onMounted(bootstrapAuth);
             <div class="two-col">
               <input v-model="dataAssetForm.name" required placeholder="Nama aset data, contoh: users.email" />
               <select v-model="dataAssetForm.type" required>
+                <option value="">Tipe aset data</option>
                 <option value="TABLE">Table</option>
                 <option value="COLUMN">Column</option>
                 <option value="API">API</option>
@@ -2496,16 +2578,19 @@ onMounted(bootstrapAuth);
             <textarea v-model="dataAssetForm.attributes" placeholder="Atribut data sebagai justifikasi, satu per baris"></textarea>
             <div class="three-col">
               <select v-model.number="dataAssetForm.confidentiality_score" required>
+                <option value="">Kerahasiaan</option>
                 <option :value="1">Kerahasiaan: Rendah (1)</option>
                 <option :value="3">Kerahasiaan: Sedang (3)</option>
                 <option :value="5">Kerahasiaan: Tinggi (5)</option>
               </select>
               <select v-model.number="dataAssetForm.integrity_score" required>
+                <option value="">Integritas</option>
                 <option :value="1">Integritas: Rendah (1)</option>
                 <option :value="3">Integritas: Sedang (3)</option>
                 <option :value="5">Integritas: Tinggi (5)</option>
               </select>
               <select v-model.number="dataAssetForm.availability_score" required>
+                <option value="">Ketersediaan</option>
                 <option :value="1">Ketersediaan: Rendah (1)</option>
                 <option :value="3">Ketersediaan: Sedang (3)</option>
                 <option :value="5">Ketersediaan: Tinggi (5)</option>
@@ -2538,6 +2623,7 @@ onMounted(bootstrapAuth);
               <option v-for="app in applications" :key="app.id" :value="app.id">{{ app.nama }}</option>
             </select>
             <select v-model="applicationDocumentForm.document_category" required>
+              <option value="">Kategori dokumen</option>
               <option value="petunjuk_teknis">Dok. Petunjuk Teknis</option>
               <option value="tata_kelola">Dok. Tatakelola</option>
               <option value="keamanan">Dok. Keamanan</option>
@@ -2553,10 +2639,12 @@ onMounted(bootstrapAuth);
             <textarea v-model="appIntegrationForm.deskripsi" placeholder="Deskripsi integrasi"></textarea>
             <div class="two-col">
               <select v-model="appIntegrationForm.jenis_integrasi" required>
+                <option value="">Jenis integrasi</option>
                 <option value="proses_bisnis">Proses Bisnis</option>
                 <option value="berbagi_data">Berbagi Data</option>
               </select>
               <select v-model="appIntegrationForm.metode_integrasi" required>
+                <option value="">Metode integrasi</option>
                 <option value="spl">SPL</option>
                 <option value="host_to_host">Host-to-Host</option>
               </select>
@@ -2581,10 +2669,12 @@ onMounted(bootstrapAuth);
             <input v-model="backupMediaForm.nama" required placeholder="Nama media" />
             <div class="two-col">
               <select v-model="backupMediaForm.location" required>
+                <option value="">Lokasi media</option>
                 <option value="local">Local</option>
                 <option value="remote">Remote</option>
               </select>
               <select v-model="backupMediaForm.jenis_media" required>
+                <option value="">Jenis media</option>
                 <option value="NAS">NAS</option>
                 <option value="Disk">Disk</option>
                 <option value="Cloud">Cloud</option>
@@ -2613,6 +2703,7 @@ onMounted(bootstrapAuth);
             <div class="two-col">
               <input v-model.number="backupJobForm.retensi_n" type="number" min="1" placeholder="n Retensi" />
               <select v-model="backupJobForm.retensi_unit">
+                <option value="">Jenis retensi</option>
                 <option value="realtime">Realtime</option>
                 <option value="menit">Menit</option>
                 <option value="jam">Jam</option>
@@ -2624,6 +2715,7 @@ onMounted(bootstrapAuth);
             <div class="two-col">
               <input v-model.number="backupJobForm.repetisi_n" type="number" min="1" placeholder="n Repetisi" />
               <select v-model="backupJobForm.repetisi_unit">
+                <option value="">Jenis repetisi</option>
                 <option value="realtime">Realtime</option>
                 <option value="menit">Menit</option>
                 <option value="jam">Jam</option>
@@ -2639,6 +2731,7 @@ onMounted(bootstrapAuth);
             <div class="two-col">
               <input v-model.number="upsDeviceForm.kapasitas_va" required type="number" min="1" placeholder="Kapasitas VA" />
               <select v-model="upsDeviceForm.kondisi" required>
+                <option value="">Kondisi UPS</option>
                 <option value="baik">Baik</option>
                 <option value="kurang_baik">Kurang Baik</option>
                 <option value="rusak">Rusak</option>
@@ -2654,6 +2747,7 @@ onMounted(bootstrapAuth);
             <input v-model="socToolForm.nama" required placeholder="Nama Platform / Device / Tools" />
             <textarea v-model="socToolForm.deskripsi_fungsi" placeholder="Deskripsi fungsi"></textarea>
             <select v-model="socToolForm.jenis" required>
+              <option value="">Jenis SOC tool</option>
               <option value="Firewall">Firewall</option>
               <option value="IDS">IDS</option>
               <option value="IPS">IPS</option>
@@ -2701,10 +2795,12 @@ onMounted(bootstrapAuth);
             </select>
             <div class="two-col">
               <select v-model="userForm.role" required>
+                <option value="">Role</option>
                 <option value="full">Full</option>
                 <option value="read_only">Read Only</option>
               </select>
               <select v-model="userForm.status" required>
+                <option value="">Status pengguna</option>
                 <option value="aktif">Aktif</option>
                 <option value="nonaktif">Nonaktif</option>
               </select>
@@ -2713,7 +2809,7 @@ onMounted(bootstrapAuth);
 
           <footer class="modal-actions">
             <button class="action-button ghost" type="button" @click="closeModal">Batal</button>
-            <button class="action-button" type="submit">{{ modal.mode === 'edit' ? 'Simpan Perubahan' : 'Simpan Data' }}</button>
+            <button class="action-button" type="submit" :disabled="saving">{{ saving ? 'Menyimpan...' : (modal.mode === 'edit' ? 'Simpan Perubahan' : 'Simpan Data') }}</button>
           </footer>
         </form>
       </div>

@@ -68,6 +68,7 @@ CREATE TABLE server (
     nama VARCHAR(255) NOT NULL,
     dc_id CHAR(36),
     rack_id CHAR(36),
+    rack_size_u SMALLINT UNSIGNED NULL,
     merk VARCHAR(100),
     tipe VARCHAR(100),
     serial_number VARCHAR(100),
@@ -159,6 +160,7 @@ CREATE TABLE aplikasi (
 
     deskripsi TEXT,
     jenis_aplikasi VARCHAR(50), -- ['web','mobile','desktop','service','lainnya']
+    pengembang VARCHAR(50), -- ['instansi_pusat','diskominfo_langkat','unit_penyelenggara','pihak_ketiga','in_house']
     klasifikasi_fungsi JSON NULL,
     tech_stack TEXT NULL, -- comma separated tags, contoh: Laravel, Vue, MySQL
 

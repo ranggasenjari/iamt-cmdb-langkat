@@ -15,7 +15,7 @@ class Server extends Model
     protected $table = 'server';
 
     protected $fillable = [
-        'nama', 'dc_id', 'rack_id', 'merk', 'tipe', 'serial_number', 'merk_processor', 'cpu_core',
+        'nama', 'dc_id', 'rack_id', 'rack_size_u', 'merk', 'tipe', 'serial_number', 'merk_processor', 'cpu_core',
         'ram_gb', 'storage_gb', 'kondisi', 'status', 'tahun', 'penanggung_jawab',
     ];
 
@@ -23,6 +23,7 @@ class Server extends Model
 
     protected $casts = [
         'cpu_core' => 'integer',
+        'rack_size_u' => 'integer',
         'ram_gb' => 'integer',
         'storage_gb' => 'integer',
         'tahun' => 'integer',

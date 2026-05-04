@@ -15,7 +15,7 @@ class Aplikasi extends Model
     protected $table = 'aplikasi';
 
     protected $fillable = [
-        'nama', 'url', 'opd_id', 'deskripsi', 'jenis_aplikasi', 'klasifikasi_fungsi', 'tech_stack', 'status', 'sla_persen',
+        'nama', 'url', 'opd_id', 'deskripsi', 'jenis_aplikasi', 'pengembang', 'klasifikasi_fungsi', 'tech_stack', 'status', 'sla_persen',
         'jam_operasional', 'kategori_data', 'mengandung_data_pribadi', 'jenis_data_pribadi',
         'retensi_data', 'pic_nama', 'pic_kontak', 'tanggal_go_live',
     ];

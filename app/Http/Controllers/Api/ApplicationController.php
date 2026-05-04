@@ -53,6 +53,7 @@ class ApplicationController extends Controller
             'opd_id' => ['nullable', 'uuid', 'exists:opd,id'],
             'deskripsi' => ['nullable', 'string'],
             'jenis_aplikasi' => ['required', 'in:web,mobile,desktop,service,lainnya'],
+            'pengembang' => ['nullable', 'in:instansi_pusat,diskominfo_langkat,unit_penyelenggara,pihak_ketiga,in_house'],
             'klasifikasi_fungsi' => ['array'],
             'klasifikasi_fungsi.*' => ['string', 'in:layanan_publik,layanan_internal,tools_pendukung,platform_integrasi,low_code_no_code,monitoring_observability,security_tools,kolaborasi_knowledge_base'],
             'tech_stack' => ['nullable', 'string'],
