@@ -75,8 +75,8 @@ const selectedServerId = ref('');
 const authToken = ref(localStorage.getItem('iamt_token') || '');
 const currentUser = ref(null);
 const authForm = reactive({
-  email: 'admin@langkatkab.go.id',
-  password: 'password',
+  email: '',
+  password: '',
 });
 const modal = reactive({
   open: false,
@@ -1041,30 +1041,56 @@ onMounted(bootstrapAuth);
 
 <template>
   <div v-if="!currentUser" class="login-shell">
-    <form class="login-card" @submit.prevent="login">
-      <div class="brand login-brand">
-        <div class="brand-mark">
-          <Database :size="26" />
+    <section class="login-identity">
+      <div class="login-identity-inner">
+        <div class="login-badge">
+          <Database :size="22" />
+          <span>CMDB Kabupaten Langkat</span>
         </div>
         <div>
-          <p class="eyebrow">Kabupaten Langkat</p>
-          <h1>IAMT CMDB</h1>
+          <p class="eyebrow">Single Source of Truth</p>
+          <h1>IAMT CMDB Langkat</h1>
+          <p class="login-copy">Manajemen aset digital, aplikasi, infrastruktur, klasifikasi data, audit, dan kepatuhan dalam satu ruang kerja terpadu.</p>
+        </div>
+        <div class="login-feature-grid">
+          <div><Server :size="22" /><span>Infrastructure</span></div>
+          <div><AppWindow :size="22" /><span>Applications</span></div>
+          <div><ShieldCheck :size="22" /><span>Security</span></div>
+          <div><Activity :size="22" /><span>Audit Trail</span></div>
         </div>
       </div>
-      <div>
-        <p class="eyebrow">Autentikasi</p>
-        <h2 class="yellow-title">Masuk Aplikasi</h2>
+    </section>
+
+    <section class="login-panel">
+      <form class="login-card" @submit.prevent="login">
+        <div class="login-card-head">
+          <div class="brand-mark">
+            <Database :size="26" />
+          </div>
+          <div>
+            <p class="eyebrow">Autentikasi</p>
+            <h2>Masuk Aplikasi</h2>
+          </div>
+        </div>
+        <label class="field-label">
+          <span>Email</span>
+          <input v-model="authForm.email" required type="email" autocomplete="username" placeholder="nama@langkatkab.go.id" />
+        </label>
+        <label class="field-label">
+          <span>Password</span>
+          <input v-model="authForm.password" required type="password" autocomplete="current-password" placeholder="Masukkan password" />
+        </label>
+        <button class="action-button login-submit" type="submit">Masuk</button>
+        <div v-if="error" class="alert">
+          <AlertTriangle :size="18" />
+          {{ error }}
+        </div>
+      </form>
+      <div class="login-footnote">
+        <span>Role-based access</span>
+        <strong>Full / Read Only</strong>
       </div>
-      <input v-model="authForm.email" required type="email" placeholder="Email" />
-      <input v-model="authForm.password" required type="password" placeholder="Password" />
-      <button class="action-button" type="submit">Masuk</button>
-      <p class="login-hint">Demo full: admin@langkatkab.go.id / password</p>
-      <p class="login-hint">Demo read only: viewer@langkatkab.go.id / password</p>
-      <div v-if="error" class="alert">
-        <AlertTriangle :size="18" />
-        {{ error }}
-      </div>
-    </form>
+    </section>
   </div>
 
   <div v-else class="app-shell">
