@@ -70,6 +70,7 @@ const menuSections = [
 const activeTab = ref('dashboard');
 const loading = ref(false);
 const saving = ref(false);
+const deleting = ref(false);
 const error = ref('');
 const query = ref('');
 const selectedServerId = ref('');
@@ -89,6 +90,12 @@ const alertModal = reactive({
   open: false,
   title: '',
   message: '',
+});
+const deleteModal = reactive({
+  open: false,
+  kind: '',
+  id: null,
+  label: '',
 });
 
 const dashboard = ref(null);
@@ -985,17 +992,38 @@ async function removeRow(kind, id) {
     return;
   }
   error.value = '';
-    try {
-      await api(`/${kind}/${id}`, { method: 'DELETE' });
-      await loadAll();
-    } catch (err) {
-      if (err.status === 409 || err.type === 'constraint_violation') {
-        showAlert('Data tidak dapat dihapus', err.message);
-        return;
-      }
-      error.value = err.message;
+  Object.assign(deleteModal, {
+    open: true,
+    kind,
+    id,
+    label: moduleLabels[kind] || 'Data',
+  });
+}
+
+function closeDeleteModal() {
+  if (deleting.value) return;
+  Object.assign(deleteModal, { open: false, kind: '', id: null, label: '' });
+}
+
+async function confirmDelete() {
+  if (!canWrite.value || deleting.value || !deleteModal.kind || !deleteModal.id) return;
+  deleting.value = true;
+  error.value = '';
+  try {
+    await api(`/${deleteModal.kind}/${deleteModal.id}`, { method: 'DELETE' });
+    Object.assign(deleteModal, { open: false, kind: '', id: null, label: '' });
+    await loadAll();
+  } catch (err) {
+    Object.assign(deleteModal, { open: false, kind: '', id: null, label: '' });
+    if (err.status === 409 || err.type === 'constraint_violation') {
+      showAlert('Data tidak dapat dihapus', err.message);
+      return;
     }
+    error.value = err.message;
+  } finally {
+    deleting.value = false;
   }
+}
 
 function cleanPayload(source) {
   return Object.fromEntries(
@@ -2812,6 +2840,27 @@ onMounted(bootstrapAuth);
             <button class="action-button" type="submit" :disabled="saving">{{ saving ? 'Menyimpan...' : (modal.mode === 'edit' ? 'Simpan Perubahan' : 'Simpan Data') }}</button>
           </footer>
         </form>
+      </div>
+
+      <div v-if="deleteModal.open" class="modal-backdrop alert-backdrop" @click.self="closeDeleteModal">
+        <section class="modal-card alert-modal-card">
+          <header class="modal-header">
+            <div>
+              <p class="eyebrow">Konfirmasi Hapus</p>
+              <h3>Hapus {{ deleteModal.label }}?</h3>
+            </div>
+            <AlertTriangle :size="28" />
+          </header>
+          <p class="alert-modal-message">
+            Data akan dihapus permanen. Jika masih ada data turunan atau relasi yang memakai entitas ini, sistem akan membatalkan proses hapus dan menampilkan peringatan.
+          </p>
+          <footer class="modal-actions">
+            <button class="action-button ghost" type="button" :disabled="deleting" @click="closeDeleteModal">Batal</button>
+            <button class="action-button danger" type="button" :disabled="deleting" @click="confirmDelete">
+              {{ deleting ? 'Menghapus...' : 'Ya, Hapus Data' }}
+            </button>
+          </footer>
+        </section>
       </div>
 
       <div v-if="alertModal.open" class="modal-backdrop alert-backdrop" @click.self="closeAlert">

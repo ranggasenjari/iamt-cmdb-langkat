@@ -657,6 +657,17 @@ textarea {
   color: var(--blue-950);
 }
 
+.action-button.danger {
+  background: var(--red-500);
+  color: #fff;
+}
+
+.action-button:disabled,
+.icon-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+}
+
 .compact-button {
   min-width: 118px;
 }
