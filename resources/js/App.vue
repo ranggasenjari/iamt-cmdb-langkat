@@ -24,7 +24,7 @@ import {
   X,
 } from 'lucide-vue-next';
 import QRCode from 'qrcode';
-import { computed, onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref, watch } from 'vue';
 import logoLangkat from '../img/logo_langkat.png';
 
 const menuSections = [
@@ -63,6 +63,7 @@ const menuSections = [
   },
   {
     items: [
+      { id: 'bulk-labels', label: 'Cetak Label', icon: Printer },
       { id: 'map', label: 'Mapping', icon: GitBranch },
       { id: 'compliance', label: 'Compliance', icon: FileCheck2 },
       { id: 'audit', label: 'Audit', icon: Activity },
@@ -107,6 +108,10 @@ const labelModal = reactive({
   item: null,
   size: '60x40',
 });
+const bulkLabelForm = reactive({
+  module: 'servers',
+  size: '60x40',
+});
 const detailModal = reactive({
   open: false,
   loading: false,
@@ -114,6 +119,8 @@ const detailModal = reactive({
   item: null,
 });
 const labelQrDataUrl = ref('');
+const bulkLabelQrUrls = ref({});
+const bulkLabelGenerating = ref(false);
 
 const dashboard = ref(null);
 const references = ref({ opd: [], classifications: [], data_centers: [], racks: [], isps: [], servers: [], vms: [], ips: [] });
@@ -551,12 +558,55 @@ const moduleLabels = {
   users: 'Pengguna & Role',
 };
 
+const bulkLabelModuleOptions = [
+  'data-centers',
+  'racks',
+  'servers',
+  'vms',
+  'isps',
+  'ip-addresses',
+  'applications',
+  'data-assets',
+  'application-documents',
+  'app-integrations',
+  'backup-media',
+  'backup-jobs',
+  'ups-devices',
+  'soc-tools',
+].map((value) => ({ value, label: moduleLabels[value] }));
+
 const activeModuleLabel = computed(() => moduleLabels[modal.module] || 'Data');
 const selectedLabelSize = computed(() => labelSizeOptions.find((option) => option.value === labelModal.size) || labelSizeOptions[1]);
+const selectedBulkLabelSize = computed(() => labelSizeOptions.find((option) => option.value === bulkLabelForm.size) || labelSizeOptions[1]);
 const labelPrintStyle = computed(() => ({
   '--label-width': `${selectedLabelSize.value.width}mm`,
   '--label-height': `${selectedLabelSize.value.height}mm`,
 }));
+const bulkLabelPrintStyle = computed(() => ({
+  '--label-width': `${selectedBulkLabelSize.value.width}mm`,
+  '--label-height': `${selectedBulkLabelSize.value.height}mm`,
+}));
+
+function itemsForLabelModule(module) {
+  return {
+    'data-centers': dataCenters.value,
+    racks: racks.value,
+    servers: servers.value,
+    vms: vms.value,
+    isps: isps.value,
+    'ip-addresses': ipAddresses.value,
+    applications: applications.value,
+    'data-assets': dataAssets.value,
+    'application-documents': applicationDocuments.value,
+    'app-integrations': appIntegrations.value,
+    'backup-media': backupMedia.value,
+    'backup-jobs': backupJobs.value,
+    'ups-devices': upsDevices.value,
+    'soc-tools': socTools.value,
+  }[module] || [];
+}
+
+const bulkLabelItems = computed(() => itemsForLabelModule(bulkLabelForm.module));
 
 function assetName(row, module = '') {
   if (!row) return '-';
@@ -577,7 +627,15 @@ function assetLocation(module, row) {
   if (module === 'data-centers') return row.lokasi || '-';
   if (module === 'racks') return row.data_center?.nama || row.dc_id || '-';
   if (module === 'servers') return [row.data_center?.nama, row.rack?.nama].filter(Boolean).join(' / ') || '-';
-  if (module === 'backup-media') return row.address_url || row.location || '-';
+  if (module === 'vms') return row.server?.nama || '-';
+  if (module === 'ip-addresses') return row.isp?.nama || '-';
+  if (module === 'isps') return row.bandwidth || row.tipe || '-';
+  if (module === 'applications') return row.opd?.nama || '-';
+  if (module === 'data-assets') return row.aplikasi?.nama || '-';
+  if (module === 'application-documents') return row.aplikasi?.nama || '-';
+  if (module === 'app-integrations') return (row.target_applications || []).map((app) => app.nama).join(', ') || row.aplikasi?.nama || '-';
+  if (module === 'backup-media') return row.location || '-';
+  if (module === 'backup-jobs') return row.media?.nama || '-';
   if (module === 'ups-devices') return row.data_center?.nama || row.dc_id || '-';
   if (module === 'soc-tools') return row.jenis || '-';
   return row.lokasi || row.location || '-';
@@ -585,6 +643,10 @@ function assetLocation(module, row) {
 
 function assetDetailUrl(module, row) {
   return `${window.location.origin}/asset/${module}/${row.id}`;
+}
+
+function bulkLabelKey(module, row) {
+  return `${module}:${row.id}`;
 }
 
 function detailEntries(item) {
@@ -642,6 +704,41 @@ async function openLabel(module, item) {
     margin: 1,
     width: 320,
   });
+}
+
+async function generateBulkLabelQrs() {
+  const module = bulkLabelForm.module;
+  if (!printableLabelModules.has(module)) return;
+
+  const rows = bulkLabelItems.value;
+  if (!rows.length) {
+    bulkLabelQrUrls.value = {};
+    return;
+  }
+
+  bulkLabelGenerating.value = true;
+  try {
+    const pairs = await Promise.all(rows.map(async (row) => [
+      bulkLabelKey(module, row),
+      await QRCode.toDataURL(assetDetailUrl(module, row), {
+        errorCorrectionLevel: 'M',
+        margin: 1,
+        width: 260,
+      }),
+    ]));
+    if (module === bulkLabelForm.module) {
+      bulkLabelQrUrls.value = Object.fromEntries(pairs);
+    }
+  } catch (err) {
+    error.value = err.message;
+  } finally {
+    bulkLabelGenerating.value = false;
+  }
+}
+
+async function printBulkLabels() {
+  await generateBulkLabelQrs();
+  window.print();
 }
 
 function closeLabelModal() {
@@ -1271,6 +1368,15 @@ const dataAssetCalculatedClassification = computed(() => {
 const statusClass = (status) => `status status-${status || 'unknown'}`;
 const yesNo = (value) => (value ? 'Ya' : 'Tidak');
 
+watch(
+  [() => activeTab.value, () => bulkLabelForm.module, () => bulkLabelForm.size, () => bulkLabelItems.value.length],
+  () => {
+    if (activeTab.value === 'bulk-labels') {
+      generateBulkLabelQrs();
+    }
+  },
+);
+
 onMounted(bootstrapAuth);
 </script>
 
@@ -1392,6 +1498,74 @@ onMounted(bootstrapAuth);
         <AlertTriangle :size="18" />
         {{ error }}
       </div>
+
+      <section v-if="activeTab === 'bulk-labels'" class="content-grid">
+        <section class="surface wide">
+          <div class="module-header">
+            <div>
+              <p class="eyebrow">Inventaris</p>
+              <h3 class="yellow-title">Cetak Label Massal</h3>
+            </div>
+            <button class="action-button" type="button" :disabled="bulkLabelGenerating || !bulkLabelItems.length" @click="printBulkLabels">
+              <Printer :size="17" />
+              Cetak A4
+            </button>
+          </div>
+
+          <div class="bulk-label-controls">
+            <label class="field-label">
+              <span>Jenis Aset</span>
+              <select v-model="bulkLabelForm.module">
+                <option v-for="option in bulkLabelModuleOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
+              </select>
+            </label>
+            <label class="field-label">
+              <span>Ukuran Label</span>
+              <select v-model="bulkLabelForm.size">
+                <option v-for="option in labelSizeOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
+              </select>
+            </label>
+            <div class="bulk-label-summary">
+              <span>Total Label</span>
+              <strong>{{ bulkLabelItems.length }}</strong>
+              <small>{{ bulkLabelGenerating ? 'Menyiapkan QR' : moduleLabels[bulkLabelForm.module] }}</small>
+            </div>
+          </div>
+        </section>
+
+        <section class="surface wide">
+          <div class="label-preview-wrap bulk-preview-wrap">
+            <article class="bulk-label-print" :style="bulkLabelPrintStyle">
+              <div v-if="!bulkLabelItems.length" class="bulk-empty-state">
+                <strong>Belum ada data {{ moduleLabels[bulkLabelForm.module] }}</strong>
+              </div>
+              <div v-else class="bulk-label-grid">
+                <article v-for="item in bulkLabelItems" :key="item.id" class="inventory-label-print bulk-inventory-label">
+                  <div class="label-brand">
+                    <img :src="logoLangkat" alt="Logo Kabupaten Langkat" />
+                    <div>
+                      <strong>PEMKAB LANGKAT</strong>
+                      <span>IAMT CMDB</span>
+                    </div>
+                  </div>
+                  <div class="label-body">
+                    <div>
+                      <small>Kode Aset</small>
+                      <strong>{{ assetCode(item) }}</strong>
+                      <span>{{ moduleLabels[bulkLabelForm.module] || 'Aset' }}</span>
+                      <b>{{ assetName(item, bulkLabelForm.module) }}</b>
+                      <em>{{ assetLocation(bulkLabelForm.module, item) }}</em>
+                    </div>
+                    <img v-if="bulkLabelQrUrls[bulkLabelKey(bulkLabelForm.module, item)]" :src="bulkLabelQrUrls[bulkLabelKey(bulkLabelForm.module, item)]" alt="QR detail aset" />
+                    <div v-else class="qr-placeholder">QR</div>
+                  </div>
+                  <footer>{{ assetDetailUrl(bulkLabelForm.module, item) }}</footer>
+                </article>
+              </div>
+            </article>
+          </div>
+        </section>
+      </section>
 
       <section v-if="activeTab === 'dashboard'" class="content-grid">
         <div class="metrics-row">

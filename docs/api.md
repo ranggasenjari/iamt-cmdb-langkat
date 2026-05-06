@@ -85,7 +85,7 @@ Contoh pola kode:
 | `ups-devices` | `LKT-UPS` | `LKT-UPS-000001` |
 | `soc-tools` | `LKT-SOC` | `LKT-SOC-000001` |
 
-Setiap modul aset CMDB, baik fisik maupun digital, dapat dicetak label dari UI. Label berisi logo Kabupaten Langkat, kode aset, nama aset, jenis aset, lokasi singkat, dan QR menuju halaman verifikasi publik:
+Setiap modul aset CMDB, baik fisik maupun digital, dapat dicetak label dari UI. Label dapat dicetak per item dari tabel modul, atau massal lewat menu `Cetak Label` dengan memilih jenis aset dan ukuran label untuk layout kertas A4. Label berisi logo Kabupaten Langkat, kode aset, nama aset, jenis aset, lokasi singkat, dan QR menuju halaman verifikasi publik:
 
 ```text
 /asset/{resource}/{id}

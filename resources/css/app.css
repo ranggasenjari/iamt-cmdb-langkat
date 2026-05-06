@@ -1116,6 +1116,75 @@ th {
   background: var(--blue-50);
 }
 
+.bulk-label-controls {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  align-items: end;
+}
+
+.bulk-label-summary {
+  min-height: 76px;
+  display: grid;
+  align-content: center;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 1px solid var(--blue-100);
+  border-radius: 8px;
+  background: var(--blue-50);
+}
+
+.bulk-label-summary span,
+.bulk-label-summary small {
+  color: var(--slate-600);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.bulk-label-summary strong {
+  color: var(--blue-950);
+  font-size: 30px;
+  line-height: 1;
+}
+
+.bulk-preview-wrap {
+  overflow: auto;
+  place-items: start center;
+}
+
+.bulk-label-print {
+  width: 210mm;
+  min-height: 297mm;
+  padding: 10mm;
+  border: 1px solid var(--slate-200);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.16);
+}
+
+.bulk-label-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, var(--label-width));
+  grid-auto-rows: var(--label-height);
+  gap: 3mm;
+  align-content: start;
+  justify-content: start;
+}
+
+.bulk-inventory-label {
+  width: var(--label-width);
+  height: var(--label-height);
+  box-shadow: none;
+}
+
+.bulk-empty-state {
+  min-height: 120mm;
+  display: grid;
+  place-items: center;
+  color: var(--slate-600);
+}
+
 .inventory-label-print {
   width: var(--label-width);
   height: var(--label-height);
@@ -1207,6 +1276,17 @@ th {
   aspect-ratio: 1;
 }
 
+.qr-placeholder {
+  width: 100%;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border: 0.25mm dashed var(--blue-100);
+  color: var(--slate-400);
+  font-size: 2mm;
+  font-weight: 900;
+}
+
 .inventory-label-print footer {
   overflow: hidden;
   color: var(--slate-600);
@@ -1261,18 +1341,38 @@ th {
   }
 
   .inventory-label-print,
-  .inventory-label-print * {
+  .inventory-label-print *,
+  .bulk-label-print,
+  .bulk-label-print * {
     visibility: visible !important;
   }
 
-  .inventory-label-print {
+  .inventory-label-print:not(.bulk-inventory-label) {
     position: fixed;
     top: 0;
     left: 0;
     box-shadow: none;
   }
 
+  .bulk-label-print {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 210mm;
+    min-height: 297mm;
+    padding: 10mm;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .bulk-inventory-label {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
   @page {
+    size: A4;
     margin: 0;
   }
 }
@@ -1308,6 +1408,7 @@ th {
   .split-grid,
   .two-table-grid,
   .app-form,
+  .bulk-label-controls,
   .impact-grid {
     grid-template-columns: 1fr 1fr;
   }
@@ -1351,6 +1452,7 @@ th {
   .split-grid,
   .two-table-grid,
   .app-form,
+  .bulk-label-controls,
   .two-col,
   .three-col,
   .picker-grid,
