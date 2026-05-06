@@ -14,6 +14,11 @@ class BackupMediaController extends Controller
         return BackupMedia::withCount('backupJobs')->orderBy('nama')->get();
     }
 
+    public function show(BackupMedia $backupMedia)
+    {
+        return $backupMedia->loadCount('backupJobs');
+    }
+
     public function store(Request $request)
     {
         return response()->json(BackupMedia::create($this->validated($request)), 201);

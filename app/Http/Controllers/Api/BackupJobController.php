@@ -15,6 +15,11 @@ class BackupJobController extends Controller
             ->get();
     }
 
+    public function show(BackupJob $backupJob)
+    {
+        return $backupJob->load(['aplikasi:id,nama,jenis_aplikasi,status', 'media:id,nama,location,jenis_media']);
+    }
+
     public function store(Request $request)
     {
         return response()->json(BackupJob::create($this->validated($request))->load(['aplikasi', 'media']), 201);

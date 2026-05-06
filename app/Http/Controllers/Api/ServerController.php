@@ -17,6 +17,11 @@ class ServerController extends Controller
             ->get();
     }
 
+    public function show(Server $server)
+    {
+        return $server->load(['dataCenter:id,nama,lokasi', 'rack:id,nama', 'vms:id,nama,server_id,status']);
+    }
+
     public function store(Request $request)
     {
         $data = $this->modelData($this->validated($request));

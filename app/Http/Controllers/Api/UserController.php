@@ -15,8 +15,14 @@ class UserController extends Controller
     {
         return Pengguna::query()
             ->select(['id', 'nama', 'email', 'opd_id', 'role', 'status', 'last_login_at', 'created_at', 'updated_at'])
+            ->with('opd:id,nama')
             ->orderBy('nama')
             ->get();
+    }
+
+    public function show(Pengguna $user)
+    {
+        return $user->load('opd:id,nama')->makeHidden(['password', 'api_token_hash']);
     }
 
     public function store(Request $request)

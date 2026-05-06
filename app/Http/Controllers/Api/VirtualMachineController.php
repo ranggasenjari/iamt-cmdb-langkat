@@ -17,6 +17,11 @@ class VirtualMachineController extends Controller
             ->get();
     }
 
+    public function show(VirtualMachine $vm)
+    {
+        return $vm->load(['server:id,nama,status', 'ipAddresses:id,ip,jenis']);
+    }
+
     public function store(Request $request)
     {
         $data = $this->modelData($this->validated($request));

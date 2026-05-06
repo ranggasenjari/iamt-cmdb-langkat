@@ -17,6 +17,11 @@ class DataCenterController extends Controller
             ->get();
     }
 
+    public function show(DataCenter $dataCenter)
+    {
+        return $dataCenter->loadCount(['racks']);
+    }
+
     public function store(Request $request)
     {
         $dataCenter = DataCenter::create($this->validated($request));

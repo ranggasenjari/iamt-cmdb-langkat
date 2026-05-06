@@ -16,6 +16,11 @@ class ApplicationController extends Controller
             ->get();
     }
 
+    public function show(Aplikasi $application)
+    {
+        return $application->load($this->relations());
+    }
+
     public function store(Request $request)
     {
         $data = $this->modelData($this->validated($request));

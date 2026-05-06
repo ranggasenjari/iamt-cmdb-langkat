@@ -32,27 +32,27 @@ Route::middleware('auth.api_token')->group(function () {
     Route::get('/dashboard', DashboardController::class);
     Route::get('/references', ReferenceController::class);
     Route::get('/dependency-map', [CmdbController::class, 'dependencyMap']);
-    Route::get('/data-classifications', DataClassificationController::class);
     Route::get('/impact/server/{server}', [CmdbController::class, 'serverImpact']);
     Route::get('/compliance', [CmdbController::class, 'compliance']);
     Route::get('/audit-log', [CmdbController::class, 'auditLog']);
     Route::get('/asset-change-logs', AssetChangeLogController::class);
 
-    Route::apiResource('/servers', ServerController::class)->only(['index']);
-    Route::apiResource('/vms', VirtualMachineController::class)->only(['index']);
-    Route::apiResource('/applications', ApplicationController::class)->only(['index']);
-    Route::apiResource('/application-documents', ApplicationDocumentController::class)->parameters(['application-documents' => 'applicationDocument'])->only(['index']);
-    Route::apiResource('/app-integrations', AppIntegrationController::class)->parameters(['app-integrations' => 'appIntegration'])->only(['index']);
-    Route::apiResource('/backup-media', BackupMediaController::class)->parameters(['backup-media' => 'backupMedia'])->only(['index']);
-    Route::apiResource('/backup-jobs', BackupJobController::class)->parameters(['backup-jobs' => 'backupJob'])->only(['index']);
-    Route::apiResource('/ups-devices', UpsDeviceController::class)->parameters(['ups-devices' => 'upsDevice'])->only(['index']);
-    Route::apiResource('/soc-tools', SocToolController::class)->parameters(['soc-tools' => 'socTool'])->only(['index']);
-    Route::apiResource('/data-assets', DataAssetController::class)->parameters(['data-assets' => 'dataAsset'])->only(['index']);
-    Route::apiResource('/data-centers', DataCenterController::class)->parameters(['data-centers' => 'dataCenter'])->only(['index']);
-    Route::apiResource('/racks', RackController::class)->only(['index']);
-    Route::apiResource('/isps', IspController::class)->only(['index']);
-    Route::apiResource('/ip-addresses', IpAddressController::class)->parameters(['ip-addresses' => 'ipAddress'])->only(['index']);
-    Route::apiResource('/users', UserController::class)->only(['index']);
+    Route::apiResource('/servers', ServerController::class)->only(['index', 'show']);
+    Route::apiResource('/vms', VirtualMachineController::class)->only(['index', 'show']);
+    Route::apiResource('/applications', ApplicationController::class)->only(['index', 'show']);
+    Route::apiResource('/application-documents', ApplicationDocumentController::class)->parameters(['application-documents' => 'applicationDocument'])->only(['index', 'show']);
+    Route::apiResource('/app-integrations', AppIntegrationController::class)->parameters(['app-integrations' => 'appIntegration'])->only(['index', 'show']);
+    Route::apiResource('/backup-media', BackupMediaController::class)->parameters(['backup-media' => 'backupMedia'])->only(['index', 'show']);
+    Route::apiResource('/backup-jobs', BackupJobController::class)->parameters(['backup-jobs' => 'backupJob'])->only(['index', 'show']);
+    Route::apiResource('/ups-devices', UpsDeviceController::class)->parameters(['ups-devices' => 'upsDevice'])->only(['index', 'show']);
+    Route::apiResource('/soc-tools', SocToolController::class)->parameters(['soc-tools' => 'socTool'])->only(['index', 'show']);
+    Route::apiResource('/data-assets', DataAssetController::class)->parameters(['data-assets' => 'dataAsset'])->only(['index', 'show']);
+    Route::apiResource('/data-classifications', DataClassificationController::class)->parameters(['data-classifications' => 'dataClassification'])->only(['index', 'show']);
+    Route::apiResource('/data-centers', DataCenterController::class)->parameters(['data-centers' => 'dataCenter'])->only(['index', 'show']);
+    Route::apiResource('/racks', RackController::class)->only(['index', 'show']);
+    Route::apiResource('/isps', IspController::class)->only(['index', 'show']);
+    Route::apiResource('/ip-addresses', IpAddressController::class)->parameters(['ip-addresses' => 'ipAddress'])->only(['index', 'show']);
+    Route::apiResource('/users', UserController::class)->parameters(['users' => 'user'])->only(['index', 'show']);
 
     Route::middleware('role.full')->group(function () {
         Route::apiResource('/servers', ServerController::class)->only(['store', 'update', 'destroy']);
@@ -65,6 +65,7 @@ Route::middleware('auth.api_token')->group(function () {
         Route::apiResource('/ups-devices', UpsDeviceController::class)->parameters(['ups-devices' => 'upsDevice'])->only(['store', 'update', 'destroy']);
         Route::apiResource('/soc-tools', SocToolController::class)->parameters(['soc-tools' => 'socTool'])->only(['store', 'update', 'destroy']);
         Route::apiResource('/data-assets', DataAssetController::class)->parameters(['data-assets' => 'dataAsset'])->only(['store', 'update', 'destroy']);
+        Route::apiResource('/data-classifications', DataClassificationController::class)->parameters(['data-classifications' => 'dataClassification'])->only(['store', 'update', 'destroy']);
         Route::apiResource('/data-centers', DataCenterController::class)->parameters(['data-centers' => 'dataCenter'])->only(['store', 'update', 'destroy']);
         Route::apiResource('/racks', RackController::class)->only(['store', 'update', 'destroy']);
         Route::apiResource('/isps', IspController::class)->only(['store', 'update', 'destroy']);

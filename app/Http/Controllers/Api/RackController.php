@@ -18,6 +18,11 @@ class RackController extends Controller
             ->get();
     }
 
+    public function show(Rack $rack)
+    {
+        return $rack->load(['dataCenter:id,nama,lokasi,tipe'])->loadCount(['servers']);
+    }
+
     public function store(Request $request)
     {
         $rack = Rack::create($this->validated($request));

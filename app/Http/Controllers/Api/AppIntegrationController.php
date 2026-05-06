@@ -24,6 +24,11 @@ class AppIntegrationController extends Controller
             ->get();
     }
 
+    public function show(AppIntegration $appIntegration)
+    {
+        return $appIntegration->load($this->relations());
+    }
+
     public function store(Request $request)
     {
         $integration = AppIntegration::create($this->validated($request));

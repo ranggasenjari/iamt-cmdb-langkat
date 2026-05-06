@@ -76,6 +76,10 @@ Read only   : viewer@langkatkab.go.id / password
 
 Role `full` dapat membaca dan mengubah data. Role `read_only` hanya dapat membaca dashboard, tabel, mapping, compliance, dan audit.
 
+## Dokumentasi API
+
+Dokumentasi REST API lengkap tersedia di [`docs/api.md`](docs/api.md).
+
 ## Seeder OPD Production
 
 Jika database production sudah berisi data aset, jangan jalankan `migrate:fresh --seed`.

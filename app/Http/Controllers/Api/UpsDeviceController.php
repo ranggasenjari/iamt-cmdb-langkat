@@ -13,6 +13,11 @@ class UpsDeviceController extends Controller
         return UpsDevice::with('dataCenter:id,nama,lokasi,tipe')->orderBy('nama')->get();
     }
 
+    public function show(UpsDevice $upsDevice)
+    {
+        return $upsDevice->load('dataCenter:id,nama,lokasi,tipe');
+    }
+
     public function store(Request $request)
     {
         return response()->json(UpsDevice::create($this->validated($request))->load('dataCenter'), 201);

@@ -17,6 +17,11 @@ class ApplicationDocumentController extends Controller
             ->get();
     }
 
+    public function show(ApplicationDocument $applicationDocument)
+    {
+        return $applicationDocument->load('aplikasi:id,nama,jenis_aplikasi,status');
+    }
+
     public function store(Request $request)
     {
         $data = $request->validate([

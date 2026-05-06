@@ -21,6 +21,14 @@ class DataAssetController extends Controller
             ->get();
     }
 
+    public function show(DataAsset $dataAsset)
+    {
+        return $dataAsset->load([
+            'aplikasi:id,nama,jenis_aplikasi,status',
+            'classification:id,code,name,risk_level,requires_encryption,requires_mfa,requires_audit_log',
+        ]);
+    }
+
     public function store(Request $request)
     {
         $asset = DataAsset::create($this->withCalculatedClassification($this->validated($request)));

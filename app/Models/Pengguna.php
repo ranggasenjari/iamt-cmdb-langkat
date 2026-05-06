@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Concerns\UsesUuid;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Pengguna extends Model
 {
@@ -25,5 +26,10 @@ class Pengguna extends Model
     public function canWrite(): bool
     {
         return $this->role === 'full' && $this->status === 'aktif';
+    }
+
+    public function opd(): BelongsTo
+    {
+        return $this->belongsTo(Opd::class, 'opd_id');
     }
 }

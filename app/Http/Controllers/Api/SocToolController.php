@@ -18,6 +18,11 @@ class SocToolController extends Controller
         ])->orderBy('nama')->get();
     }
 
+    public function show(SocTool $socTool)
+    {
+        return $socTool->load($this->relations());
+    }
+
     public function store(Request $request)
     {
         $tool = SocTool::create($this->validated($request));

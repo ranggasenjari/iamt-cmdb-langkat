@@ -19,6 +19,11 @@ class IpAddressController extends Controller
             ->get();
     }
 
+    public function show(IpAddress $ipAddress)
+    {
+        return $ipAddress->load(['isp:id,nama,tipe,bandwidth'])->loadCount(['vms']);
+    }
+
     public function store(Request $request)
     {
         $ipAddress = IpAddress::create($this->validated($request));

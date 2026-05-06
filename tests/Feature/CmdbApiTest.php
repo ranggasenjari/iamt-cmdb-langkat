@@ -374,4 +374,176 @@ class CmdbApiTest extends TestCase
             ->assertJsonPath('type', 'constraint_violation')
             ->assertJsonPath('message', 'Terdapat data dibawah entitas ini. Hapus atau lepaskan relasi data terkait terlebih dahulu sebelum menghapus data utama.');
     }
+
+    public function test_rest_api_detail_endpoints_are_available_for_all_managed_modules(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+        $application = \App\Models\Aplikasi::firstOrFail();
+        $dataCenter = \App\Models\DataCenter::firstOrFail();
+        $backupMedia = \App\Models\BackupMedia::create([
+            'nama' => 'Backup Media Detail Test',
+            'location' => 'local',
+            'jenis_media' => 'NAS',
+            'kapasitas_gb' => 512,
+        ]);
+        $backupJob = \App\Models\BackupJob::create([
+            'aplikasi_id' => $application->id,
+            'backup_media_id' => $backupMedia->id,
+            'retensi_n' => 7,
+            'retensi_unit' => 'hari',
+            'repetisi_n' => 1,
+            'repetisi_unit' => 'hari',
+        ]);
+        $applicationDocument = \App\Models\ApplicationDocument::create([
+            'aplikasi_id' => $application->id,
+            'jenis' => 'keamanan',
+            'document_category' => 'keamanan',
+            'nama' => 'Dokumen Detail Test',
+            'path' => 'uploads/testing/detail.pdf',
+            'original_name' => 'detail.pdf',
+            'mime_type' => 'application/pdf',
+            'size_bytes' => 1024,
+            'tanggal' => now()->toDateString(),
+        ]);
+        $appIntegration = \App\Models\AppIntegration::create([
+            'aplikasi_id' => $application->id,
+            'jenis_integrasi' => 'berbagi_data',
+            'metode_integrasi' => 'spl',
+            'deskripsi' => 'Detail test',
+        ]);
+        $upsDevice = \App\Models\UpsDevice::create([
+            'nama' => 'UPS Detail Test',
+            'kapasitas_va' => 1000,
+            'kondisi' => 'baik',
+            'dc_id' => $dataCenter->id,
+        ]);
+        $socTool = \App\Models\SocTool::create([
+            'nama' => 'SOC Detail Test',
+            'jenis' => 'SIEM',
+            'deskripsi_fungsi' => 'Detail endpoint test',
+        ]);
+
+        $this->authenticateAs('read_only');
+
+        $ids = [
+            'data-centers' => $dataCenter->id,
+            'racks' => \App\Models\Rack::firstOrFail()->id,
+            'servers' => \App\Models\Server::firstOrFail()->id,
+            'vms' => \App\Models\VirtualMachine::firstOrFail()->id,
+            'isps' => \App\Models\Isp::firstOrFail()->id,
+            'ip-addresses' => \App\Models\IpAddress::firstOrFail()->id,
+            'applications' => $application->id,
+            'data-assets' => \App\Models\DataAsset::firstOrFail()->id,
+            'data-classifications' => \App\Models\DataClassification::firstOrFail()->id,
+            'application-documents' => $applicationDocument->id,
+            'app-integrations' => $appIntegration->id,
+            'backup-media' => $backupMedia->id,
+            'backup-jobs' => $backupJob->id,
+            'ups-devices' => $upsDevice->id,
+            'soc-tools' => $socTool->id,
+            'users' => \App\Models\Pengguna::where('email', 'viewer@langkatkab.go.id')->firstOrFail()->id,
+        ];
+
+        foreach ($ids as $module => $id) {
+            $this->getJson("/api/{$module}/{$id}")->assertOk()->assertJsonPath('id', $id);
+        }
+    }
+
+    public function test_delete_endpoints_work_for_each_managed_module_without_children(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+        $this->authenticateAs();
+
+        $dcId = $this->postJson('/api/data-centers', ['nama' => 'DC Delete Test', 'lokasi' => 'Stabat', 'tipe' => 'utama'])->assertCreated()->json('id');
+        $rackId = $this->postJson('/api/racks', ['dc_id' => $dcId, 'nama' => 'Rack Delete Test', 'kapasitas_u' => 12])->assertCreated()->json('id');
+        $serverId = $this->postJson('/api/servers', ['nama' => 'SRV-DELETE-TEST', 'dc_id' => $dcId, 'rack_id' => $rackId, 'status' => 'aktif'])->assertCreated()->json('id');
+        $vmId = $this->postJson('/api/vms', ['nama' => 'VM-DELETE-TEST', 'server_id' => $serverId, 'status' => 'running'])->assertCreated()->json('id');
+        $ispId = $this->postJson('/api/isps', ['nama' => 'ISP Delete Test'])->assertCreated()->json('id');
+        $ipId = $this->postJson('/api/ip-addresses', ['ip' => '10.88.88.88', 'jenis' => 'private', 'isp_id' => $ispId])->assertCreated()->json('id');
+        $appId = $this->postJson('/api/applications', [
+            'nama' => 'App Delete Test',
+            'jenis_aplikasi' => 'web',
+            'pengembang' => 'diskominfo_langkat',
+            'status' => 'aktif',
+        ])->assertCreated()->json('id');
+        $classificationId = $this->postJson('/api/data-classifications', [
+            'code' => 'DELETE_TEST',
+            'name' => 'Delete Test',
+            'risk_level' => 'LOW',
+            'requires_encryption' => false,
+            'requires_mfa' => false,
+            'requires_audit_log' => true,
+        ])->assertCreated()->json('id');
+        $assetId = $this->postJson('/api/data-assets', [
+            'aplikasi_id' => $appId,
+            'classification_id' => $classificationId,
+            'name' => 'delete_test.dataset',
+            'type' => 'DATASET',
+            'confidentiality_score' => 1,
+            'integrity_score' => 1,
+            'availability_score' => 1,
+        ])->assertCreated()->json('id');
+        $documentId = $this->post('/api/application-documents', [
+            'aplikasi_id' => $appId,
+            'document_category' => 'tata_kelola',
+            'files' => [UploadedFile::fake()->create('delete-doc.pdf', 8, 'application/pdf')],
+        ])->assertCreated()->json('0.id');
+        $integrationId = $this->post('/api/app-integrations', [
+            'aplikasi_id' => $appId,
+            'jenis_integrasi' => 'proses_bisnis',
+            'metode_integrasi' => 'host_to_host',
+        ])->assertCreated()->json('id');
+        $mediaId = $this->postJson('/api/backup-media', [
+            'nama' => 'Media Delete Test',
+            'location' => 'local',
+            'jenis_media' => 'NAS',
+        ])->assertCreated()->json('id');
+        $backupJobId = $this->postJson('/api/backup-jobs', [
+            'aplikasi_id' => $appId,
+            'backup_media_id' => $mediaId,
+            'retensi_n' => 7,
+            'retensi_unit' => 'hari',
+            'repetisi_n' => 1,
+            'repetisi_unit' => 'hari',
+        ])->assertCreated()->json('id');
+        $upsId = $this->postJson('/api/ups-devices', [
+            'nama' => 'UPS Delete Test',
+            'kapasitas_va' => 1500,
+            'kondisi' => 'baik',
+            'dc_id' => $dcId,
+        ])->assertCreated()->json('id');
+        $socId = $this->postJson('/api/soc-tools', [
+            'nama' => 'SOC Delete Test',
+            'jenis' => 'SIEM',
+        ])->assertCreated()->json('id');
+        $userId = $this->postJson('/api/users', [
+            'nama' => 'Delete User',
+            'email' => 'delete.user@langkatkab.go.id',
+            'password' => 'password',
+            'role' => 'read_only',
+            'status' => 'aktif',
+        ])->assertCreated()->json('id');
+
+        foreach ([
+            "application-documents/{$documentId}",
+            "app-integrations/{$integrationId}",
+            "backup-jobs/{$backupJobId}",
+            "backup-media/{$mediaId}",
+            "data-assets/{$assetId}",
+            "data-classifications/{$classificationId}",
+            "soc-tools/{$socId}",
+            "ups-devices/{$upsId}",
+            "applications/{$appId}",
+            "vms/{$vmId}",
+            "ip-addresses/{$ipId}",
+            "servers/{$serverId}",
+            "isps/{$ispId}",
+            "racks/{$rackId}",
+            "data-centers/{$dcId}",
+            "users/{$userId}",
+        ] as $endpoint) {
+            $this->deleteJson("/api/{$endpoint}")->assertNoContent();
+        }
+    }
+
 }

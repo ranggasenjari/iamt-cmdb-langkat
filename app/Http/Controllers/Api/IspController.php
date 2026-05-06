@@ -17,6 +17,11 @@ class IspController extends Controller
             ->get();
     }
 
+    public function show(Isp $isp)
+    {
+        return $isp->loadCount(['ipAddresses']);
+    }
+
     public function store(Request $request)
     {
         $isp = Isp::create($this->validated($request));
