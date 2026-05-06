@@ -254,5 +254,7 @@ class DatabaseSeeder extends Seeder
         DB::table('audit_log')->insert([
             ['aksi' => 'seed', 'tabel' => 'cmdb', 'record_id' => null, 'before_data' => null, 'after_data' => json_encode(['message' => 'Demo CMDB Kabupaten Langkat dibuat']), 'ip_address' => '127.0.0.1', 'user_agent' => 'DatabaseSeeder', 'created_at' => $now],
         ]);
+
+        \App\Support\AssetCodeGenerator::backfillAll();
     }
 }

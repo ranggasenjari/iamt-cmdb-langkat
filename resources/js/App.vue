@@ -14,6 +14,7 @@ import {
   Network,
   Pencil,
   Plus,
+  Printer,
   RefreshCw,
   Search,
   Server,
@@ -22,6 +23,7 @@ import {
   Users,
   X,
 } from 'lucide-vue-next';
+import QRCode from 'qrcode';
 import { computed, onMounted, reactive, ref } from 'vue';
 
 const menuSections = [
@@ -71,6 +73,7 @@ const activeTab = ref('dashboard');
 const loading = ref(false);
 const saving = ref(false);
 const deleting = ref(false);
+const assetDeepLinkHandled = ref(false);
 const error = ref('');
 const query = ref('');
 const selectedServerId = ref('');
@@ -97,6 +100,19 @@ const deleteModal = reactive({
   id: null,
   label: '',
 });
+const labelModal = reactive({
+  open: false,
+  module: '',
+  item: null,
+  size: '60x40',
+});
+const detailModal = reactive({
+  open: false,
+  loading: false,
+  module: '',
+  item: null,
+});
+const labelQrDataUrl = ref('');
 
 const dashboard = ref(null);
 const references = ref({ opd: [], classifications: [], data_centers: [], racks: [], isps: [], servers: [], vms: [], ips: [] });
@@ -122,6 +138,14 @@ const assetChangeLogs = ref([]);
 const impact = ref(null);
 
 const canWrite = computed(() => Boolean(currentUser.value?.can_write));
+
+const labelSizeOptions = [
+  { value: '50x30', label: '50 x 30 mm', width: 50, height: 30 },
+  { value: '60x40', label: '60 x 40 mm', width: 60, height: 40 },
+  { value: '70x50', label: '70 x 50 mm', width: 70, height: 50 },
+  { value: '90x50', label: '90 x 50 mm', width: 90, height: 50 },
+];
+const physicalLabelModules = new Set(['data-centers', 'racks', 'servers', 'backup-media', 'ups-devices', 'soc-tools']);
 
 const dataCenterForm = reactive({
   nama: '',
@@ -397,6 +421,7 @@ async function login() {
     currentUser.value = response.user;
     localStorage.setItem('iamt_token', response.token);
     await loadAll();
+    await handleAssetDeepLink();
   } catch (err) {
     error.value = err.message;
   }
@@ -423,7 +448,10 @@ async function logout() {
 
 async function bootstrapAuth() {
   await loadCurrentUser();
-  if (currentUser.value) await loadAll();
+  if (currentUser.value) {
+    await loadAll();
+    await handleAssetDeepLink();
+  }
 }
 
 async function loadAll() {
@@ -508,6 +536,106 @@ const moduleLabels = {
 };
 
 const activeModuleLabel = computed(() => moduleLabels[modal.module] || 'Data');
+const selectedLabelSize = computed(() => labelSizeOptions.find((option) => option.value === labelModal.size) || labelSizeOptions[1]);
+const labelPrintStyle = computed(() => ({
+  '--label-width': `${selectedLabelSize.value.width}mm`,
+  '--label-height': `${selectedLabelSize.value.height}mm`,
+}));
+
+function assetName(row, module = '') {
+  if (!row) return '-';
+  if (module === 'ip-addresses') return row.ip || '-';
+  if (module === 'data-assets') return row.name || '-';
+  if (module === 'application-documents') return row.original_name || row.nama || '-';
+  if (module === 'backup-jobs') return row.aplikasi?.nama ? `Backup ${row.aplikasi.nama}` : `Pencadangan #${row.id}`;
+  if (module === 'app-integrations') return row.aplikasi?.nama ? `Integrasi ${row.aplikasi.nama}` : `Integrasi #${row.id}`;
+  return row.nama || row.name || row.asset_code || '-';
+}
+
+function assetCode(row) {
+  return row?.asset_code || 'Kode belum dibuat';
+}
+
+function assetLocation(module, row) {
+  if (!row) return '-';
+  if (module === 'data-centers') return row.lokasi || '-';
+  if (module === 'racks') return row.data_center?.nama || row.dc_id || '-';
+  if (module === 'servers') return [row.data_center?.nama, row.rack?.nama].filter(Boolean).join(' / ') || '-';
+  if (module === 'backup-media') return row.address_url || row.location || '-';
+  if (module === 'ups-devices') return row.data_center?.nama || row.dc_id || '-';
+  if (module === 'soc-tools') return row.jenis || '-';
+  return row.lokasi || row.location || '-';
+}
+
+function assetDetailUrl(module, row) {
+  return `${window.location.origin}/asset/${module}/${row.id}`;
+}
+
+function detailEntries(item) {
+  return Object.entries(item || {})
+    .filter(([key, value]) => !['id', 'created_at', 'updated_at'].includes(key) && value !== null && value !== undefined && typeof value !== 'object')
+    .map(([key, value]) => ({ key, value }));
+}
+
+function relationEntries(item) {
+  return Object.entries(item || {})
+    .filter(([, value]) => value && typeof value === 'object')
+    .map(([key, value]) => {
+      if (Array.isArray(value)) {
+        return { key, value: value.map((row) => assetName(row)).join(', ') || '-' };
+      }
+
+      return { key, value: assetName(value) };
+    });
+}
+
+async function openAssetDetail(module, id) {
+  detailModal.open = true;
+  detailModal.loading = true;
+  detailModal.module = module;
+  detailModal.item = null;
+  try {
+    detailModal.item = await api(`/${module}/${id}`);
+  } catch (err) {
+    error.value = err.message;
+  } finally {
+    detailModal.loading = false;
+  }
+}
+
+function closeDetailModal() {
+  Object.assign(detailModal, { open: false, loading: false, module: '', item: null });
+}
+
+async function handleAssetDeepLink() {
+  if (assetDeepLinkHandled.value || !currentUser.value) return;
+
+  const match = window.location.pathname.match(/^\/asset\/([^/]+)\/([^/]+)/);
+  if (!match) return;
+
+  assetDeepLinkHandled.value = true;
+  await openAssetDetail(match[1], decodeURIComponent(match[2]));
+}
+
+async function openLabel(module, item) {
+  if (!physicalLabelModules.has(module)) return;
+
+  Object.assign(labelModal, { open: true, module, item, size: labelModal.size || '60x40' });
+  labelQrDataUrl.value = await QRCode.toDataURL(assetDetailUrl(module, item), {
+    errorCorrectionLevel: 'M',
+    margin: 1,
+    width: 320,
+  });
+}
+
+function closeLabelModal() {
+  Object.assign(labelModal, { open: false, module: '', item: null });
+  labelQrDataUrl.value = '';
+}
+
+function printLabel() {
+  window.print();
+}
 
 function resetModuleForm(module) {
   if (module === 'data-centers') Object.assign(dataCenterForm, { nama: '', lokasi: '', tipe: '' });
@@ -1632,13 +1760,14 @@ onMounted(bootstrapAuth);
               </thead>
               <tbody>
                 <tr v-for="dc in filteredDataCenters" :key="dc.id">
-                  <td><strong>{{ dc.nama }}</strong></td>
+                  <td><strong>{{ dc.nama }}</strong><span>{{ assetCode(dc) }}</span></td>
                   <td>{{ dc.lokasi || '-' }}</td>
                   <td><span :class="statusClass(dc.tipe)">{{ dc.tipe }}</span></td>
                   <td>{{ dc.racks_count || 0 }}</td>
                   <td>
-                    <div v-if="canWrite" class="row-actions">
-                      <button class="icon-button" title="Edit data center" @click="openEdit('data-centers', dc)"><Pencil :size="16" /></button>
+                    <div class="row-actions">
+                      <button class="icon-button" title="Cetak label data center" @click="openLabel('data-centers', dc)"><Printer :size="16" /></button>
+                      <button v-if="canWrite" class="icon-button" title="Edit data center" @click="openEdit('data-centers', dc)"><Pencil :size="16" /></button>
                       <button v-if="canWrite" class="icon-button danger" title="Hapus data center" @click="removeRow('data-centers', dc.id)"><Trash2 :size="16" /></button>
                     </div>
                   </td>
@@ -1671,13 +1800,14 @@ onMounted(bootstrapAuth);
               </thead>
               <tbody>
                 <tr v-for="rack in filteredRacks" :key="rack.id">
-                  <td><strong>{{ rack.nama }}</strong></td>
+                  <td><strong>{{ rack.nama }}</strong><span>{{ assetCode(rack) }}</span></td>
                   <td>{{ rack.data_center?.nama || '-' }}<span>{{ rack.data_center?.lokasi || '' }}</span></td>
                   <td>{{ rack.kapasitas_u || 0 }}U</td>
                   <td>{{ rack.servers_count || 0 }}</td>
                   <td>
-                    <div v-if="canWrite" class="row-actions">
-                      <button class="icon-button" title="Edit rack" @click="openEdit('racks', rack)"><Pencil :size="16" /></button>
+                    <div class="row-actions">
+                      <button class="icon-button" title="Cetak label rack" @click="openLabel('racks', rack)"><Printer :size="16" /></button>
+                      <button v-if="canWrite" class="icon-button" title="Edit rack" @click="openEdit('racks', rack)"><Pencil :size="16" /></button>
                       <button v-if="canWrite" class="icon-button danger" title="Hapus rack" @click="removeRow('racks', rack.id)"><Trash2 :size="16" /></button>
                     </div>
                   </td>
@@ -1712,15 +1842,16 @@ onMounted(bootstrapAuth);
               </thead>
               <tbody>
                 <tr v-for="server in filteredServers" :key="server.id">
-                  <td><strong>{{ server.nama }}</strong><span>{{ server.merk }} {{ server.tipe }} / {{ server.tahun || '-' }}</span></td>
+                  <td><strong>{{ server.nama }}</strong><span>{{ assetCode(server) }}</span><span>{{ server.merk }} {{ server.tipe }} / {{ server.tahun || '-' }}</span></td>
                   <td>{{ server.data_center?.nama || '-' }}<span>{{ server.rack?.nama || '-' }}{{ server.rack_size_u ? ` / ${server.rack_size_u}U` : '' }}</span></td>
                   <td>{{ server.cpu_core }} core / {{ server.ram_gb }} GB<span>{{ server.merk_processor || 'Processor belum diisi' }} / {{ server.storage_gb }} GB storage</span></td>
                   <td><span :class="statusClass(server.kondisi)">{{ server.kondisi || '-' }}</span></td>
                   <td><span :class="statusClass(server.status)">{{ server.status }}</span></td>
                   <td>{{ server.vms?.length || 0 }}</td>
                   <td>
-                    <div v-if="canWrite" class="row-actions">
-                      <button class="icon-button" title="Edit server" @click="openEdit('servers', server)"><Pencil :size="16" /></button>
+                    <div class="row-actions">
+                      <button class="icon-button" title="Cetak label server" @click="openLabel('servers', server)"><Printer :size="16" /></button>
+                      <button v-if="canWrite" class="icon-button" title="Edit server" @click="openEdit('servers', server)"><Pencil :size="16" /></button>
                       <button v-if="canWrite" class="icon-button danger" title="Hapus server" @click="removeRow('servers', server.id)"><Trash2 :size="16" /></button>
                     </div>
                   </td>
@@ -1755,7 +1886,7 @@ onMounted(bootstrapAuth);
               </thead>
               <tbody>
                 <tr v-for="vm in filteredVms" :key="vm.id">
-                  <td><strong>{{ vm.nama }}</strong></td>
+                  <td><strong>{{ vm.nama }}</strong><span>{{ assetCode(vm) }}</span></td>
                   <td>{{ vm.server?.nama || '-' }}</td>
                   <td>{{ vm.os || '-' }}</td>
                   <td>{{ vm.vcpu }} vCPU / {{ vm.ram_gb }} GB<span>{{ vm.storage_gb }} GB storage</span></td>
@@ -1796,7 +1927,7 @@ onMounted(bootstrapAuth);
               </thead>
               <tbody>
                 <tr v-for="ip in filteredIpAddresses" :key="ip.id">
-                  <td><strong>{{ ip.ip }}</strong></td>
+                  <td><strong>{{ ip.ip }}</strong><span>{{ assetCode(ip) }}</span></td>
                   <td><span :class="statusClass(ip.jenis)">{{ ip.jenis }}</span></td>
                   <td>{{ ip.isp?.nama || '-' }}<span>{{ ip.isp?.bandwidth || '' }}</span></td>
                   <td>{{ ip.vms_count || 0 }}</td>
@@ -1836,7 +1967,7 @@ onMounted(bootstrapAuth);
               </thead>
               <tbody>
                 <tr v-for="isp in filteredIsps" :key="isp.id">
-                  <td><strong>{{ isp.nama }}</strong></td>
+                  <td><strong>{{ isp.nama }}</strong><span>{{ assetCode(isp) }}</span></td>
                   <td>{{ isp.tipe || '-' }}</td>
                   <td>{{ isp.bandwidth || '-' }}</td>
                   <td>{{ isp.kontak || '-' }}</td>
@@ -1882,7 +2013,7 @@ onMounted(bootstrapAuth);
               </thead>
               <tbody>
                 <tr v-for="app in filteredApplications" :key="app.id">
-                  <td><strong>{{ app.nama }}</strong><span>{{ app.url || '-' }}</span></td>
+                  <td><strong>{{ app.nama }}</strong><span>{{ assetCode(app) }}</span><span>{{ app.url || '-' }}</span></td>
                   <td>{{ app.opd?.nama || '-' }}</td>
                   <td><span class="status">{{ app.jenis_aplikasi || '-' }}</span></td>
                   <td>{{ app.pengembang ? developerLabel(app.pengembang) : '-' }}</td>
@@ -1931,7 +2062,7 @@ onMounted(bootstrapAuth);
               </thead>
               <tbody>
                 <tr v-for="asset in filteredDataAssets" :key="asset.id">
-                  <td><strong>{{ asset.name }}</strong><span>{{ [asset.table_name, asset.column_name].filter(Boolean).join('.') || asset.description || '-' }}</span></td>
+                  <td><strong>{{ asset.name }}</strong><span>{{ assetCode(asset) }}</span><span>{{ [asset.table_name, asset.column_name].filter(Boolean).join('.') || asset.description || '-' }}</span></td>
                   <td>{{ asset.aplikasi?.nama || '-' }}<span>{{ asset.aplikasi?.jenis_aplikasi || '' }}</span></td>
                   <td><span class="status">{{ asset.type }}</span></td>
                   <td>{{ asset.classification?.name || '-' }}<span>{{ asset.classification?.code || '' }}</span></td>
@@ -1969,7 +2100,7 @@ onMounted(bootstrapAuth);
                 <tr v-for="doc in filteredApplicationDocuments" :key="doc.id">
                   <td>{{ doc.aplikasi?.nama || '-' }}</td>
                   <td><span class="status">{{ doc.document_category || doc.jenis }}</span></td>
-                  <td><strong>{{ doc.original_name || doc.nama }}</strong><span>{{ doc.path || '-' }}</span></td>
+                  <td><strong>{{ doc.original_name || doc.nama }}</strong><span>{{ assetCode(doc) }}</span><span>{{ doc.path || '-' }}</span></td>
                   <td>{{ doc.size_bytes ? Math.round(doc.size_bytes / 1024) + ' KB' : '-' }}</td>
                   <td>{{ doc.tanggal || '-' }}</td>
                   <td><div v-if="canWrite" class="row-actions"><button class="icon-button" title="Edit dokumen" @click="openEdit('application-documents', doc)"><Pencil :size="16" /></button><button v-if="canWrite" class="icon-button danger" title="Hapus dokumen" @click="removeRow('application-documents', doc.id)"><Trash2 :size="16" /></button></div></td>
@@ -1991,7 +2122,7 @@ onMounted(bootstrapAuth);
               <thead><tr><th>Aplikasi</th><th>Jenis</th><th>Metode</th><th>Target</th><th>Data</th><th>Dokumen</th><th>Aksi</th></tr></thead>
               <tbody>
                 <tr v-for="integration in filteredAppIntegrations" :key="integration.id">
-                  <td><strong>{{ integration.aplikasi?.nama || '-' }}</strong><span>{{ integration.deskripsi || '-' }}</span></td>
+                  <td><strong>{{ integration.aplikasi?.nama || '-' }}</strong><span>{{ assetCode(integration) }}</span><span>{{ integration.deskripsi || '-' }}</span></td>
                   <td><span class="status">{{ integration.jenis_integrasi }}</span></td>
                   <td><span class="status">{{ integration.metode_integrasi }}</span></td>
                   <td>{{ (integration.target_applications || []).map((app) => app.nama).join(', ') || integration.external_endpoints || '-' }}</td>
@@ -2016,13 +2147,13 @@ onMounted(bootstrapAuth);
               <thead><tr><th>Media</th><th>Lokasi</th><th>Jenis</th><th>Kapasitas</th><th>Address / URL</th><th>Job</th><th>Aksi</th></tr></thead>
               <tbody>
                 <tr v-for="media in filteredBackupMedia" :key="media.id">
-                  <td><strong>{{ media.nama }}</strong></td>
+                  <td><strong>{{ media.nama }}</strong><span>{{ assetCode(media) }}</span></td>
                   <td><span class="status">{{ media.location }}</span></td>
                   <td>{{ media.jenis_media }}</td>
                   <td>{{ media.kapasitas_gb || 0 }} GB</td>
                   <td>{{ media.address_url || '-' }}</td>
                   <td>{{ media.backup_jobs_count || 0 }}</td>
-                  <td><div v-if="canWrite" class="row-actions"><button class="icon-button" title="Edit media" @click="openEdit('backup-media', media)"><Pencil :size="16" /></button><button v-if="canWrite" class="icon-button danger" title="Hapus media" @click="removeRow('backup-media', media.id)"><Trash2 :size="16" /></button></div></td>
+                  <td><div class="row-actions"><button class="icon-button" title="Cetak label media" @click="openLabel('backup-media', media)"><Printer :size="16" /></button><button v-if="canWrite" class="icon-button" title="Edit media" @click="openEdit('backup-media', media)"><Pencil :size="16" /></button><button v-if="canWrite" class="icon-button danger" title="Hapus media" @click="removeRow('backup-media', media.id)"><Trash2 :size="16" /></button></div></td>
                 </tr>
               </tbody>
             </table>
@@ -2041,7 +2172,7 @@ onMounted(bootstrapAuth);
               <thead><tr><th>Aplikasi</th><th>Media</th><th>Retensi</th><th>Repetisi</th><th>Aksi</th></tr></thead>
               <tbody>
                 <tr v-for="job in filteredBackupJobs" :key="job.id">
-                  <td><strong>{{ job.aplikasi?.nama || '-' }}</strong></td>
+                  <td><strong>{{ job.aplikasi?.nama || '-' }}</strong><span>{{ assetCode(job) }}</span></td>
                   <td>{{ job.media?.nama || '-' }}<span>{{ job.media?.jenis_media || '' }}</span></td>
                   <td>{{ job.retensi_n }} {{ job.retensi_unit }}</td>
                   <td>{{ job.repetisi_n }} {{ job.repetisi_unit }}</td>
@@ -2064,11 +2195,11 @@ onMounted(bootstrapAuth);
               <thead><tr><th>Nama</th><th>Kapasitas</th><th>Kondisi</th><th>Lokasi DC</th><th>Aksi</th></tr></thead>
               <tbody>
                 <tr v-for="ups in filteredUpsDevices" :key="ups.id">
-                  <td><strong>{{ ups.nama }}</strong></td>
+                  <td><strong>{{ ups.nama }}</strong><span>{{ assetCode(ups) }}</span></td>
                   <td>{{ ups.kapasitas_va }} VA</td>
                   <td><span :class="statusClass(ups.kondisi)">{{ ups.kondisi }}</span></td>
                   <td>{{ ups.data_center?.nama || '-' }}<span>{{ ups.data_center?.lokasi || '' }}</span></td>
-                  <td><div v-if="canWrite" class="row-actions"><button class="icon-button" title="Edit UPS" @click="openEdit('ups-devices', ups)"><Pencil :size="16" /></button><button v-if="canWrite" class="icon-button danger" title="Hapus UPS" @click="removeRow('ups-devices', ups.id)"><Trash2 :size="16" /></button></div></td>
+                  <td><div class="row-actions"><button class="icon-button" title="Cetak label UPS" @click="openLabel('ups-devices', ups)"><Printer :size="16" /></button><button v-if="canWrite" class="icon-button" title="Edit UPS" @click="openEdit('ups-devices', ups)"><Pencil :size="16" /></button><button v-if="canWrite" class="icon-button danger" title="Hapus UPS" @click="removeRow('ups-devices', ups.id)"><Trash2 :size="16" /></button></div></td>
                 </tr>
               </tbody>
             </table>
@@ -2087,7 +2218,7 @@ onMounted(bootstrapAuth);
               <thead><tr><th>Nama</th><th>Jenis</th><th>Fungsi</th><th>Cakupan</th><th>Aksi</th></tr></thead>
               <tbody>
                 <tr v-for="tool in filteredSocTools" :key="tool.id">
-                  <td><strong>{{ tool.nama }}</strong></td>
+                  <td><strong>{{ tool.nama }}</strong><span>{{ assetCode(tool) }}</span></td>
                   <td><span class="status">{{ tool.jenis }}</span></td>
                   <td>{{ tool.deskripsi_fungsi || '-' }}</td>
                   <td>
@@ -2096,7 +2227,7 @@ onMounted(bootstrapAuth);
                     <span>VM: {{ tool.vms?.length || 0 }}</span>
                     <span>Aplikasi: {{ tool.applications?.length || 0 }}</span>
                   </td>
-                  <td><div v-if="canWrite" class="row-actions"><button class="icon-button" title="Edit SOC" @click="openEdit('soc-tools', tool)"><Pencil :size="16" /></button><button v-if="canWrite" class="icon-button danger" title="Hapus SOC" @click="removeRow('soc-tools', tool.id)"><Trash2 :size="16" /></button></div></td>
+                  <td><div class="row-actions"><button class="icon-button" title="Cetak label SOC" @click="openLabel('soc-tools', tool)"><Printer :size="16" /></button><button v-if="canWrite" class="icon-button" title="Edit SOC" @click="openEdit('soc-tools', tool)"><Pencil :size="16" /></button><button v-if="canWrite" class="icon-button danger" title="Hapus SOC" @click="removeRow('soc-tools', tool.id)"><Trash2 :size="16" /></button></div></td>
                 </tr>
               </tbody>
             </table>
@@ -2840,6 +2971,73 @@ onMounted(bootstrapAuth);
             <button class="action-button" type="submit" :disabled="saving">{{ saving ? 'Menyimpan...' : (modal.mode === 'edit' ? 'Simpan Perubahan' : 'Simpan Data') }}</button>
           </footer>
         </form>
+      </div>
+
+      <div v-if="labelModal.open && labelModal.item" class="modal-backdrop label-backdrop" @click.self="closeLabelModal">
+        <section class="modal-card label-modal-card">
+          <header class="modal-header">
+            <div>
+              <p class="eyebrow">Label Inventaris</p>
+              <h3>{{ assetName(labelModal.item, labelModal.module) }}</h3>
+            </div>
+            <button class="icon-button" type="button" title="Tutup label" @click="closeLabelModal"><X :size="18" /></button>
+          </header>
+
+          <div class="label-toolbar">
+            <select v-model="labelModal.size">
+              <option v-for="option in labelSizeOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
+            </select>
+            <button class="action-button" type="button" @click="printLabel"><Printer :size="17" /> Cetak Label</button>
+          </div>
+
+          <div class="label-preview-wrap">
+            <article class="inventory-label-print" :style="labelPrintStyle">
+              <div class="label-brand">
+                <strong>PEMKAB LANGKAT</strong>
+                <span>IAMT CMDB</span>
+              </div>
+              <div class="label-body">
+                <div>
+                  <small>Kode Aset</small>
+                  <strong>{{ assetCode(labelModal.item) }}</strong>
+                  <span>{{ moduleLabels[labelModal.module] || 'Aset' }}</span>
+                  <b>{{ assetName(labelModal.item, labelModal.module) }}</b>
+                  <em>{{ assetLocation(labelModal.module, labelModal.item) }}</em>
+                </div>
+                <img v-if="labelQrDataUrl" :src="labelQrDataUrl" alt="QR detail aset" />
+              </div>
+              <footer>{{ assetDetailUrl(labelModal.module, labelModal.item) }}</footer>
+            </article>
+          </div>
+        </section>
+      </div>
+
+      <div v-if="detailModal.open" class="modal-backdrop" @click.self="closeDetailModal">
+        <section class="modal-card detail-modal-card">
+          <header class="modal-header">
+            <div>
+              <p class="eyebrow">Detail Aset</p>
+              <h3>{{ detailModal.loading ? 'Memuat...' : assetName(detailModal.item, detailModal.module) }}</h3>
+            </div>
+            <button class="icon-button" type="button" title="Tutup detail" @click="closeDetailModal"><X :size="18" /></button>
+          </header>
+
+          <div v-if="detailModal.item" class="detail-grid">
+            <div class="detail-highlight">
+              <span>Kode Aset</span>
+              <strong>{{ assetCode(detailModal.item) }}</strong>
+              <small>{{ moduleLabels[detailModal.module] || detailModal.module }}</small>
+            </div>
+            <div v-for="entry in detailEntries(detailModal.item)" :key="entry.key">
+              <span>{{ entry.key }}</span>
+              <strong>{{ entry.value }}</strong>
+            </div>
+            <div v-for="entry in relationEntries(detailModal.item)" :key="entry.key">
+              <span>{{ entry.key }}</span>
+              <strong>{{ entry.value }}</strong>
+            </div>
+          </div>
+        </section>
       </div>
 
       <div v-if="deleteModal.open" class="modal-backdrop alert-backdrop" @click.self="closeDeleteModal">

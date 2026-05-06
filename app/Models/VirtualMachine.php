@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasAssetCode;
 use App\Models\Concerns\UsesUuid;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -9,11 +10,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class VirtualMachine extends Model
 {
-    use UsesUuid;
+    use HasAssetCode, UsesUuid;
 
     protected $table = 'vm';
 
-    protected $fillable = ['nama', 'server_id', 'os', 'vcpu', 'ram_gb', 'storage_gb', 'status'];
+    protected $fillable = ['asset_code', 'nama', 'server_id', 'os', 'vcpu', 'ram_gb', 'storage_gb', 'status'];
 
     public $timestamps = false;
 

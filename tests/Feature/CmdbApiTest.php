@@ -375,6 +375,38 @@ class CmdbApiTest extends TestCase
             ->assertJsonPath('message', 'Terdapat data dibawah entitas ini. Hapus atau lepaskan relasi data terkait terlebih dahulu sebelum menghapus data utama.');
     }
 
+    public function test_inventory_asset_codes_are_generated_for_physical_and_digital_assets(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+        $this->authenticateAs();
+
+        $server = Server::where('nama', 'SRV-PROD-01')->firstOrFail();
+        $this->assertMatchesRegularExpression('/^LKT-SRV-\d{6}$/', $server->asset_code);
+
+        $dcCode = $this->postJson('/api/data-centers', [
+            'nama' => 'DC Label Test',
+            'lokasi' => 'Stabat',
+            'tipe' => 'utama',
+        ])->assertCreated()->json('asset_code');
+
+        $appCode = $this->postJson('/api/applications', [
+            'nama' => 'Aplikasi Label Test',
+            'jenis_aplikasi' => 'web',
+            'pengembang' => 'diskominfo_langkat',
+            'status' => 'aktif',
+        ])->assertCreated()->json('asset_code');
+
+        $mediaCode = $this->postJson('/api/backup-media', [
+            'nama' => 'NAS Label Test',
+            'location' => 'local',
+            'jenis_media' => 'NAS',
+        ])->assertCreated()->json('asset_code');
+
+        $this->assertMatchesRegularExpression('/^LKT-DC-\d{6}$/', $dcCode);
+        $this->assertMatchesRegularExpression('/^LKT-APP-\d{6}$/', $appCode);
+        $this->assertMatchesRegularExpression('/^LKT-BKM-\d{6}$/', $mediaCode);
+    }
+
     public function test_rest_api_detail_endpoints_are_available_for_all_managed_modules(): void
     {
         $this->seed(DatabaseSeeder::class);

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasAssetCode;
 use App\Models\Concerns\UsesUuid;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -9,11 +10,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class IpAddress extends Model
 {
-    use UsesUuid;
+    use HasAssetCode, UsesUuid;
 
     protected $table = 'ip_address';
 
-    protected $fillable = ['ip', 'jenis', 'isp_id'];
+    protected $fillable = ['asset_code', 'ip', 'jenis', 'isp_id'];
 
     public $timestamps = false;
 

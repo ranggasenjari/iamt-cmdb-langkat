@@ -3,16 +3,17 @@
 namespace App\Models;
 
 use App\Models\Concerns\UsesUuid;
+use App\Models\Concerns\HasAssetCode;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class DataCenter extends Model
 {
-    use UsesUuid;
+    use HasAssetCode, UsesUuid;
 
     protected $table = 'data_center';
 
-    protected $fillable = ['nama', 'lokasi', 'tipe'];
+    protected $fillable = ['asset_code', 'nama', 'lokasi', 'tipe'];
 
     public $timestamps = false;
 

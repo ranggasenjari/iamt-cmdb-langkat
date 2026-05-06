@@ -50,6 +50,7 @@ CREATE TABLE user_roles (
 -- =========================
 CREATE TABLE data_center (
     id CHAR(36) PRIMARY KEY,
+    asset_code VARCHAR(50) UNIQUE,
     nama VARCHAR(255),
     lokasi VARCHAR(255),
     tipe ENUM('utama','dr','cloud')
@@ -57,6 +58,7 @@ CREATE TABLE data_center (
 
 CREATE TABLE rack (
     id CHAR(36) PRIMARY KEY,
+    asset_code VARCHAR(50) UNIQUE,
     dc_id CHAR(36),
     nama VARCHAR(100),
     kapasitas_u INT,
@@ -65,6 +67,7 @@ CREATE TABLE rack (
 
 CREATE TABLE server (
     id CHAR(36) PRIMARY KEY DEFAULT (UUID()),
+    asset_code VARCHAR(50) UNIQUE,
     nama VARCHAR(255) NOT NULL,
     dc_id CHAR(36),
     rack_id CHAR(36),
@@ -98,6 +101,7 @@ CREATE TABLE server (
 -- =========================
 CREATE TABLE vm (
     id CHAR(36) PRIMARY KEY DEFAULT (UUID()),
+    asset_code VARCHAR(50) UNIQUE,
     nama VARCHAR(255),
     server_id CHAR(36),
 
@@ -117,6 +121,7 @@ CREATE TABLE vm (
 -- =========================
 CREATE TABLE isp (
     id CHAR(36) PRIMARY KEY,
+    asset_code VARCHAR(50) UNIQUE,
     nama VARCHAR(255),
     tipe VARCHAR(50),
     bandwidth VARCHAR(50),
@@ -125,6 +130,7 @@ CREATE TABLE isp (
 
 CREATE TABLE ip_address (
     id CHAR(36) PRIMARY KEY,
+    asset_code VARCHAR(50) UNIQUE,
     ip VARCHAR(45) UNIQUE,
     jenis ENUM('publik','private'),
     isp_id CHAR(36),
@@ -154,6 +160,7 @@ CREATE TABLE network_device (
 -- =========================
 CREATE TABLE aplikasi (
     id CHAR(36) PRIMARY KEY DEFAULT (UUID()),
+    asset_code VARCHAR(50) UNIQUE,
     nama VARCHAR(255) NOT NULL,
     url VARCHAR(255),
     opd_id CHAR(36) NULL,
@@ -195,6 +202,7 @@ CREATE TABLE aplikasi (
 -- =========================
 CREATE TABLE aplikasi_dokumen (
     id CHAR(36) PRIMARY KEY,
+    asset_code VARCHAR(50) UNIQUE,
     aplikasi_id CHAR(36),
     jenis ENUM('keamanan','tata_kelola','modul'),
     document_category VARCHAR(50),
@@ -338,6 +346,7 @@ CREATE TABLE backup_aplikasi (
 
 CREATE TABLE backup_media (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    asset_code VARCHAR(50) UNIQUE,
     nama VARCHAR(255) NOT NULL,
     location ENUM('local','remote') NOT NULL,
     jenis_media ENUM('NAS','Disk','Cloud','Replication','Tape','Object Storage') NOT NULL,
@@ -349,6 +358,7 @@ CREATE TABLE backup_media (
 
 CREATE TABLE backup_jobs (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    asset_code VARCHAR(50) UNIQUE,
     aplikasi_id CHAR(36) NOT NULL,
     backup_media_id BIGINT NOT NULL,
     retensi_n INT UNSIGNED DEFAULT 1,
@@ -368,6 +378,7 @@ CREATE TABLE backup_jobs (
 -- =========================
 CREATE TABLE ups_devices (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    asset_code VARCHAR(50) UNIQUE,
     nama VARCHAR(255) NOT NULL,
     kapasitas_va INT UNSIGNED NOT NULL,
     kondisi ENUM('baik','kurang_baik','rusak') NOT NULL,
@@ -397,6 +408,7 @@ CREATE TABLE data_classifications (
 
 CREATE TABLE data_assets (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    asset_code VARCHAR(50) UNIQUE,
     aplikasi_id CHAR(36) NOT NULL,
     classification_id BIGINT NOT NULL,
     name VARCHAR(150) NOT NULL,
@@ -430,6 +442,7 @@ CREATE TABLE data_assets (
 -- =========================
 CREATE TABLE app_integrations (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    asset_code VARCHAR(50) UNIQUE,
     aplikasi_id CHAR(36) NOT NULL,
     deskripsi TEXT NULL,
     jenis_integrasi ENUM('proses_bisnis','berbagi_data') NOT NULL,
@@ -474,6 +487,7 @@ CREATE TABLE app_integration_documents (
 -- =========================
 CREATE TABLE soc_tools (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    asset_code VARCHAR(50) UNIQUE,
     nama VARCHAR(255) NOT NULL,
     deskripsi_fungsi TEXT NULL,
     jenis ENUM('Firewall','IDS','IPS','Antivirus','EDR','SIEM','WAF','NDR','Vulnerability Scanner','Log Management') NOT NULL,

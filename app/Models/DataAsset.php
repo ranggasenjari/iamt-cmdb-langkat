@@ -2,13 +2,16 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasAssetCode;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class DataAsset extends Model
 {
+    use HasAssetCode;
+
     protected $fillable = [
-        'aplikasi_id', 'classification_id', 'name', 'type', 'table_name', 'column_name',
+        'asset_code', 'aplikasi_id', 'classification_id', 'name', 'type', 'table_name', 'column_name',
         'attributes', 'owner_agency', 'confidentiality_score', 'integrity_score',
         'availability_score', 'risk_total',
         'contains_personal_data', 'personal_data_type', 'processing_purpose',

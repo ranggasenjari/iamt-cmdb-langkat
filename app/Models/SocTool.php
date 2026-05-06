@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasAssetCode;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class SocTool extends Model
 {
-    protected $fillable = ['nama', 'deskripsi_fungsi', 'jenis'];
+    use HasAssetCode;
+
+    protected $fillable = ['asset_code', 'nama', 'deskripsi_fungsi', 'jenis'];
 
     public function dataCenters(): BelongsToMany
     {

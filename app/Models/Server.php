@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasAssetCode;
 use App\Models\Concerns\UsesUuid;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -10,12 +11,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Server extends Model
 {
-    use UsesUuid;
+    use HasAssetCode, UsesUuid;
 
     protected $table = 'server';
 
     protected $fillable = [
-        'nama', 'dc_id', 'rack_id', 'rack_size_u', 'merk', 'tipe', 'serial_number', 'merk_processor', 'cpu_core',
+        'asset_code', 'nama', 'dc_id', 'rack_id', 'rack_size_u', 'merk', 'tipe', 'serial_number', 'merk_processor', 'cpu_core',
         'ram_gb', 'storage_gb', 'kondisi', 'status', 'tahun', 'penanggung_jawab',
     ];
 

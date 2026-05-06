@@ -64,6 +64,32 @@ Jika data tidak dapat dihapus karena masih dipakai data anak, API mengembalikan:
 
 Status HTTP: `409 Conflict`.
 
+## Kode Aset Inventaris
+
+Setiap aset fisik maupun digital memiliki field `asset_code` yang dibuat otomatis saat data dibuat dan ikut dikembalikan pada response API. Field ini bersifat identitas internal CMDB dan tidak perlu dikirim saat `POST`.
+
+Contoh pola kode:
+
+| Resource | Prefix | Contoh |
+| --- | --- | --- |
+| `data-centers` | `LKT-DC` | `LKT-DC-000001` |
+| `racks` | `LKT-RCK` | `LKT-RCK-000001` |
+| `servers` | `LKT-SRV` | `LKT-SRV-000001` |
+| `vms` | `LKT-VM` | `LKT-VM-000001` |
+| `applications` | `LKT-APP` | `LKT-APP-000001` |
+| `data-assets` | `LKT-DATA` | `LKT-DATA-000001` |
+| `backup-media` | `LKT-BKM` | `LKT-BKM-000001` |
+| `ups-devices` | `LKT-UPS` | `LKT-UPS-000001` |
+| `soc-tools` | `LKT-SOC` | `LKT-SOC-000001` |
+
+Aset fisik dapat dicetak label dari UI. Label berisi kode aset, nama aset, jenis aset, lokasi singkat, dan QR menuju halaman detail aset internal:
+
+```text
+/asset/{resource}/{id}
+```
+
+Ukuran label yang tersedia di UI: `50 x 30 mm`, `60 x 40 mm`, `70 x 50 mm`, dan `90 x 50 mm`.
+
 ## Daftar Resource
 
 | Modul UI | Resource | Tipe ID |

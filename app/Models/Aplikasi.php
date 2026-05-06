@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasAssetCode;
 use App\Models\Concerns\UsesUuid;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -10,12 +11,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Aplikasi extends Model
 {
-    use UsesUuid;
+    use HasAssetCode, UsesUuid;
 
     protected $table = 'aplikasi';
 
     protected $fillable = [
-        'nama', 'url', 'opd_id', 'deskripsi', 'jenis_aplikasi', 'pengembang', 'klasifikasi_fungsi', 'tech_stack', 'status', 'sla_persen',
+        'asset_code', 'nama', 'url', 'opd_id', 'deskripsi', 'jenis_aplikasi', 'pengembang', 'klasifikasi_fungsi', 'tech_stack', 'status', 'sla_persen',
         'jam_operasional', 'kategori_data', 'mengandung_data_pribadi', 'jenis_data_pribadi',
         'retensi_data', 'pic_nama', 'pic_kontak', 'tanggal_go_live',
     ];

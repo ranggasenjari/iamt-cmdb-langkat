@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasAssetCode;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class UpsDevice extends Model
 {
-    protected $fillable = ['nama', 'kapasitas_va', 'kondisi', 'dc_id'];
+    use HasAssetCode;
+
+    protected $fillable = ['asset_code', 'nama', 'kapasitas_va', 'kondisi', 'dc_id'];
 
     public function dataCenter(): BelongsTo
     {

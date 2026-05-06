@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasAssetCode;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -9,7 +10,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class AppIntegration extends Model
 {
-    protected $fillable = ['aplikasi_id', 'deskripsi', 'jenis_integrasi', 'metode_integrasi', 'external_endpoints'];
+    use HasAssetCode;
+
+    protected $fillable = ['asset_code', 'aplikasi_id', 'deskripsi', 'jenis_integrasi', 'metode_integrasi', 'external_endpoints'];
 
     public function aplikasi(): BelongsTo
     {
