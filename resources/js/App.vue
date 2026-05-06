@@ -25,6 +25,7 @@ import {
 } from 'lucide-vue-next';
 import QRCode from 'qrcode';
 import { computed, onMounted, reactive, ref } from 'vue';
+import logoLangkat from '../img/logo_langkat.png';
 
 const menuSections = [
   {
@@ -145,7 +146,22 @@ const labelSizeOptions = [
   { value: '70x50', label: '70 x 50 mm', width: 70, height: 50 },
   { value: '90x50', label: '90 x 50 mm', width: 90, height: 50 },
 ];
-const physicalLabelModules = new Set(['data-centers', 'racks', 'servers', 'backup-media', 'ups-devices', 'soc-tools']);
+const printableLabelModules = new Set([
+  'data-centers',
+  'racks',
+  'servers',
+  'vms',
+  'isps',
+  'ip-addresses',
+  'applications',
+  'data-assets',
+  'application-documents',
+  'app-integrations',
+  'backup-media',
+  'backup-jobs',
+  'ups-devices',
+  'soc-tools',
+]);
 
 const dataCenterForm = reactive({
   nama: '',
@@ -618,7 +634,7 @@ async function handleAssetDeepLink() {
 }
 
 async function openLabel(module, item) {
-  if (!physicalLabelModules.has(module)) return;
+  if (!printableLabelModules.has(module)) return;
 
   Object.assign(labelModal, { open: true, module, item, size: labelModal.size || '60x40' });
   labelQrDataUrl.value = await QRCode.toDataURL(assetDetailUrl(module, item), {
@@ -1263,7 +1279,7 @@ onMounted(bootstrapAuth);
     <section class="login-identity">
       <div class="login-identity-inner">
         <div class="login-badge">
-          <Database :size="22" />
+          <img class="brand-logo small" :src="logoLangkat" alt="Logo Kabupaten Langkat" />
           <span>CMDB Kabupaten Langkat</span>
         </div>
         <div>
@@ -1284,7 +1300,7 @@ onMounted(bootstrapAuth);
       <form class="login-card" @submit.prevent="login">
         <div class="login-card-head">
           <div class="brand-mark">
-            <Database :size="26" />
+            <img :src="logoLangkat" alt="Logo Kabupaten Langkat" />
           </div>
           <div>
             <p class="eyebrow">Autentikasi</p>
@@ -1316,7 +1332,7 @@ onMounted(bootstrapAuth);
     <aside class="sidebar">
       <div class="brand">
         <div class="brand-mark">
-          <Database :size="26" />
+          <img :src="logoLangkat" alt="Logo Kabupaten Langkat" />
         </div>
         <div>
           <p class="eyebrow">Kabupaten Langkat</p>
@@ -1893,8 +1909,9 @@ onMounted(bootstrapAuth);
                   <td>{{ (vm.ip_addresses || []).map((ip) => ip.ip).join(', ') || '-' }}</td>
                   <td><span :class="statusClass(vm.status)">{{ vm.status }}</span></td>
                   <td>
-                    <div v-if="canWrite" class="row-actions">
-                      <button class="icon-button" title="Edit VM" @click="openEdit('vms', vm)"><Pencil :size="16" /></button>
+                    <div class="row-actions">
+                      <button class="icon-button" title="Cetak label VM" @click="openLabel('vms', vm)"><Printer :size="16" /></button>
+                      <button v-if="canWrite" class="icon-button" title="Edit VM" @click="openEdit('vms', vm)"><Pencil :size="16" /></button>
                       <button v-if="canWrite" class="icon-button danger" title="Hapus VM" @click="removeRow('vms', vm.id)"><Trash2 :size="16" /></button>
                     </div>
                   </td>
@@ -1932,8 +1949,9 @@ onMounted(bootstrapAuth);
                   <td>{{ ip.isp?.nama || '-' }}<span>{{ ip.isp?.bandwidth || '' }}</span></td>
                   <td>{{ ip.vms_count || 0 }}</td>
                   <td>
-                    <div v-if="canWrite" class="row-actions">
-                      <button class="icon-button" title="Edit IP address" @click="openEdit('ip-addresses', ip)"><Pencil :size="16" /></button>
+                    <div class="row-actions">
+                      <button class="icon-button" title="Cetak label IP address" @click="openLabel('ip-addresses', ip)"><Printer :size="16" /></button>
+                      <button v-if="canWrite" class="icon-button" title="Edit IP address" @click="openEdit('ip-addresses', ip)"><Pencil :size="16" /></button>
                       <button v-if="canWrite" class="icon-button danger" title="Hapus IP address" @click="removeRow('ip-addresses', ip.id)"><Trash2 :size="16" /></button>
                     </div>
                   </td>
@@ -1973,8 +1991,9 @@ onMounted(bootstrapAuth);
                   <td>{{ isp.kontak || '-' }}</td>
                   <td>{{ isp.ip_addresses_count || 0 }}</td>
                   <td>
-                    <div v-if="canWrite" class="row-actions">
-                      <button class="icon-button" title="Edit ISP" @click="openEdit('isps', isp)"><Pencil :size="16" /></button>
+                    <div class="row-actions">
+                      <button class="icon-button" title="Cetak label ISP" @click="openLabel('isps', isp)"><Printer :size="16" /></button>
+                      <button v-if="canWrite" class="icon-button" title="Edit ISP" @click="openEdit('isps', isp)"><Pencil :size="16" /></button>
                       <button v-if="canWrite" class="icon-button danger" title="Hapus ISP" @click="removeRow('isps', isp.id)"><Trash2 :size="16" /></button>
                     </div>
                   </td>
@@ -2024,8 +2043,9 @@ onMounted(bootstrapAuth);
                   <td>{{ app.vms?.length || 0 }} VM / {{ app.servers?.length || 0 }} server</td>
                   <td><span :class="statusClass(app.status)">{{ app.status }}</span></td>
                   <td>
-                    <div v-if="canWrite" class="row-actions">
-                      <button class="icon-button" title="Edit aplikasi" @click="openEdit('applications', app)"><Pencil :size="16" /></button>
+                    <div class="row-actions">
+                      <button class="icon-button" title="Cetak label aplikasi" @click="openLabel('applications', app)"><Printer :size="16" /></button>
+                      <button v-if="canWrite" class="icon-button" title="Edit aplikasi" @click="openEdit('applications', app)"><Pencil :size="16" /></button>
                       <button v-if="canWrite" class="icon-button danger" title="Hapus aplikasi" @click="removeRow('applications', app.id)"><Trash2 :size="16" /></button>
                     </div>
                   </td>
@@ -2075,8 +2095,9 @@ onMounted(bootstrapAuth);
                     <span>Audit: {{ yesNo(asset.classification?.requires_audit_log) }}</span>
                   </td>
                   <td>
-                    <div v-if="canWrite" class="row-actions">
-                      <button class="icon-button" title="Edit data aplikasi" @click="openEdit('data-assets', asset)"><Pencil :size="16" /></button>
+                    <div class="row-actions">
+                      <button class="icon-button" title="Cetak label data aplikasi" @click="openLabel('data-assets', asset)"><Printer :size="16" /></button>
+                      <button v-if="canWrite" class="icon-button" title="Edit data aplikasi" @click="openEdit('data-assets', asset)"><Pencil :size="16" /></button>
                       <button v-if="canWrite" class="icon-button danger" title="Hapus data aplikasi" @click="removeRow('data-assets', asset.id)"><Trash2 :size="16" /></button>
                     </div>
                   </td>
@@ -2103,7 +2124,7 @@ onMounted(bootstrapAuth);
                   <td><strong>{{ doc.original_name || doc.nama }}</strong><span>{{ assetCode(doc) }}</span><span>{{ doc.path || '-' }}</span></td>
                   <td>{{ doc.size_bytes ? Math.round(doc.size_bytes / 1024) + ' KB' : '-' }}</td>
                   <td>{{ doc.tanggal || '-' }}</td>
-                  <td><div v-if="canWrite" class="row-actions"><button class="icon-button" title="Edit dokumen" @click="openEdit('application-documents', doc)"><Pencil :size="16" /></button><button v-if="canWrite" class="icon-button danger" title="Hapus dokumen" @click="removeRow('application-documents', doc.id)"><Trash2 :size="16" /></button></div></td>
+                  <td><div class="row-actions"><button class="icon-button" title="Cetak label dokumen" @click="openLabel('application-documents', doc)"><Printer :size="16" /></button><button v-if="canWrite" class="icon-button" title="Edit dokumen" @click="openEdit('application-documents', doc)"><Pencil :size="16" /></button><button v-if="canWrite" class="icon-button danger" title="Hapus dokumen" @click="removeRow('application-documents', doc.id)"><Trash2 :size="16" /></button></div></td>
                 </tr>
               </tbody>
             </table>
@@ -2128,7 +2149,7 @@ onMounted(bootstrapAuth);
                   <td>{{ (integration.target_applications || []).map((app) => app.nama).join(', ') || integration.external_endpoints || '-' }}</td>
                   <td>{{ (integration.data_assets || []).map((asset) => asset.name).join(', ') || '-' }}</td>
                   <td>{{ integration.documents?.length || 0 }}</td>
-                  <td><div v-if="canWrite" class="row-actions"><button class="icon-button" title="Edit integrasi" @click="openEdit('app-integrations', integration)"><Pencil :size="16" /></button><button v-if="canWrite" class="icon-button danger" title="Hapus integrasi" @click="removeRow('app-integrations', integration.id)"><Trash2 :size="16" /></button></div></td>
+                  <td><div class="row-actions"><button class="icon-button" title="Cetak label integrasi" @click="openLabel('app-integrations', integration)"><Printer :size="16" /></button><button v-if="canWrite" class="icon-button" title="Edit integrasi" @click="openEdit('app-integrations', integration)"><Pencil :size="16" /></button><button v-if="canWrite" class="icon-button danger" title="Hapus integrasi" @click="removeRow('app-integrations', integration.id)"><Trash2 :size="16" /></button></div></td>
                 </tr>
               </tbody>
             </table>
@@ -2176,7 +2197,7 @@ onMounted(bootstrapAuth);
                   <td>{{ job.media?.nama || '-' }}<span>{{ job.media?.jenis_media || '' }}</span></td>
                   <td>{{ job.retensi_n }} {{ job.retensi_unit }}</td>
                   <td>{{ job.repetisi_n }} {{ job.repetisi_unit }}</td>
-                  <td><div v-if="canWrite" class="row-actions"><button class="icon-button" title="Edit pencadangan" @click="openEdit('backup-jobs', job)"><Pencil :size="16" /></button><button v-if="canWrite" class="icon-button danger" title="Hapus pencadangan" @click="removeRow('backup-jobs', job.id)"><Trash2 :size="16" /></button></div></td>
+                  <td><div class="row-actions"><button class="icon-button" title="Cetak label pencadangan" @click="openLabel('backup-jobs', job)"><Printer :size="16" /></button><button v-if="canWrite" class="icon-button" title="Edit pencadangan" @click="openEdit('backup-jobs', job)"><Pencil :size="16" /></button><button v-if="canWrite" class="icon-button danger" title="Hapus pencadangan" @click="removeRow('backup-jobs', job.id)"><Trash2 :size="16" /></button></div></td>
                 </tr>
               </tbody>
             </table>
@@ -2993,8 +3014,11 @@ onMounted(bootstrapAuth);
           <div class="label-preview-wrap">
             <article class="inventory-label-print" :style="labelPrintStyle">
               <div class="label-brand">
-                <strong>PEMKAB LANGKAT</strong>
-                <span>IAMT CMDB</span>
+                <img :src="logoLangkat" alt="Logo Kabupaten Langkat" />
+                <div>
+                  <strong>PEMKAB LANGKAT</strong>
+                  <span>IAMT CMDB</span>
+                </div>
               </div>
               <div class="label-body">
                 <div>

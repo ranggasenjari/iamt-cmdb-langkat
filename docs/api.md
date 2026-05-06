@@ -78,15 +78,20 @@ Contoh pola kode:
 | `vms` | `LKT-VM` | `LKT-VM-000001` |
 | `applications` | `LKT-APP` | `LKT-APP-000001` |
 | `data-assets` | `LKT-DATA` | `LKT-DATA-000001` |
+| `application-documents` | `LKT-DOC` | `LKT-DOC-000001` |
+| `app-integrations` | `LKT-INT` | `LKT-INT-000001` |
 | `backup-media` | `LKT-BKM` | `LKT-BKM-000001` |
+| `backup-jobs` | `LKT-BKJ` | `LKT-BKJ-000001` |
 | `ups-devices` | `LKT-UPS` | `LKT-UPS-000001` |
 | `soc-tools` | `LKT-SOC` | `LKT-SOC-000001` |
 
-Aset fisik dapat dicetak label dari UI. Label berisi kode aset, nama aset, jenis aset, lokasi singkat, dan QR menuju halaman detail aset internal:
+Setiap modul aset CMDB, baik fisik maupun digital, dapat dicetak label dari UI. Label berisi logo Kabupaten Langkat, kode aset, nama aset, jenis aset, lokasi singkat, dan QR menuju halaman verifikasi publik:
 
 ```text
 /asset/{resource}/{id}
 ```
+
+Halaman QR ini dapat diakses tanpa login dan hanya menampilkan identitas publik aset. Resource autentikasi seperti `users` tidak disediakan pada halaman publik.
 
 Ukuran label yang tersedia di UI: `50 x 30 mm`, `60 x 40 mm`, `70 x 50 mm`, dan `90 x 50 mm`.
 

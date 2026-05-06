@@ -71,6 +71,12 @@ body {
   font-weight: 800;
 }
 
+.brand-logo.small {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+}
+
 .login-identity h1 {
   max-width: 720px;
   margin: 10px 0 14px;
@@ -227,6 +233,12 @@ button {
   background: var(--yellow-500);
   color: var(--blue-950);
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
+}
+
+.brand-mark img {
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
 }
 
 .brand h1,
@@ -1121,11 +1133,24 @@ th {
 
 .label-brand {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
+  align-items: center;
+  justify-content: flex-start;
   gap: 2mm;
   border-bottom: 0.25mm solid var(--blue-100);
   padding-bottom: 1mm;
+}
+
+.label-brand img {
+  width: 5.5mm;
+  height: 5.5mm;
+  flex: none;
+  object-fit: contain;
+}
+
+.label-brand div {
+  min-width: 0;
+  display: grid;
+  gap: 0.4mm;
 }
 
 .label-brand strong {

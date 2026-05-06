@@ -407,6 +407,21 @@ class CmdbApiTest extends TestCase
         $this->assertMatchesRegularExpression('/^LKT-BKM-\d{6}$/', $mediaCode);
     }
 
+    public function test_public_asset_label_detail_is_available_without_login(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $server = Server::where('nama', 'SRV-PROD-01')->firstOrFail();
+
+        $this->get("/asset/servers/{$server->id}")
+            ->assertOk()
+            ->assertSee('IAMT CMDB Kabupaten Langkat')
+            ->assertSee('SRV-PROD-01')
+            ->assertSee($server->asset_code);
+
+        $this->get("/asset/users/{$server->id}")->assertNotFound();
+    }
+
     public function test_rest_api_detail_endpoints_are_available_for_all_managed_modules(): void
     {
         $this->seed(DatabaseSeeder::class);

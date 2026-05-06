@@ -18,7 +18,7 @@ Aplikasi CMDB untuk manajemen aset digital Kabupaten Langkat. Stack utama:
 - Compliance check PSE/SPBE ringan dan security gap.
 - Audit log umum untuk perubahan data.
 - Riwayat perubahan aset Server dan VM dengan nilai lama-baru, alasan perubahan, operator, IP address, dan user agent.
-- Kode aset inventaris otomatis untuk aset fisik dan digital, plus cetak label QR multi ukuran untuk aset fisik.
+- Kode aset inventaris otomatis untuk aset fisik dan digital, plus cetak label QR multi ukuran dengan logo Kabupaten Langkat dan halaman verifikasi publik tanpa login.
 - Autentikasi API berbasis token, login screen, dan modul Pengguna & Role dengan pilihan `full` dan `read_only`.
 - Seed data contoh Kabupaten Langkat.
 
