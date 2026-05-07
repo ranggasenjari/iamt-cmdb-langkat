@@ -11,6 +11,7 @@ use App\Models\ConsumerNetworkCredential;
 use App\Models\ConsumerNetworkDevice;
 use App\Models\ConsumerNetworkInstallation;
 use App\Models\ConsumerNetworkIpConfig;
+use App\Models\ConsumerNetworkMonitoring;
 use App\Models\ConsumerNetworkSite;
 use App\Models\DataAsset;
 use App\Models\DataCenter;
@@ -59,6 +60,7 @@ class PublicAssetController extends Controller
             'network-installations' => ConsumerNetworkInstallation::query()->with(['site:id,nama,kode,asset_code', 'device:id,nama,jenis,asset_code', 'replacementDevice:id,nama,jenis,asset_code']),
             'network-ip-configs' => ConsumerNetworkIpConfig::query()->with(['device:id,nama,jenis,asset_code', 'site:id,nama,kode,asset_code', 'ipAddressRecord:id,ip,jenis']),
             'network-credentials' => ConsumerNetworkCredential::query()->with(['device:id,nama,jenis,asset_code', 'site:id,nama,kode,asset_code']),
+            'network-monitorings' => ConsumerNetworkMonitoring::query()->with(['site:id,nama,kode,asset_code,alamat,lokasi_detail', 'items.device:id,nama,jenis,asset_code', 'attachments:id,monitoring_id,original_name,mime_type,size_bytes']),
         };
 
         $row = $query->findOrFail($id);
@@ -96,6 +98,7 @@ class PublicAssetController extends Controller
             'network-installations' => 'Instalasi & Pergantian Jaringan',
             'network-ip-configs' => 'Konfigurasi IP Jaringan',
             'network-credentials' => 'Kredensial Jaringan',
+            'network-monitorings' => 'Monitoring Site Jaringan',
         ];
     }
 
@@ -110,6 +113,7 @@ class PublicAssetController extends Controller
             'network-installations' => collect([$row->device?->nama, $row->site?->nama])->filter()->join(' @ ') ?: '-',
             'network-ip-configs' => collect([$row->device?->nama, $row->ip_address ?: ($row->ipAddressRecord?->ip)])->filter()->join(' / ') ?: '-',
             'network-credentials' => collect([$row->label, $row->device?->nama])->filter()->join(' / ') ?: '-',
+            'network-monitorings' => collect(['Monitoring', $row->site?->nama, optional($row->monitoring_at)->format('Y-m-d H:i')])->filter()->join(' / ') ?: '-',
             default => $row->nama ?? '-',
         };
     }
@@ -134,6 +138,7 @@ class PublicAssetController extends Controller
             'network-installations' => trim(($row->role ?? '-').' / '.($row->status ?? '-')),
             'network-ip-configs' => trim(($row->ip_type ?? '-').' / '.($row->status ?? '-')),
             'network-credentials' => trim(($row->access_method ?? '-').' / '.($row->has_password ? 'Password tersimpan' : 'Tanpa password')),
+            'network-monitorings' => $row->period_month ?? optional($row->monitoring_at)->format('Y-m') ?? '-',
             default => '-',
         };
     }
@@ -160,6 +165,7 @@ class PublicAssetController extends Controller
             'network-installations' => $row->site?->nama ?? '-',
             'network-ip-configs' => $row->site?->nama ?? $row->device?->nama ?? '-',
             'network-credentials' => $row->site?->nama ?? $row->device?->nama ?? '-',
+            'network-monitorings' => collect([$row->site?->nama, $row->site?->lokasi_detail, $row->site?->alamat])->filter()->join(' / ') ?: '-',
             default => '-',
         };
     }
@@ -227,6 +233,26 @@ class PublicAssetController extends Controller
                 'Metode Akses' => $row->access_method ?? '-',
                 'Username' => $row->username ?? '-',
                 'Password' => $row->has_password ? 'Tersimpan, tidak ditampilkan pada halaman publik' : 'Belum ada',
+                'Catatan' => $row->notes ?? '-',
+            ],
+            'network-monitorings' => [
+                'Site / Node' => $row->site?->nama ?? '-',
+                'Tanggal Pemantauan' => optional($row->monitoring_at)->format('Y-m-d H:i') ?? '-',
+                'Petugas' => collect($row->officers ?? [])->join(', ') ?: '-',
+                'Speedtest' => collect([
+                    filled($row->speedtest_download_mbps) ? 'Down '.$row->speedtest_download_mbps.' Mbps' : null,
+                    filled($row->speedtest_upload_mbps) ? 'Up '.$row->speedtest_upload_mbps.' Mbps' : null,
+                    filled($row->speedtest_ping_ms) ? 'Ping '.$row->speedtest_ping_ms.' ms' : null,
+                ])->filter()->join(' / ') ?: '-',
+                'Kondisi Menara' => $row->tower_available
+                    ? collect([
+                        'Besi: '.($row->tower_besi_condition ?? '-'),
+                        'Kawat: '.($row->tower_kawat_condition ?? '-'),
+                        'Pondasi: '.($row->tower_pondasi_condition ?? '-'),
+                    ])->join(' / ')
+                    : 'Tidak ada / tidak diperiksa',
+                'Checklist Perangkat' => $row->items->map(fn ($item) => ($item->device?->nama ?? '-').' - '.$item->condition.($item->note ? ' ('.$item->note.')' : ''))->join('; ') ?: '-',
+                'Lampiran' => $row->attachments->pluck('original_name')->join(', ') ?: '-',
                 'Catatan' => $row->notes ?? '-',
             ],
             default => [],

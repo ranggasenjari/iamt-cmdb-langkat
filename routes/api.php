@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\ConsumerNetworkCredentialController;
 use App\Http\Controllers\Api\ConsumerNetworkDeviceController;
 use App\Http\Controllers\Api\ConsumerNetworkInstallationController;
 use App\Http\Controllers\Api\ConsumerNetworkIpConfigController;
+use App\Http\Controllers\Api\ConsumerNetworkMonitoringController;
 use App\Http\Controllers\Api\ConsumerNetworkSiteController;
 use App\Http\Controllers\Api\DataAssetController;
 use App\Http\Controllers\Api\DataClassificationController;
@@ -56,6 +57,7 @@ Route::middleware('auth.api_token')->group(function () {
     Route::apiResource('/network-installations', ConsumerNetworkInstallationController::class)->parameters(['network-installations' => 'networkInstallation'])->only(['index', 'show']);
     Route::apiResource('/network-ip-configs', ConsumerNetworkIpConfigController::class)->parameters(['network-ip-configs' => 'networkIpConfig'])->only(['index', 'show']);
     Route::apiResource('/network-credentials', ConsumerNetworkCredentialController::class)->parameters(['network-credentials' => 'networkCredential'])->only(['index', 'show']);
+    Route::apiResource('/network-monitorings', ConsumerNetworkMonitoringController::class)->parameters(['network-monitorings' => 'networkMonitoring'])->only(['index', 'show']);
     Route::apiResource('/data-assets', DataAssetController::class)->parameters(['data-assets' => 'dataAsset'])->only(['index', 'show']);
     Route::apiResource('/data-classifications', DataClassificationController::class)->parameters(['data-classifications' => 'dataClassification'])->only(['index', 'show']);
     Route::apiResource('/data-centers', DataCenterController::class)->parameters(['data-centers' => 'dataCenter'])->only(['index', 'show']);
@@ -80,6 +82,7 @@ Route::middleware('auth.api_token')->group(function () {
         Route::apiResource('/network-ip-configs', ConsumerNetworkIpConfigController::class)->parameters(['network-ip-configs' => 'networkIpConfig'])->only(['store', 'update', 'destroy']);
         Route::post('/network-credentials/{networkCredential}/reveal-password', [ConsumerNetworkCredentialController::class, 'revealPassword']);
         Route::apiResource('/network-credentials', ConsumerNetworkCredentialController::class)->parameters(['network-credentials' => 'networkCredential'])->only(['store', 'update', 'destroy']);
+        Route::apiResource('/network-monitorings', ConsumerNetworkMonitoringController::class)->parameters(['network-monitorings' => 'networkMonitoring'])->only(['store', 'update', 'destroy']);
         Route::apiResource('/data-assets', DataAssetController::class)->parameters(['data-assets' => 'dataAsset'])->only(['store', 'update', 'destroy']);
         Route::apiResource('/data-classifications', DataClassificationController::class)->parameters(['data-classifications' => 'dataClassification'])->only(['store', 'update', 'destroy']);
         Route::apiResource('/data-centers', DataCenterController::class)->parameters(['data-centers' => 'dataCenter'])->only(['store', 'update', 'destroy']);

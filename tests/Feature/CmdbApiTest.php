@@ -27,6 +27,14 @@ class CmdbApiTest extends TestCase
         $this->withHeader('Authorization', "Bearer {$token}");
     }
 
+    private function fakePng(string $name)
+    {
+        return UploadedFile::fake()->createWithContent(
+            $name,
+            base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=')
+        );
+    }
+
     public function test_dashboard_returns_cmdb_metrics(): void
     {
         $this->seed(DatabaseSeeder::class);
@@ -383,6 +391,105 @@ class CmdbApiTest extends TestCase
             ->assertDontSee('secret-password');
     }
 
+    public function test_consumer_network_site_monitoring_can_be_managed_with_universal_attachments(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+        $this->authenticateAs();
+
+        $dc = \App\Models\DataCenter::firstOrFail();
+
+        $siteId = $this->postJson('/api/network-sites', [
+            'kode' => 'MONITORING-SITE',
+            'nama' => 'Site Monitoring Bulanan',
+            'jenis' => 'tower',
+            'status' => 'aktif',
+            'dc_id' => $dc->id,
+            'lokasi_detail' => 'Tower sisi barat kantor',
+        ])->assertCreated()->json('id');
+
+        $deviceId = $this->postJson('/api/network-devices', [
+            'nama' => 'Access Point Monitoring',
+            'jenis' => 'access_point',
+            'status' => 'aktif',
+            'kondisi' => 'baik',
+        ])->assertCreated()->json('id');
+
+        $installationId = $this->postJson('/api/network-installations', [
+            'site_id' => $siteId,
+            'device_id' => $deviceId,
+            'role' => 'access',
+            'status' => 'aktif',
+            'installed_at' => '2026-05-01',
+        ])->assertCreated()->json('id');
+
+        $monitoringResponse = $this->post('/api/network-monitorings', [
+            'site_id' => $siteId,
+            'monitoring_at' => '2026-05-08T09:30',
+            'period_month' => '2026-05',
+            'officers' => json_encode(['Rangga', 'Tim NOC']),
+            'speedtest_download_mbps' => '95.40',
+            'speedtest_upload_mbps' => '42.10',
+            'speedtest_ping_ms' => '12',
+            'tower_available' => '1',
+            'tower_besi_condition' => 'baik',
+            'tower_kawat_condition' => 'kurang_baik',
+            'tower_pondasi_condition' => 'baik',
+            'tower_notes' => 'Kawat perlu pengencangan ringan.',
+            'notes' => 'Monitoring bulanan berjalan normal.',
+            'items' => json_encode([[
+                'device_id' => $deviceId,
+                'installation_id' => $installationId,
+                'condition' => 'baik',
+                'note' => 'Sinyal stabil.',
+            ]]),
+            'attachments' => [
+                $this->fakePng('foto-speedtest.png'),
+                $this->fakePng('foto-menara.png'),
+            ],
+        ])->assertCreated()
+            ->assertJsonPath('site.nama', 'Site Monitoring Bulanan')
+            ->assertJsonPath('items.0.note', 'Sinyal stabil.')
+            ->assertJsonCount(2, 'attachments');
+
+        $monitoringId = $monitoringResponse->json('id');
+        $assetCode = $monitoringResponse->json('asset_code');
+        $attachmentId = $monitoringResponse->json('attachments.0.id');
+        $this->assertMatchesRegularExpression('/^LKT-MON-\d{6}$/', $assetCode);
+
+        $this->post("/api/network-monitorings/{$monitoringId}", [
+            '_method' => 'PUT',
+            'site_id' => $siteId,
+            'monitoring_at' => '2026-05-09T10:00',
+            'period_month' => '2026-05',
+            'officers' => json_encode(['Rangga']),
+            'speedtest_download_mbps' => '100.25',
+            'speedtest_upload_mbps' => '45.75',
+            'tower_available' => '0',
+            'notes' => 'Update hasil monitoring.',
+            'items' => json_encode([[
+                'device_id' => $deviceId,
+                'installation_id' => $installationId,
+                'condition' => 'kurang_baik',
+                'note' => 'Adapter mulai panas.',
+            ]]),
+            'remove_attachment_ids' => json_encode([$attachmentId]),
+            'attachments' => [
+                $this->fakePng('foto-perangkat.png'),
+            ],
+        ])->assertOk()
+            ->assertJsonPath('items.0.condition', 'kurang_baik')
+            ->assertJsonCount(2, 'attachments');
+
+        $this->get("/asset/network-monitorings/{$monitoringId}")
+            ->assertOk()
+            ->assertSee('Site Monitoring Bulanan')
+            ->assertSee('Adapter mulai panas.')
+            ->assertSee($assetCode);
+
+        $this->deleteJson("/api/network-monitorings/{$monitoringId}")
+            ->assertNoContent();
+    }
+
     public function test_full_user_can_reveal_network_credential_password_with_account_password_and_audit_log(): void
     {
         $this->seed(DatabaseSeeder::class);
@@ -713,6 +820,18 @@ class CmdbApiTest extends TestCase
             'username' => 'admin',
             'password' => 'secret',
         ]);
+        $networkMonitoring = \App\Models\ConsumerNetworkMonitoring::create([
+            'site_id' => $networkSite->id,
+            'monitoring_at' => now(),
+            'period_month' => now()->format('Y-m'),
+            'officers' => ['Detail Tester'],
+        ]);
+        $networkMonitoring->items()->create([
+            'device_id' => $networkDevice->id,
+            'installation_id' => $networkInstallation->id,
+            'condition' => 'baik',
+            'note' => 'Detail monitoring item',
+        ]);
 
         $this->authenticateAs('read_only');
 
@@ -737,6 +856,7 @@ class CmdbApiTest extends TestCase
             'network-installations' => $networkInstallation->id,
             'network-ip-configs' => $networkIpConfig->id,
             'network-credentials' => $networkCredential->id,
+            'network-monitorings' => $networkMonitoring->id,
             'users' => \App\Models\Pengguna::where('email', 'viewer@langkatkab.go.id')->firstOrFail()->id,
         ];
 
@@ -845,6 +965,18 @@ class CmdbApiTest extends TestCase
             'access_method' => 'ssh',
             'username' => 'admin',
         ])->assertCreated()->json('id');
+        $networkMonitoringId = $this->post('/api/network-monitorings', [
+            'site_id' => $networkSiteId,
+            'monitoring_at' => '2026-05-08T09:00',
+            'period_month' => '2026-05',
+            'officers' => json_encode(['Delete Tester']),
+            'items' => json_encode([[
+                'device_id' => $networkDeviceId,
+                'installation_id' => $networkInstallationId,
+                'condition' => 'baik',
+                'note' => 'Delete monitoring test',
+            ]]),
+        ])->assertCreated()->json('id');
         $userId = $this->postJson('/api/users', [
             'nama' => 'Delete User',
             'email' => 'delete.user@langkatkab.go.id',
@@ -861,6 +993,7 @@ class CmdbApiTest extends TestCase
             "data-assets/{$assetId}",
             "data-classifications/{$classificationId}",
             "soc-tools/{$socId}",
+            "network-monitorings/{$networkMonitoringId}",
             "network-credentials/{$networkCredentialId}",
             "network-ip-configs/{$networkIpConfigId}",
             "network-installations/{$networkInstallationId}",

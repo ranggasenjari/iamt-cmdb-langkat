@@ -66,6 +66,7 @@ const menuSections = [
     label: 'Consumer Networking',
     items: [
       { id: 'network-sites', label: 'Site / Node', icon: Building2 },
+      { id: 'network-monitorings', label: 'Monitoring Site', icon: CheckCircle2 },
       { id: 'network-devices', label: 'Perangkat', icon: Network },
       { id: 'network-installations', label: 'Instalasi & Pergantian', icon: GitBranch },
       { id: 'network-ip-configs', label: 'Konfigurasi IP', icon: Network },
@@ -130,6 +131,10 @@ const labelModal = reactive({
   item: null,
   size: '60x40',
 });
+const monitoringReportModal = reactive({
+  open: false,
+  item: null,
+});
 const bulkLabelForm = reactive({
   module: 'servers',
   size: '60x40',
@@ -141,6 +146,7 @@ const detailModal = reactive({
   item: null,
 });
 const labelQrDataUrl = ref('');
+const monitoringReportQrDataUrl = ref('');
 const bulkLabelQrUrls = ref({});
 const bulkLabelGenerating = ref(false);
 const backdropPointerStartedOnSelf = ref(false);
@@ -166,6 +172,7 @@ const networkDevices = ref([]);
 const networkInstallations = ref([]);
 const networkIpConfigs = ref([]);
 const networkCredentials = ref([]);
+const networkMonitorings = ref([]);
 const users = ref([]);
 const dependencyMap = ref([]);
 const compliance = ref(null);
@@ -404,6 +411,25 @@ const networkCredentialForm = reactive({
   last_rotated_at: '',
 });
 
+const networkMonitoringForm = reactive({
+  site_id: '',
+  monitoring_at: '',
+  period_month: '',
+  officers_text: '',
+  speedtest_download_mbps: null,
+  speedtest_upload_mbps: null,
+  speedtest_ping_ms: null,
+  tower_available: false,
+  tower_besi_condition: '',
+  tower_kawat_condition: '',
+  tower_pondasi_condition: '',
+  tower_notes: '',
+  notes: '',
+  items: [],
+  attachments: [],
+  remove_attachment_ids: [],
+});
+
 const userForm = reactive({
   nama: '',
   email: '',
@@ -507,11 +533,18 @@ const networkAccessMethodOptions = [
   { value: 'lainnya', label: 'Lainnya' },
 ];
 
+const monitoringConditionOptions = [
+  { value: 'baik', label: 'Baik' },
+  { value: 'kurang_baik', label: 'Kurang Baik' },
+  { value: 'rusak', label: 'Rusak' },
+];
+
 const networkDeviceTypeLabel = (value) => networkDeviceTypeOptions.find((option) => option.value === value)?.label || value || '-';
 const networkSiteTypeLabel = (value) => networkSiteTypeOptions.find((option) => option.value === value)?.label || value || '-';
 const networkInstallationRoleLabel = (value) => networkInstallationRoleOptions.find((option) => option.value === value)?.label || value || '-';
 const networkIpTypeLabel = (value) => networkIpTypeOptions.find((option) => option.value === value)?.label || value || '-';
 const networkAccessMethodLabel = (value) => networkAccessMethodOptions.find((option) => option.value === value)?.label || value || '-';
+const monitoringConditionLabel = (value) => monitoringConditionOptions.find((option) => option.value === value)?.label || value || '-';
 
 function functionClassificationLabel(value) {
   return functionClassificationOptions.find((option) => option.value === value)?.label || value;
@@ -648,7 +681,7 @@ async function loadAll() {
   loading.value = true;
   error.value = '';
   try {
-    const [dash, refs, dcRows, rackRows, ispRows, ipRows, serverRows, vmRows, appRows, dataAssetRows, documentRows, integrationRows, backupMediaRows, backupJobRows, upsRows, socRows, networkSiteRows, networkRows, networkInstallationRows, networkIpConfigRows, networkCredentialRows, userRows, mapRows, complianceRows, auditRows, changeRows] = await Promise.all([
+    const [dash, refs, dcRows, rackRows, ispRows, ipRows, serverRows, vmRows, appRows, dataAssetRows, documentRows, integrationRows, backupMediaRows, backupJobRows, upsRows, socRows, networkSiteRows, networkRows, networkInstallationRows, networkIpConfigRows, networkCredentialRows, networkMonitoringRows, userRows, mapRows, complianceRows, auditRows, changeRows] = await Promise.all([
       api('/dashboard'),
       api('/references'),
       api('/data-centers'),
@@ -670,6 +703,7 @@ async function loadAll() {
       api('/network-installations'),
       api('/network-ip-configs'),
       api('/network-credentials'),
+      api('/network-monitorings'),
       api('/users'),
       api('/dependency-map'),
       api('/compliance'),
@@ -698,6 +732,7 @@ async function loadAll() {
     networkInstallations.value = networkInstallationRows;
     networkIpConfigs.value = networkIpConfigRows;
     networkCredentials.value = networkCredentialRows;
+    networkMonitorings.value = networkMonitoringRows;
     users.value = userRows;
     dependencyMap.value = mapRows;
     compliance.value = complianceRows;
@@ -737,6 +772,7 @@ const moduleLabels = {
   'network-installations': 'Instalasi & Pergantian',
   'network-ip-configs': 'Konfigurasi IP Jaringan',
   'network-credentials': 'Kredensial Jaringan',
+  'network-monitorings': 'Monitoring Site',
   users: 'Pengguna & Role',
 };
 
@@ -810,6 +846,7 @@ function assetName(row, module = '') {
   if (module === 'network-installations') return `${row.device?.nama || '-'} @ ${row.site?.nama || '-'}`;
   if (module === 'network-ip-configs') return `${row.device?.nama || '-'} / ${row.ip_address || row.ip_address_record?.ip || '-'}`;
   if (module === 'network-credentials') return `${row.label || 'Akses'} / ${row.device?.nama || '-'}`;
+  if (module === 'network-monitorings') return `Monitoring ${row.site?.nama || '-'} / ${formatDateTime(row.monitoring_at)}`;
   return row.nama || row.name || row.asset_code || '-';
 }
 
@@ -838,11 +875,62 @@ function assetLocation(module, row) {
   if (module === 'network-installations') return row.site?.nama || row.device?.nama || '-';
   if (module === 'network-ip-configs') return row.site?.nama || row.device?.nama || '-';
   if (module === 'network-credentials') return row.site?.nama || row.device?.nama || '-';
+  if (module === 'network-monitorings') return [row.site?.nama, row.site?.lokasi_detail, row.site?.alamat].filter(Boolean).join(' / ') || '-';
   return row.lokasi || row.location || '-';
 }
 
 function assetDetailUrl(module, row) {
   return `${window.location.origin}/asset/${module}/${row.id}`;
+}
+
+function formatDateTime(value) {
+  if (!value) return '-';
+  return new Date(value).toLocaleString('id-ID', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  });
+}
+
+function toDateTimeLocal(value) {
+  if (!value) return '';
+  const date = new Date(value);
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  return local.toISOString().slice(0, 16);
+}
+
+function formatFileSize(bytes) {
+  if (!bytes) return '-';
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function monitoringOfficersText(row) {
+  return (row?.officers || []).filter(Boolean).join(', ') || '-';
+}
+
+function monitoringSpeedSummary(row) {
+  const parts = [];
+  if (row?.speedtest_download_mbps !== null && row?.speedtest_download_mbps !== undefined && row.speedtest_download_mbps !== '') parts.push(`Down ${row.speedtest_download_mbps} Mbps`);
+  if (row?.speedtest_upload_mbps !== null && row?.speedtest_upload_mbps !== undefined && row.speedtest_upload_mbps !== '') parts.push(`Up ${row.speedtest_upload_mbps} Mbps`);
+  if (row?.speedtest_ping_ms !== null && row?.speedtest_ping_ms !== undefined && row.speedtest_ping_ms !== '') parts.push(`Ping ${row.speedtest_ping_ms} ms`);
+  return parts.join(' / ') || '-';
+}
+
+function monitoringTowerSummary(row) {
+  if (!row?.tower_available) return 'Tidak ada / tidak diperiksa';
+  return [
+    `Besi: ${monitoringConditionLabel(row.tower_besi_condition)}`,
+    `Kawat: ${monitoringConditionLabel(row.tower_kawat_condition)}`,
+    `Pondasi: ${monitoringConditionLabel(row.tower_pondasi_condition)}`,
+  ].join(' / ');
+}
+
+function monitoringImageAttachments(row) {
+  return (row?.attachments || []).filter((attachment) => attachment.is_image);
+}
+
+function monitoringDocumentAttachments(row) {
+  return (row?.attachments || []).filter((attachment) => !attachment.is_image);
 }
 
 function bulkLabelKey(module, row) {
@@ -947,6 +1035,77 @@ function closeLabelModal() {
 }
 
 function printLabel() {
+  window.print();
+}
+
+function monitoringItemsForSite(siteId) {
+  if (!siteId) return [];
+
+  const scopedInstallations = networkInstallations.value.filter((row) => row.site_id === siteId);
+  const activeInstallations = scopedInstallations.filter((row) => row.status === 'aktif');
+  const rows = activeInstallations.length ? activeInstallations : scopedInstallations;
+  const seen = new Set();
+
+  return rows
+    .filter((row) => {
+      if (!row.device_id || seen.has(row.device_id)) return false;
+      seen.add(row.device_id);
+      return true;
+    })
+    .map((row) => ({
+      device_id: row.device_id,
+      installation_id: row.id,
+      device_name: row.device?.nama || '-',
+      device_type: row.device?.jenis || '',
+      role: row.role || '',
+      condition: '',
+      note: '',
+    }))
+    .sort((a, b) => a.device_name.localeCompare(b.device_name));
+}
+
+function populateMonitoringItemsFromSite(preserveExisting = false) {
+  const existing = new Map(networkMonitoringForm.items.map((item) => [item.device_id, item]));
+  networkMonitoringForm.items = monitoringItemsForSite(networkMonitoringForm.site_id).map((item) => {
+    const previous = existing.get(item.device_id);
+    return {
+      ...item,
+      condition: preserveExisting ? previous?.condition || '' : '',
+      note: preserveExisting ? previous?.note || '' : '',
+    };
+  });
+}
+
+function parseOfficersText(text) {
+  return String(text || '')
+    .split(/[\n,]+/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function setMonitoringAttachments(event) {
+  networkMonitoringForm.attachments = Array.from(event.target.files || []);
+}
+
+function toggleRemoveMonitoringAttachment(id) {
+  toggleInArray(networkMonitoringForm.remove_attachment_ids, id);
+}
+
+async function openMonitoringReport(row) {
+  Object.assign(monitoringReportModal, { open: true, item: row });
+  monitoringReportQrDataUrl.value = await QRCode.toDataURL(assetDetailUrl('network-monitorings', row), {
+    errorCorrectionLevel: 'M',
+    margin: 1,
+    width: 320,
+  });
+}
+
+function closeMonitoringReport() {
+  Object.assign(monitoringReportModal, { open: false, item: null });
+  monitoringReportQrDataUrl.value = '';
+}
+
+function printMonitoringReport() {
   window.print();
 }
 
@@ -1138,6 +1297,26 @@ function resetModuleForm(module) {
       last_rotated_at: '',
     });
   }
+  if (module === 'network-monitorings') {
+    Object.assign(networkMonitoringForm, {
+      site_id: '',
+      monitoring_at: '',
+      period_month: '',
+      officers_text: '',
+      speedtest_download_mbps: null,
+      speedtest_upload_mbps: null,
+      speedtest_ping_ms: null,
+      tower_available: false,
+      tower_besi_condition: '',
+      tower_kawat_condition: '',
+      tower_pondasi_condition: '',
+      tower_notes: '',
+      notes: '',
+      items: [],
+      attachments: [],
+      remove_attachment_ids: [],
+    });
+  }
   if (module === 'users') {
     Object.assign(userForm, { nama: '', email: '', password: '', opd_id: '', role: '', status: '' });
   }
@@ -1164,6 +1343,7 @@ function formFor(module) {
     'network-installations': networkInstallationForm,
     'network-ip-configs': networkIpConfigForm,
     'network-credentials': networkCredentialForm,
+    'network-monitorings': networkMonitoringForm,
     users: userForm,
   }[module];
 }
@@ -1379,6 +1559,34 @@ function openEdit(module, row) {
       last_rotated_at: row.last_rotated_at ? String(row.last_rotated_at).slice(0, 10) : '',
     });
   }
+  if (module === 'network-monitorings') {
+    Object.assign(networkMonitoringForm, {
+      site_id: row.site_id || '',
+      monitoring_at: toDateTimeLocal(row.monitoring_at),
+      period_month: row.period_month || '',
+      officers_text: (row.officers || []).join('\n'),
+      speedtest_download_mbps: row.speedtest_download_mbps ?? null,
+      speedtest_upload_mbps: row.speedtest_upload_mbps ?? null,
+      speedtest_ping_ms: row.speedtest_ping_ms ?? null,
+      tower_available: Boolean(row.tower_available),
+      tower_besi_condition: row.tower_besi_condition || '',
+      tower_kawat_condition: row.tower_kawat_condition || '',
+      tower_pondasi_condition: row.tower_pondasi_condition || '',
+      tower_notes: row.tower_notes || '',
+      notes: row.notes || '',
+      items: (row.items || []).map((item) => ({
+        device_id: item.device_id,
+        installation_id: item.installation_id || '',
+        device_name: item.device?.nama || '-',
+        device_type: item.device?.jenis || '',
+        role: item.installation?.role || '',
+        condition: item.condition || '',
+        note: item.note || '',
+      })),
+      attachments: [],
+      remove_attachment_ids: [],
+    });
+  }
   if (module === 'users') {
     Object.assign(userForm, {
       nama: row.nama || '',
@@ -1436,7 +1644,7 @@ async function saveModal() {
   error.value = '';
   saving.value = true;
   try {
-    if (['application-documents', 'app-integrations'].includes(modal.module)) {
+    if (['application-documents', 'app-integrations', 'network-monitorings'].includes(modal.module)) {
       const formData = formDataFor(modal.module);
       const endpoint = modal.mode === 'edit' ? `/${modal.module}/${modal.id}` : `/${modal.module}`;
       await apiForm(endpoint, formData, modal.mode === 'edit' ? 'PUT' : 'POST');
@@ -1463,6 +1671,10 @@ function appendArray(formData, key, values) {
   values.forEach((value) => formData.append(`${key}[]`, value));
 }
 
+function appendValue(formData, key, value) {
+  formData.append(key, value ?? '');
+}
+
 function formDataFor(module) {
   const formData = new FormData();
 
@@ -1481,6 +1693,30 @@ function formDataFor(module) {
     appendArray(formData, 'target_application_ids', appIntegrationForm.target_application_ids);
     appendArray(formData, 'data_asset_ids', appIntegrationForm.data_asset_ids);
     appIntegrationForm.documents.forEach((file) => formData.append('documents[]', file));
+  }
+
+  if (module === 'network-monitorings') {
+    appendValue(formData, 'site_id', networkMonitoringForm.site_id);
+    appendValue(formData, 'monitoring_at', networkMonitoringForm.monitoring_at);
+    appendValue(formData, 'period_month', networkMonitoringForm.period_month);
+    appendValue(formData, 'speedtest_download_mbps', networkMonitoringForm.speedtest_download_mbps);
+    appendValue(formData, 'speedtest_upload_mbps', networkMonitoringForm.speedtest_upload_mbps);
+    appendValue(formData, 'speedtest_ping_ms', networkMonitoringForm.speedtest_ping_ms);
+    appendValue(formData, 'tower_available', networkMonitoringForm.tower_available ? '1' : '0');
+    appendValue(formData, 'tower_besi_condition', networkMonitoringForm.tower_besi_condition);
+    appendValue(formData, 'tower_kawat_condition', networkMonitoringForm.tower_kawat_condition);
+    appendValue(formData, 'tower_pondasi_condition', networkMonitoringForm.tower_pondasi_condition);
+    appendValue(formData, 'tower_notes', networkMonitoringForm.tower_notes);
+    appendValue(formData, 'notes', networkMonitoringForm.notes);
+    appendValue(formData, 'officers', JSON.stringify(parseOfficersText(networkMonitoringForm.officers_text)));
+    appendValue(formData, 'items', JSON.stringify(networkMonitoringForm.items.map((item) => ({
+      device_id: item.device_id,
+      installation_id: item.installation_id || null,
+      condition: item.condition,
+      note: item.note || null,
+    }))));
+    appendValue(formData, 'remove_attachment_ids', JSON.stringify(networkMonitoringForm.remove_attachment_ids));
+    networkMonitoringForm.attachments.forEach((file) => formData.append('attachments[]', file));
   }
 
   return formData;
@@ -1804,6 +2040,11 @@ const filteredNetworkIpConfigs = computed(() => {
 const filteredNetworkCredentials = computed(() => {
   const needle = query.value.toLowerCase();
   return networkCredentials.value.filter((row) => JSON.stringify(row).toLowerCase().includes(needle));
+});
+
+const filteredNetworkMonitorings = computed(() => {
+  const needle = query.value.toLowerCase();
+  return networkMonitorings.value.filter((row) => JSON.stringify(row).toLowerCase().includes(needle));
 });
 
 const filteredUsers = computed(() => {
@@ -2909,6 +3150,37 @@ onMounted(bootstrapAuth);
           </section>
         </section>
 
+        <section v-if="activeTab === 'network-monitorings'" class="content-grid">
+          <section class="surface wide">
+            <div class="module-header">
+              <div><p class="eyebrow">Consumer Networking</p><h3 class="yellow-title">Monitoring Site Bulanan</h3></div>
+              <button v-if="canWrite" class="action-button" type="button" @click="openCreate('network-monitorings')"><Plus :size="17" /> Tambah Monitoring</button>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Site / Periode</th><th>Speedtest</th><th>Menara</th><th>Petugas</th><th>Checklist</th><th>Lampiran</th><th>Aksi</th></tr></thead>
+                <tbody>
+                  <tr v-for="row in filteredNetworkMonitorings" :key="row.id">
+                    <td><strong>{{ row.site?.nama || '-' }}</strong><span>{{ assetCode(row) }}</span><span>{{ formatDateTime(row.monitoring_at) }} / {{ row.period_month || '-' }}</span></td>
+                    <td>{{ monitoringSpeedSummary(row) }}</td>
+                    <td>{{ monitoringTowerSummary(row) }}<span>{{ row.tower_notes || '' }}</span></td>
+                    <td>{{ monitoringOfficersText(row) }}</td>
+                    <td>{{ row.items_count || row.items?.length || 0 }} perangkat<span>{{ (row.items || []).filter((item) => item.condition === 'rusak').length }} rusak</span></td>
+                    <td>{{ row.attachments?.length || 0 }} file</td>
+                    <td>
+                      <div class="row-actions">
+                        <button class="icon-button" title="Cetak laporan monitoring" @click="openMonitoringReport(row)"><Printer :size="16" /></button>
+                        <button v-if="canWrite" class="icon-button" title="Edit monitoring" @click="openEdit('network-monitorings', row)"><Pencil :size="16" /></button>
+                        <button v-if="canWrite" class="icon-button danger" title="Hapus monitoring" @click="removeRow('network-monitorings', row.id)"><Trash2 :size="16" /></button>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </section>
+
         <section v-if="activeTab === 'network-devices'" class="content-grid">
           <section class="surface wide">
             <div class="module-header">
@@ -3767,6 +4039,96 @@ onMounted(bootstrapAuth);
             <textarea v-model="networkSiteForm.catatan" placeholder="Catatan site / node"></textarea>
           </div>
 
+          <div v-if="modal.module === 'network-monitorings'" class="modal-form monitoring-form">
+            <div class="two-col">
+              <select v-model="networkMonitoringForm.site_id" required @change="populateMonitoringItemsFromSite(false)">
+                <option value="">Site / node pemantauan</option>
+                <option v-for="site in networkSites" :key="site.id" :value="site.id">{{ site.nama }}</option>
+              </select>
+              <input v-model="networkMonitoringForm.monitoring_at" required type="datetime-local" />
+            </div>
+            <div class="two-col">
+              <input v-model="networkMonitoringForm.period_month" type="month" placeholder="Periode bulan" />
+              <textarea v-model="networkMonitoringForm.officers_text" required placeholder="Nama petugas monitoring, pisahkan dengan koma atau baris baru"></textarea>
+            </div>
+
+            <section class="monitoring-form-section">
+              <div class="section-heading compact">
+                <h4>Hasil Uji Koneksi</h4>
+                <Activity :size="20" />
+              </div>
+              <div class="three-col">
+                <input v-model.number="networkMonitoringForm.speedtest_download_mbps" type="number" min="0" step="0.01" placeholder="Download Mbps" />
+                <input v-model.number="networkMonitoringForm.speedtest_upload_mbps" type="number" min="0" step="0.01" placeholder="Upload Mbps" />
+                <input v-model.number="networkMonitoringForm.speedtest_ping_ms" type="number" min="0" step="0.01" placeholder="Ping ms" />
+              </div>
+            </section>
+
+            <section class="monitoring-form-section">
+              <label class="toggle">
+                <input v-model="networkMonitoringForm.tower_available" type="checkbox" />
+                <span>Site memiliki menara internet / tower</span>
+              </label>
+              <div v-if="networkMonitoringForm.tower_available" class="three-col">
+                <select v-model="networkMonitoringForm.tower_besi_condition">
+                  <option value="">Kondisi besi</option>
+                  <option v-for="option in monitoringConditionOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
+                </select>
+                <select v-model="networkMonitoringForm.tower_kawat_condition">
+                  <option value="">Kondisi kawat</option>
+                  <option v-for="option in monitoringConditionOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
+                </select>
+                <select v-model="networkMonitoringForm.tower_pondasi_condition">
+                  <option value="">Kondisi pondasi</option>
+                  <option v-for="option in monitoringConditionOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
+                </select>
+              </div>
+              <textarea v-if="networkMonitoringForm.tower_available" v-model="networkMonitoringForm.tower_notes" placeholder="Catatan kondisi menara"></textarea>
+            </section>
+
+            <section class="monitoring-form-section">
+              <div class="section-heading compact">
+                <h4>Checklist Perangkat di Site</h4>
+                <button class="action-button ghost compact-button" type="button" :disabled="!networkMonitoringForm.site_id" @click="populateMonitoringItemsFromSite(true)">Muat Ulang</button>
+              </div>
+              <div v-if="!networkMonitoringForm.items.length" class="empty-note">Pilih site yang sudah memiliki riwayat instalasi perangkat aktif.</div>
+              <div v-else class="monitoring-checklist-table">
+                <div class="monitoring-checklist-head">
+                  <span>Perangkat</span>
+                  <span>Kondisi</span>
+                  <span>Keterangan</span>
+                </div>
+                <div v-for="item in networkMonitoringForm.items" :key="item.device_id" class="monitoring-checklist-row">
+                  <div>
+                    <strong>{{ item.device_name }}</strong>
+                    <span>{{ networkDeviceTypeLabel(item.device_type) }} / {{ networkInstallationRoleLabel(item.role) }}</span>
+                  </div>
+                  <select v-model="item.condition" required>
+                    <option value="">Pilih kondisi</option>
+                    <option v-for="option in monitoringConditionOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
+                  </select>
+                  <textarea v-model="item.note" placeholder="Keterangan perangkat"></textarea>
+                </div>
+              </div>
+            </section>
+
+            <textarea v-model="networkMonitoringForm.notes" placeholder="Catatan umum pemantauan"></textarea>
+
+            <section class="monitoring-form-section">
+              <label class="field-label">
+                <span>Lampiran Monitoring</span>
+                <input multiple type="file" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx" @change="setMonitoringAttachments" />
+              </label>
+              <small>Gunakan untuk foto petugas, foto speedtest, foto perangkat, foto menara, atau dokumen pendukung lainnya.</small>
+              <div v-if="modal.mode === 'edit' && (networkMonitorings.find((row) => row.id === modal.id)?.attachments || []).length" class="monitoring-attachment-list">
+                <label v-for="attachment in networkMonitorings.find((row) => row.id === modal.id)?.attachments || []" :key="attachment.id" class="toggle attachment-toggle">
+                  <input :checked="networkMonitoringForm.remove_attachment_ids.includes(attachment.id)" type="checkbox" @change="toggleRemoveMonitoringAttachment(attachment.id)" />
+                  <span>Hapus {{ attachment.original_name }} ({{ formatFileSize(attachment.size_bytes) }})</span>
+                </label>
+              </div>
+            </section>
+          </div>
+
           <div v-if="modal.module === 'network-devices'" class="modal-form">
             <input v-model="networkDeviceForm.nama" required placeholder="Nama perangkat jaringan" />
             <div class="three-col">
@@ -4029,6 +4391,128 @@ onMounted(bootstrapAuth);
               <footer>{{ assetDetailUrl(labelModal.module, labelModal.item) }}</footer>
             </article>
           </div>
+        </section>
+      </div>
+
+      <div v-if="monitoringReportModal.open && monitoringReportModal.item" class="modal-backdrop label-backdrop" @pointerdown="handleBackdropPointerDown" @click="closeFromBackdrop($event, closeMonitoringReport)">
+        <section class="modal-card monitoring-report-modal-card">
+          <header class="modal-header">
+            <div>
+              <p class="eyebrow">Laporan Monitoring</p>
+              <h3>{{ monitoringReportModal.item.site?.nama || '-' }}</h3>
+            </div>
+            <button class="icon-button" type="button" title="Tutup laporan" @click="closeMonitoringReport"><X :size="18" /></button>
+          </header>
+
+          <div class="label-toolbar">
+            <span>{{ formatDateTime(monitoringReportModal.item.monitoring_at) }}</span>
+            <button class="action-button" type="button" @click="printMonitoringReport"><Printer :size="17" /> Cetak Laporan</button>
+          </div>
+
+          <article class="monitoring-report-print">
+            <header class="report-header">
+              <div class="report-brand">
+                <img :src="logoLangkat" alt="Logo Kabupaten Langkat" />
+                <div>
+                  <p>PEMERINTAH KABUPATEN LANGKAT</p>
+                  <h1>Laporan Monitoring Site Jaringan</h1>
+                  <span>IAMT CMDB Langkat</span>
+                </div>
+              </div>
+              <img v-if="monitoringReportQrDataUrl" class="report-qr" :src="monitoringReportQrDataUrl" alt="QR detail monitoring" />
+            </header>
+
+            <section class="report-title-block">
+              <div>
+                <span>Site / Node</span>
+                <strong>{{ monitoringReportModal.item.site?.nama || '-' }}</strong>
+                <small>{{ assetLocation('network-monitorings', monitoringReportModal.item) }}</small>
+              </div>
+              <div>
+                <span>Kode Laporan</span>
+                <strong>{{ assetCode(monitoringReportModal.item) }}</strong>
+                <small>{{ assetDetailUrl('network-monitorings', monitoringReportModal.item) }}</small>
+              </div>
+            </section>
+
+            <section class="report-summary-grid">
+              <div>
+                <span>Periode</span>
+                <strong>{{ monitoringReportModal.item.period_month || '-' }}</strong>
+              </div>
+              <div>
+                <span>Speedtest</span>
+                <strong>{{ monitoringSpeedSummary(monitoringReportModal.item) }}</strong>
+              </div>
+              <div>
+                <span>Menara</span>
+                <strong>{{ monitoringTowerSummary(monitoringReportModal.item) }}</strong>
+              </div>
+            </section>
+
+            <section class="report-section">
+              <h2>Checklist Kondisi Perangkat</h2>
+              <table class="report-table">
+                <thead>
+                  <tr><th>No</th><th>Perangkat</th><th>Jenis / Role</th><th>Kondisi</th><th>Keterangan</th></tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(item, index) in monitoringReportModal.item.items || []" :key="item.id || item.device_id">
+                    <td>{{ index + 1 }}</td>
+                    <td><strong>{{ item.device?.nama || '-' }}</strong><span>{{ item.device?.asset_code || '' }}</span></td>
+                    <td>{{ networkDeviceTypeLabel(item.device?.jenis) }} / {{ networkInstallationRoleLabel(item.installation?.role) }}</td>
+                    <td><span :class="statusClass(item.condition)">{{ monitoringConditionLabel(item.condition) }}</span></td>
+                    <td>{{ item.note || '-' }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </section>
+
+            <section v-if="monitoringReportModal.item.tower_available" class="report-section">
+              <h2>Kondisi Menara Internet</h2>
+              <div class="report-summary-grid compact-report-grid">
+                <div><span>Besi</span><strong>{{ monitoringConditionLabel(monitoringReportModal.item.tower_besi_condition) }}</strong></div>
+                <div><span>Kawat</span><strong>{{ monitoringConditionLabel(monitoringReportModal.item.tower_kawat_condition) }}</strong></div>
+                <div><span>Pondasi</span><strong>{{ monitoringConditionLabel(monitoringReportModal.item.tower_pondasi_condition) }}</strong></div>
+              </div>
+              <p v-if="monitoringReportModal.item.tower_notes" class="report-note">{{ monitoringReportModal.item.tower_notes }}</p>
+            </section>
+
+            <section v-if="monitoringReportModal.item.notes" class="report-section">
+              <h2>Catatan Umum</h2>
+              <p class="report-note">{{ monitoringReportModal.item.notes }}</p>
+            </section>
+
+            <section v-if="monitoringImageAttachments(monitoringReportModal.item).length" class="report-section">
+              <h2>Lampiran Foto</h2>
+              <div class="report-attachment-grid">
+                <figure v-for="attachment in monitoringImageAttachments(monitoringReportModal.item)" :key="attachment.id">
+                  <img :src="attachment.url" :alt="attachment.original_name" />
+                  <figcaption>{{ attachment.original_name }}</figcaption>
+                </figure>
+              </div>
+            </section>
+
+            <section v-if="monitoringDocumentAttachments(monitoringReportModal.item).length" class="report-section">
+              <h2>Lampiran Dokumen</h2>
+              <ul class="report-document-list">
+                <li v-for="attachment in monitoringDocumentAttachments(monitoringReportModal.item)" :key="attachment.id">
+                  {{ attachment.original_name }} - {{ formatFileSize(attachment.size_bytes) }}
+                </li>
+              </ul>
+            </section>
+
+            <footer class="report-footer">
+              <div>
+                <span>Waktu Pemantauan</span>
+                <strong>{{ formatDateTime(monitoringReportModal.item.monitoring_at) }}</strong>
+              </div>
+              <div>
+                <span>Petugas Monitoring</span>
+                <strong>{{ monitoringOfficersText(monitoringReportModal.item) }}</strong>
+              </div>
+            </footer>
+          </article>
         </section>
       </div>
 

@@ -1340,6 +1340,274 @@ th {
   background: #fff7d6 !important;
 }
 
+.monitoring-form-section {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--blue-100);
+  border-radius: 8px;
+  background: var(--blue-50);
+}
+
+.monitoring-form-section .section-heading {
+  margin-bottom: 0;
+}
+
+.monitoring-form-section h4 {
+  margin: 0;
+  color: var(--blue-950);
+}
+
+.empty-note {
+  padding: 12px;
+  border: 1px dashed var(--blue-200);
+  border-radius: 8px;
+  color: var(--slate-600);
+  font-weight: 700;
+}
+
+.monitoring-checklist-table {
+  display: grid;
+  gap: 8px;
+}
+
+.monitoring-checklist-head,
+.monitoring-checklist-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) minmax(140px, 0.6fr) minmax(180px, 1fr);
+  gap: 10px;
+  align-items: start;
+}
+
+.monitoring-checklist-head {
+  color: var(--slate-600);
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.monitoring-checklist-row {
+  padding: 10px;
+  border: 1px solid var(--blue-100);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.monitoring-checklist-row div {
+  display: grid;
+  gap: 4px;
+}
+
+.monitoring-checklist-row span,
+.monitoring-form-section small {
+  color: var(--slate-600);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.monitoring-attachment-list {
+  display: grid;
+  gap: 8px;
+}
+
+.attachment-toggle {
+  justify-content: flex-start;
+  padding: 8px 10px;
+  border: 1px solid var(--blue-100);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.monitoring-report-modal-card {
+  width: min(980px, 100%);
+}
+
+.monitoring-report-print {
+  width: 210mm;
+  min-height: 297mm;
+  margin: 0 auto;
+  padding: 14mm;
+  border: 1px solid var(--slate-200);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--blue-950);
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.16);
+  font-family: Arial, sans-serif;
+}
+
+.report-header,
+.report-title-block,
+.report-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.report-header {
+  align-items: flex-start;
+  padding-bottom: 12px;
+  border-bottom: 2px solid var(--blue-950);
+}
+
+.report-brand {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.report-brand img {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+}
+
+.report-brand p,
+.report-brand h1,
+.report-brand span {
+  margin: 0;
+}
+
+.report-brand p,
+.report-title-block span,
+.report-summary-grid span,
+.report-footer span {
+  color: var(--slate-600);
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.report-brand h1 {
+  color: var(--blue-950);
+  font-size: 22px;
+  line-height: 1.2;
+}
+
+.report-brand span {
+  color: var(--yellow-600);
+  font-weight: 900;
+}
+
+.report-qr {
+  width: 88px;
+  height: 88px;
+  object-fit: contain;
+}
+
+.report-title-block {
+  margin: 18px 0;
+  padding: 12px;
+  border: 1px solid var(--blue-100);
+  border-radius: 8px;
+  background: var(--blue-50);
+}
+
+.report-title-block div,
+.report-summary-grid div,
+.report-footer div {
+  display: grid;
+  gap: 5px;
+}
+
+.report-title-block strong {
+  font-size: 18px;
+}
+
+.report-title-block small {
+  color: var(--slate-600);
+  overflow-wrap: anywhere;
+}
+
+.report-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.report-summary-grid div {
+  padding: 10px;
+  border: 1px solid var(--blue-100);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.compact-report-grid {
+  margin-bottom: 10px;
+}
+
+.report-section {
+  margin-top: 18px;
+}
+
+.report-section h2 {
+  margin: 0 0 10px;
+  color: var(--blue-950);
+  font-size: 15px;
+}
+
+.report-table {
+  font-size: 12px;
+}
+
+.report-table th,
+.report-table td {
+  padding: 8px;
+  vertical-align: top;
+}
+
+.report-table td span {
+  display: block;
+  color: var(--slate-600);
+}
+
+.report-note {
+  margin: 0;
+  padding: 10px;
+  border-left: 4px solid var(--yellow-500);
+  background: #fff7d6;
+  color: var(--slate-700);
+  line-height: 1.5;
+}
+
+.report-attachment-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.report-attachment-grid figure {
+  margin: 0;
+  break-inside: avoid;
+}
+
+.report-attachment-grid img {
+  width: 100%;
+  max-height: 82mm;
+  object-fit: contain;
+  border: 1px solid var(--slate-200);
+  border-radius: 8px;
+  background: var(--slate-50);
+}
+
+.report-attachment-grid figcaption,
+.report-document-list {
+  color: var(--slate-600);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.report-document-list {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.report-footer {
+  margin-top: 22px;
+  padding-top: 14px;
+  border-top: 1px solid var(--blue-100);
+}
+
 .spin {
   animation: spin 0.9s linear infinite;
 }
@@ -1358,7 +1626,9 @@ th {
   .inventory-label-print,
   .inventory-label-print *,
   .bulk-label-print,
-  .bulk-label-print * {
+  .bulk-label-print *,
+  .monitoring-report-print,
+  .monitoring-report-print * {
     visibility: visible !important;
   }
 
@@ -1382,6 +1652,24 @@ th {
   }
 
   .bulk-inventory-label {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .monitoring-report-print {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 210mm;
+    min-height: 297mm;
+    padding: 14mm;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .report-section,
+  .report-attachment-grid figure {
     break-inside: avoid;
     page-break-inside: avoid;
   }
@@ -1424,6 +1712,8 @@ th {
   .two-table-grid,
   .app-form,
   .bulk-label-controls,
+  .monitoring-checklist-head,
+  .monitoring-checklist-row,
   .impact-grid {
     grid-template-columns: 1fr 1fr;
   }
@@ -1451,7 +1741,10 @@ th {
   .topbar,
   .top-actions,
   .dependency-head,
-  .impact-toolbar {
+  .impact-toolbar,
+  .report-header,
+  .report-title-block,
+  .report-footer {
     align-items: stretch;
     flex-direction: column;
   }
@@ -1468,6 +1761,10 @@ th {
   .two-table-grid,
   .app-form,
   .bulk-label-controls,
+  .monitoring-checklist-head,
+  .monitoring-checklist-row,
+  .report-summary-grid,
+  .report-attachment-grid,
   .two-col,
   .three-col,
   .picker-grid,

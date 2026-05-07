@@ -60,4 +60,9 @@ class ConsumerNetworkSite extends Model
     {
         return $this->hasMany(ConsumerNetworkCredential::class, 'site_id');
     }
+
+    public function monitorings(): HasMany
+    {
+        return $this->hasMany(ConsumerNetworkMonitoring::class, 'site_id');
+    }
 }

@@ -24,6 +24,7 @@ class AssetCodeGenerator
         'soc_tools' => 'SOC',
         'consumer_network_devices' => 'NET',
         'consumer_network_sites' => 'NETS',
+        'consumer_network_monitorings' => 'MON',
     ];
 
     public static function next(string $table): string

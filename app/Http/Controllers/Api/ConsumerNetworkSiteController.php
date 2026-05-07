@@ -13,7 +13,7 @@ class ConsumerNetworkSiteController extends Controller
     public function index()
     {
         return ConsumerNetworkSite::with($this->relations())
-            ->withCount(['installations', 'ipConfigs', 'credentials'])
+            ->withCount(['installations', 'ipConfigs', 'credentials', 'monitorings'])
             ->orderBy('jenis')
             ->orderBy('nama')
             ->get();
@@ -22,7 +22,7 @@ class ConsumerNetworkSiteController extends Controller
     public function show(ConsumerNetworkSite $networkSite)
     {
         return $networkSite->load($this->relations())
-            ->loadCount(['installations', 'ipConfigs', 'credentials']);
+            ->loadCount(['installations', 'ipConfigs', 'credentials', 'monitorings']);
     }
 
     public function store(Request $request)

@@ -86,6 +86,7 @@ Contoh pola kode:
 | `soc-tools` | `LKT-SOC` | `LKT-SOC-000001` |
 | `network-sites` | `LKT-NETS` | `LKT-NETS-000001` |
 | `network-devices` | `LKT-NET` | `LKT-NET-000001` |
+| `network-monitorings` | `LKT-MON` | `LKT-MON-000001` |
 
 Setiap modul aset CMDB, baik fisik maupun digital, dapat dicetak label dari UI. Label dapat dicetak per item dari tabel modul, atau massal lewat menu `Cetak Label` dengan memilih jenis aset dan ukuran label untuk layout kertas A4. Label berisi logo Kabupaten Langkat, kode aset, nama aset, jenis aset, lokasi singkat, dan QR menuju halaman verifikasi publik:
 
@@ -121,6 +122,7 @@ Ukuran label yang tersedia di UI: `50 x 30 mm`, `60 x 40 mm`, `70 x 50 mm`, dan 
 | Consumer Networking - Instalasi & Pergantian | `network-installations` | UUID |
 | Consumer Networking - Konfigurasi IP | `network-ip-configs` | UUID |
 | Consumer Networking - Kredensial | `network-credentials` | UUID |
+| Consumer Networking - Monitoring Site | `network-monitorings` | UUID |
 | Pengguna & Role | `users` | UUID |
 
 ## Payload Modul
@@ -545,6 +547,72 @@ Response sukses:
   "label": "Admin Web Router",
   "password": "password-kredensial"
 }
+```
+
+### Consumer Networking - Monitoring Site: `network-monitorings`
+
+Resource ini mencatat pemantauan bulanan pada sebuah site. Create dan update memakai `multipart/form-data` karena dapat berisi banyak lampiran universal.
+
+| Field | Tipe | Keterangan |
+| --- | --- | --- |
+| `site_id` | UUID | Wajib |
+| `monitoring_at` | datetime | Wajib |
+| `period_month` | `YYYY-MM` | Opsional, otomatis dari `monitoring_at` jika kosong |
+| `officers` | JSON array/string | Nama petugas, contoh `["Rangga","Tim NOC"]` |
+| `speedtest_download_mbps` | number | Opsional |
+| `speedtest_upload_mbps` | number | Opsional |
+| `speedtest_ping_ms` | number | Opsional |
+| `tower_available` | boolean | Opsional |
+| `tower_besi_condition` | enum | Opsional |
+| `tower_kawat_condition` | enum | Opsional |
+| `tower_pondasi_condition` | enum | Opsional |
+| `tower_notes` | string | Opsional |
+| `notes` | string | Opsional |
+| `items` | JSON array | Checklist perangkat |
+| `attachments[]` | file[] | Lampiran universal: foto petugas, speedtest, perangkat, menara, atau dokumen pendukung |
+| `remove_attachment_ids` | JSON array | Opsional saat update untuk menghapus lampiran lama |
+
+Enum kondisi checklist dan menara: `baik`, `kurang_baik`, `rusak`.
+
+Contoh field `items`:
+
+```json
+[
+  {
+    "device_id": "uuid-network-device",
+    "installation_id": "uuid-network-installation",
+    "condition": "baik",
+    "note": "Perangkat aktif dan suhu normal"
+  }
+]
+```
+
+Contoh `multipart/form-data`:
+
+```http
+POST /api/network-monitorings
+Authorization: Bearer {token}
+
+site_id=uuid-network-site
+monitoring_at=2026-05-08T09:30
+period_month=2026-05
+officers=["Rangga","Tim Infrastruktur"]
+speedtest_download_mbps=95.4
+speedtest_upload_mbps=42.1
+speedtest_ping_ms=12
+tower_available=1
+tower_besi_condition=baik
+tower_kawat_condition=kurang_baik
+tower_pondasi_condition=baik
+items=[{"device_id":"uuid-network-device","installation_id":"uuid-network-installation","condition":"baik","note":"Normal"}]
+attachments[]=foto-speedtest.png
+attachments[]=foto-menara.jpg
+```
+
+Response menyertakan relasi `site`, `items.device`, `items.installation`, dan `attachments`. UI menyediakan tombol cetak laporan berformat A4 dengan QR publik ke:
+
+```text
+/asset/network-monitorings/{id}
 ```
 
 ### Pengguna & Role: `users`
