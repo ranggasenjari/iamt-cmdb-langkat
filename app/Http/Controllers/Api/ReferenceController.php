@@ -7,6 +7,7 @@ use App\Models\DataCenter;
 use App\Models\DataClassification;
 use App\Models\BackupMedia;
 use App\Models\ConsumerNetworkDevice;
+use App\Models\ConsumerNetworkSite;
 use App\Models\IpAddress;
 use App\Models\Isp;
 use App\Models\Opd;
@@ -29,6 +30,7 @@ class ReferenceController extends Controller
             'ips' => IpAddress::orderBy('ip')->get(['id', 'ip', 'jenis']),
             'backup_media' => BackupMedia::orderBy('nama')->get(['id', 'nama', 'location', 'jenis_media']),
             'network_devices' => ConsumerNetworkDevice::orderBy('nama')->get(['id', 'nama', 'jenis', 'asset_code', 'management_ip']),
+            'network_sites' => ConsumerNetworkSite::orderBy('nama')->get(['id', 'nama', 'kode', 'jenis', 'asset_code']),
         ];
     }
 }

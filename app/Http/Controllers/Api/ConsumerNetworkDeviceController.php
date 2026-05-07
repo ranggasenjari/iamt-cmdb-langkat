@@ -12,7 +12,7 @@ class ConsumerNetworkDeviceController extends Controller
     public function index()
     {
         return ConsumerNetworkDevice::with($this->relations())
-            ->withCount('downstreamDevices')
+            ->withCount(['downstreamDevices', 'installations', 'ipConfigs', 'credentials'])
             ->orderBy('jenis')
             ->orderBy('nama')
             ->get();
@@ -20,7 +20,8 @@ class ConsumerNetworkDeviceController extends Controller
 
     public function show(ConsumerNetworkDevice $networkDevice)
     {
-        return $networkDevice->load($this->relations())->loadCount('downstreamDevices');
+        return $networkDevice->load($this->relations())
+            ->loadCount(['downstreamDevices', 'installations', 'ipConfigs', 'credentials']);
     }
 
     public function store(Request $request)
@@ -120,6 +121,7 @@ class ConsumerNetworkDeviceController extends Controller
             'opd:id,nama',
             'ipAddress:id,ip,jenis',
             'upstreamDevice:id,nama,jenis,asset_code',
+            'activeInstallation.site:id,nama,kode,jenis,asset_code',
         ];
     }
 

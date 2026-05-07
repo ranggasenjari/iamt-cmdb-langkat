@@ -8,6 +8,7 @@ use App\Models\ApplicationDocument;
 use App\Models\BackupJob;
 use App\Models\BackupMedia;
 use App\Models\ConsumerNetworkDevice;
+use App\Models\ConsumerNetworkSite;
 use App\Models\DataAsset;
 use App\Models\DataCenter;
 use App\Models\IpAddress;
@@ -50,7 +51,8 @@ class PublicAssetController extends Controller
             'backup-jobs' => BackupJob::query()->with(['aplikasi:id,nama,asset_code', 'media:id,nama,asset_code']),
             'ups-devices' => UpsDevice::query()->with('dataCenter:id,nama,lokasi'),
             'soc-tools' => SocTool::query()->with(['dataCenters:id,nama', 'servers:id,nama', 'vms:id,nama', 'applications:id,nama']),
-            'network-devices' => ConsumerNetworkDevice::query()->with(['dataCenter:id,nama,lokasi', 'rack:id,nama', 'opd:id,nama', 'upstreamDevice:id,nama']),
+            'network-sites' => ConsumerNetworkSite::query()->with(['dataCenter:id,nama,lokasi', 'rack:id,nama', 'opd:id,nama']),
+            'network-devices' => ConsumerNetworkDevice::query()->with(['dataCenter:id,nama,lokasi', 'rack:id,nama', 'opd:id,nama', 'upstreamDevice:id,nama', 'activeInstallation.site:id,nama,kode,asset_code']),
         };
 
         $row = $query->findOrFail($id);
@@ -83,6 +85,7 @@ class PublicAssetController extends Controller
             'backup-jobs' => 'Pencadangan',
             'ups-devices' => 'UPS / Power Backup',
             'soc-tools' => 'SOC',
+            'network-sites' => 'Site / Node Jaringan',
             'network-devices' => 'Consumer Networking',
         ];
     }
@@ -114,6 +117,7 @@ class PublicAssetController extends Controller
             'backup-jobs' => trim(($row->repetisi_n ?? '-').' '.($row->repetisi_unit ?? '')),
             'ups-devices' => $row->kondisi ?? '-',
             'soc-tools' => $row->jenis ?? '-',
+            'network-sites' => trim(($row->jenis ?? '-').' / '.($row->status ?? '-')),
             'network-devices' => trim(($row->jenis ?? '-').' / '.($row->status ?? '-')),
             default => '-',
         };
@@ -136,6 +140,7 @@ class PublicAssetController extends Controller
             'backup-jobs' => $row->media?->nama ?? '-',
             'ups-devices' => collect([$row->dataCenter?->nama, $row->dataCenter?->lokasi])->filter()->join(' / ') ?: '-',
             'soc-tools' => 'DC '.$row->dataCenters->count().' / Server '.$row->servers->count().' / VM '.$row->vms->count().' / Aplikasi '.$row->applications->count(),
+            'network-sites' => collect([$row->dataCenter?->nama, $row->rack?->nama, $row->opd?->nama, $row->lokasi_detail, $row->alamat])->filter()->join(' / ') ?: '-',
             'network-devices' => collect([$row->dataCenter?->nama, $row->rack?->nama, $row->opd?->nama, $row->lokasi_instalasi])->filter()->join(' / ') ?: '-',
             default => '-',
         };
@@ -171,7 +176,13 @@ class PublicAssetController extends Controller
             'network-devices' => [
                 'Merk / Model' => trim(($row->merk ?? '-').' '.($row->model ?? '')),
                 'Firmware' => $row->os_firmware ?? '-',
+                'Site Aktif' => $row->activeInstallation?->site?->nama ?? '-',
                 'Uplink' => $row->upstreamDevice?->nama ?? '-',
+            ],
+            'network-sites' => [
+                'Kode Site' => $row->kode ?? '-',
+                'PIC' => collect([$row->pic_nama, $row->pic_kontak])->filter()->join(' / ') ?: '-',
+                'Koordinat' => $row->titik_koordinat ?? '-',
             ],
             default => [],
         };

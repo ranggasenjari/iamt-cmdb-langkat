@@ -7,6 +7,7 @@ use App\Models\Concerns\UsesUuid;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class ConsumerNetworkDevice extends Model
 {
@@ -68,6 +69,29 @@ class ConsumerNetworkDevice extends Model
     public function downstreamDevices(): HasMany
     {
         return $this->hasMany(self::class, 'upstream_device_id');
+    }
+
+    public function installations(): HasMany
+    {
+        return $this->hasMany(ConsumerNetworkInstallation::class, 'device_id');
+    }
+
+    public function activeInstallation(): HasOne
+    {
+        return $this->hasOne(ConsumerNetworkInstallation::class, 'device_id')
+            ->where('status', 'aktif')
+            ->orderByDesc('installed_at')
+            ->orderByDesc('created_at');
+    }
+
+    public function ipConfigs(): HasMany
+    {
+        return $this->hasMany(ConsumerNetworkIpConfig::class, 'device_id');
+    }
+
+    public function credentials(): HasMany
+    {
+        return $this->hasMany(ConsumerNetworkCredential::class, 'device_id');
     }
 
     public function getHasCredentialAttribute(): bool

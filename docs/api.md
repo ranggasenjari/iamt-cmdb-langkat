@@ -84,6 +84,7 @@ Contoh pola kode:
 | `backup-jobs` | `LKT-BKJ` | `LKT-BKJ-000001` |
 | `ups-devices` | `LKT-UPS` | `LKT-UPS-000001` |
 | `soc-tools` | `LKT-SOC` | `LKT-SOC-000001` |
+| `network-sites` | `LKT-NETS` | `LKT-NETS-000001` |
 | `network-devices` | `LKT-NET` | `LKT-NET-000001` |
 
 Setiap modul aset CMDB, baik fisik maupun digital, dapat dicetak label dari UI. Label dapat dicetak per item dari tabel modul, atau massal lewat menu `Cetak Label` dengan memilih jenis aset dan ukuran label untuk layout kertas A4. Label berisi logo Kabupaten Langkat, kode aset, nama aset, jenis aset, lokasi singkat, dan QR menuju halaman verifikasi publik:
@@ -115,7 +116,11 @@ Ukuran label yang tersedia di UI: `50 x 30 mm`, `60 x 40 mm`, `70 x 50 mm`, dan 
 | Pencadangan | `backup-jobs` | integer |
 | UPS / Power Backup | `ups-devices` | integer |
 | SOC | `soc-tools` | integer |
-| Consumer Networking | `network-devices` | UUID |
+| Consumer Networking - Site / Node | `network-sites` | UUID |
+| Consumer Networking - Perangkat | `network-devices` | UUID |
+| Consumer Networking - Instalasi & Pergantian | `network-installations` | UUID |
+| Consumer Networking - Konfigurasi IP | `network-ip-configs` | UUID |
+| Consumer Networking - Kredensial | `network-credentials` | UUID |
 | Pengguna & Role | `users` | UUID |
 
 ## Payload Modul
@@ -398,7 +403,35 @@ Enum `kondisi`: `baik`, `kurang_baik`, `rusak`.
 
 Enum `jenis`: `Firewall`, `IDS`, `IPS`, `Antivirus`, `EDR`, `SIEM`, `WAF`, `NDR`, `Vulnerability Scanner`, `Log Management`.
 
-### Consumer Networking: `network-devices`
+### Consumer Networking - Site / Node: `network-sites`
+
+Site / Node adalah titik instalasi, misalnya kantor OPD, ruang, rack, tower, node outdoor, atau titik pemasangan access point.
+
+```json
+{
+  "kode": "DISKOMINFO-LT2-CORE",
+  "nama": "Node Core Diskominfo Lantai 2",
+  "jenis": "rack",
+  "status": "aktif",
+  "opd_id": "uuid-opd",
+  "dc_id": "uuid-data-center",
+  "rack_id": "uuid-rack",
+  "alamat": "Komplek Kantor Bupati Langkat",
+  "lokasi_detail": "Lantai 2 ruang command center",
+  "titik_koordinat": "3.7610, 98.4510",
+  "pic_nama": "Tim Infrastruktur TIK",
+  "pic_kontak": "0812-0000-0000",
+  "catatan": "Node distribusi utama"
+}
+```
+
+Enum `jenis`: `kantor`, `dc`, `rack`, `tower`, `ruang`, `outdoor`, `lainnya`.
+
+Enum `status`: `aktif`, `nonaktif`, `maintenance`.
+
+### Consumer Networking - Perangkat: `network-devices`
+
+Resource ini menyimpan inventaris perangkatnya saja. Lokasi aktif, IP, dan kredensial dicatat di resource turunan supaya riwayat pergantian tetap rapi.
 
 ```json
 {
@@ -416,27 +449,7 @@ Enum `jenis`: `Firewall`, `IDS`, `IPS`, `Antivirus`, `EDR`, `SIEM`, `WAF`, `NDR`
   "wireless_standard": "Wi-Fi 6",
   "frekuensi": "2.4/5 GHz",
   "bandwidth": "1 Gbps",
-  "management_ip": "10.10.10.1",
-  "subnet_mask": "255.255.255.0",
-  "gateway": "10.10.10.254",
-  "dns": "10.10.10.10",
-  "vlan": "10",
-  "ssid": "Langkat-Internal",
-  "ip_public": "203.0.113.10",
-  "dhcp_enabled": true,
-  "ip_address_id": "uuid-ip-cmdb",
-  "upstream_device_id": "uuid-perangkat-uplink",
-  "dc_id": "uuid-data-center",
-  "rack_id": "uuid-rack",
-  "opd_id": "uuid-opd",
-  "lokasi_instalasi": "Rack core jaringan lantai 2",
-  "titik_koordinat": "3.7610, 98.4510",
-  "tanggal_pasang": "2026-05-07",
-  "penanggung_jawab": "Tim Infrastruktur TIK",
-  "management_url": "https://router-core.example.test",
-  "credential_username": "admin",
-  "credential_password": "password-baru",
-  "credential_notes": "Akses hanya dari jaringan manajemen"
+  "deskripsi": "Router edge jaringan Diskominfo"
 }
 ```
 
@@ -446,7 +459,72 @@ Enum `status`: `aktif`, `nonaktif`, `maintenance`.
 
 Enum `kondisi`: `baik`, `kurang_baik`, `rusak`.
 
-Field `credential_password` disimpan terenkripsi dan tidak dikembalikan pada response API. Saat update, kosongkan field ini jika tidak ingin mengganti password perangkat.
+### Consumer Networking - Instalasi & Pergantian: `network-installations`
+
+Resource ini mencatat perangkat apa yang terpasang di site/node tertentu, termasuk riwayat pergantian perangkat.
+
+```json
+{
+  "site_id": "uuid-network-site",
+  "device_id": "uuid-network-device",
+  "replaced_by_device_id": "uuid-network-device-pengganti",
+  "role": "primary",
+  "status": "aktif",
+  "installed_at": "2026-05-08",
+  "removed_at": null,
+  "installed_by": "Admin Infrastruktur",
+  "notes": "Pemasangan awal node core"
+}
+```
+
+Enum `role`: `primary`, `backup`, `distribution`, `access`, `uplink`, `client`, `lainnya`.
+
+Enum `status`: `aktif`, `diganti`, `dilepas`, `rusak`, `maintenance`.
+
+### Consumer Networking - Konfigurasi IP: `network-ip-configs`
+
+```json
+{
+  "device_id": "uuid-network-device",
+  "site_id": "uuid-network-site",
+  "ip_address_id": "uuid-ip-cmdb",
+  "interface_name": "ether1",
+  "ip_type": "management",
+  "ip_address": "10.10.10.1",
+  "subnet_mask": "255.255.255.0",
+  "gateway": "10.10.10.254",
+  "dns": "10.10.10.10",
+  "vlan": "10",
+  "ssid": "Langkat-Internal",
+  "dhcp_enabled": true,
+  "status": "aktif",
+  "notes": "IP manajemen router"
+}
+```
+
+Enum `ip_type`: `management`, `wan`, `lan`, `wifi`, `loopback`, `lainnya`.
+
+Enum `status`: `aktif`, `nonaktif`.
+
+### Consumer Networking - Kredensial: `network-credentials`
+
+```json
+{
+  "device_id": "uuid-network-device",
+  "site_id": "uuid-network-site",
+  "label": "Admin Web Router",
+  "access_method": "web",
+  "management_url": "https://router-core.example.test",
+  "username": "admin",
+  "password": "password-baru",
+  "notes": "Akses hanya dari jaringan manajemen",
+  "last_rotated_at": "2026-05-08"
+}
+```
+
+Enum `access_method`: `web`, `ssh`, `winbox`, `snmp`, `api`, `vpn`, `lainnya`.
+
+Field `password` disimpan terenkripsi dan tidak dikembalikan pada response API. Saat update, kosongkan field ini jika tidak ingin mengganti password.
 
 ### Pengguna & Role: `users`
 
@@ -472,7 +550,7 @@ Saat update, `password` boleh dikosongkan jika tidak ingin mengganti password.
 | Method | Endpoint | Keterangan |
 | --- | --- | --- |
 | GET | `/api/dashboard` | Metrik dashboard |
-| GET | `/api/references` | Referensi OPD, DC, rack, server, VM, IP, perangkat jaringan, klasifikasi |
+| GET | `/api/references` | Referensi OPD, DC, rack, server, VM, IP, site/perangkat jaringan, klasifikasi |
 | GET | `/api/dependency-map` | Mapping aplikasi, VM, server, IP |
 | GET | `/api/impact/server/{server}` | Analisis dampak server |
 | GET | `/api/compliance` | Ringkasan compliance |

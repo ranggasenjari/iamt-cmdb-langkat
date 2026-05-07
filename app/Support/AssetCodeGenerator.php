@@ -23,6 +23,7 @@ class AssetCodeGenerator
         'ups_devices' => 'UPS',
         'soc_tools' => 'SOC',
         'consumer_network_devices' => 'NET',
+        'consumer_network_sites' => 'NETS',
     ];
 
     public static function next(string $table): string

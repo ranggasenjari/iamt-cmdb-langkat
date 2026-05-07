@@ -254,6 +254,23 @@ class CmdbApiTest extends TestCase
         $rack = \App\Models\Rack::firstOrFail();
         $opd = \App\Models\Opd::where('nama', 'Dinas Komunikasi Dan Informatika')->firstOrFail();
 
+        $siteResponse = $this->postJson('/api/network-sites', [
+            'kode' => 'DISKOMINFO-LT2-CORE',
+            'nama' => 'Node Core Diskominfo Lantai 2',
+            'jenis' => 'rack',
+            'status' => 'aktif',
+            'opd_id' => $opd->id,
+            'dc_id' => $dc->id,
+            'rack_id' => $rack->id,
+            'lokasi_detail' => 'Rack core jaringan lantai 2',
+            'pic_nama' => 'Tim Infrastruktur TIK',
+        ])->assertCreated()
+            ->assertJsonPath('nama', 'Node Core Diskominfo Lantai 2');
+
+        $siteId = $siteResponse->json('id');
+        $siteAssetCode = $siteResponse->json('asset_code');
+        $this->assertMatchesRegularExpression('/^LKT-NETS-\d{6}$/', $siteAssetCode);
+
         $deviceResponse = $this->postJson('/api/network-devices', [
             'nama' => 'Router Utama Diskominfo',
             'jenis' => 'router_utama',
@@ -266,27 +283,52 @@ class CmdbApiTest extends TestCase
             'mac_address' => 'AA:BB:CC:DD:EE:FF',
             'kapasitas_port' => 12,
             'poe_support' => false,
-            'management_ip' => '10.10.10.1',
-            'subnet_mask' => '255.255.255.0',
-            'gateway' => '10.10.10.254',
-            'dns' => '10.10.10.10',
-            'vlan' => '10',
-            'dhcp_enabled' => true,
-            'dc_id' => $dc->id,
-            'rack_id' => $rack->id,
-            'opd_id' => $opd->id,
-            'lokasi_instalasi' => 'Rack core jaringan lantai 2',
-            'management_url' => 'https://router-core.example.test',
-            'credential_username' => 'admin',
-            'credential_password' => 'secret-password',
         ])->assertCreated()
             ->assertJsonPath('nama', 'Router Utama Diskominfo')
-            ->assertJsonPath('has_credential', true)
             ->assertJsonMissingPath('credential_password');
 
         $deviceId = $deviceResponse->json('id');
         $assetCode = $deviceResponse->json('asset_code');
         $this->assertMatchesRegularExpression('/^LKT-NET-\d{6}$/', $assetCode);
+
+        $installationId = $this->postJson('/api/network-installations', [
+            'site_id' => $siteId,
+            'device_id' => $deviceId,
+            'role' => 'primary',
+            'status' => 'aktif',
+            'installed_at' => '2026-05-08',
+            'installed_by' => 'Admin Infrastruktur',
+        ])->assertCreated()
+            ->assertJsonPath('site.nama', 'Node Core Diskominfo Lantai 2')
+            ->json('id');
+
+        $this->postJson('/api/network-ip-configs', [
+            'device_id' => $deviceId,
+            'site_id' => $siteId,
+            'interface_name' => 'ether1',
+            'ip_type' => 'management',
+            'ip_address' => '10.10.10.1',
+            'subnet_mask' => '255.255.255.0',
+            'gateway' => '10.10.10.254',
+            'dns' => '10.10.10.10',
+            'vlan' => '10',
+            'dhcp_enabled' => true,
+            'status' => 'aktif',
+        ])->assertCreated()
+            ->assertJsonPath('ip_address', '10.10.10.1')
+            ->assertJsonPath('dhcp_enabled', true);
+
+        $this->postJson('/api/network-credentials', [
+            'device_id' => $deviceId,
+            'site_id' => $siteId,
+            'label' => 'Admin Web Router',
+            'access_method' => 'web',
+            'management_url' => 'https://router-core.example.test',
+            'username' => 'admin',
+            'password' => 'secret-password',
+        ])->assertCreated()
+            ->assertJsonPath('has_password', true)
+            ->assertJsonMissingPath('password');
 
         $this->putJson("/api/network-devices/{$deviceId}", [
             'nama' => 'Router Utama Diskominfo',
@@ -295,21 +337,27 @@ class CmdbApiTest extends TestCase
             'kondisi' => 'baik',
             'merk' => 'MikroTik',
             'model' => 'CCR2004',
-            'management_ip' => '10.10.10.2',
-            'dhcp_enabled' => false,
         ])->assertOk()
-            ->assertJsonPath('status', 'maintenance')
-            ->assertJsonPath('management_ip', '10.10.10.2');
+            ->assertJsonPath('status', 'maintenance');
 
         $this->getJson('/api/network-devices')
             ->assertOk()
             ->assertJsonFragment(['nama' => 'Router Utama Diskominfo'])
-            ->assertJsonMissingPath('0.credential_password');
+            ->assertJsonFragment(['installations_count' => 1]);
+
+        $this->getJson("/api/network-installations/{$installationId}")
+            ->assertOk()
+            ->assertJsonPath('device.nama', 'Router Utama Diskominfo');
 
         $this->get("/asset/network-devices/{$deviceId}")
             ->assertOk()
             ->assertSee('Router Utama Diskominfo')
             ->assertSee($assetCode);
+
+        $this->get("/asset/network-sites/{$siteId}")
+            ->assertOk()
+            ->assertSee('Node Core Diskominfo Lantai 2')
+            ->assertSee($siteAssetCode);
     }
 
     public function test_server_and_vm_specification_changes_are_logged_with_reason(): void
@@ -543,6 +591,35 @@ class CmdbApiTest extends TestCase
             'kondisi' => 'baik',
             'dc_id' => $dataCenter->id,
         ]);
+        $networkSite = \App\Models\ConsumerNetworkSite::create([
+            'kode' => 'DETAIL-SITE',
+            'nama' => 'Site Detail Test',
+            'jenis' => 'kantor',
+            'status' => 'aktif',
+            'dc_id' => $dataCenter->id,
+        ]);
+        $networkInstallation = \App\Models\ConsumerNetworkInstallation::create([
+            'site_id' => $networkSite->id,
+            'device_id' => $networkDevice->id,
+            'role' => 'access',
+            'status' => 'aktif',
+        ]);
+        $networkIpConfig = \App\Models\ConsumerNetworkIpConfig::create([
+            'device_id' => $networkDevice->id,
+            'site_id' => $networkSite->id,
+            'interface_name' => 'ether2',
+            'ip_type' => 'lan',
+            'ip_address' => '10.99.0.2',
+            'status' => 'aktif',
+        ]);
+        $networkCredential = \App\Models\ConsumerNetworkCredential::create([
+            'device_id' => $networkDevice->id,
+            'site_id' => $networkSite->id,
+            'label' => 'Detail Credential',
+            'access_method' => 'ssh',
+            'username' => 'admin',
+            'password' => 'secret',
+        ]);
 
         $this->authenticateAs('read_only');
 
@@ -562,7 +639,11 @@ class CmdbApiTest extends TestCase
             'backup-jobs' => $backupJob->id,
             'ups-devices' => $upsDevice->id,
             'soc-tools' => $socTool->id,
+            'network-sites' => $networkSite->id,
             'network-devices' => $networkDevice->id,
+            'network-installations' => $networkInstallation->id,
+            'network-ip-configs' => $networkIpConfig->id,
+            'network-credentials' => $networkCredential->id,
             'users' => \App\Models\Pengguna::where('email', 'viewer@langkatkab.go.id')->firstOrFail()->id,
         ];
 
@@ -644,6 +725,33 @@ class CmdbApiTest extends TestCase
             'status' => 'aktif',
             'kondisi' => 'baik',
         ])->assertCreated()->json('id');
+        $networkSiteId = $this->postJson('/api/network-sites', [
+            'kode' => 'DELETE-SITE',
+            'nama' => 'Site Delete Test',
+            'jenis' => 'kantor',
+            'status' => 'aktif',
+            'dc_id' => $dcId,
+        ])->assertCreated()->json('id');
+        $networkInstallationId = $this->postJson('/api/network-installations', [
+            'site_id' => $networkSiteId,
+            'device_id' => $networkDeviceId,
+            'role' => 'access',
+            'status' => 'aktif',
+        ])->assertCreated()->json('id');
+        $networkIpConfigId = $this->postJson('/api/network-ip-configs', [
+            'device_id' => $networkDeviceId,
+            'site_id' => $networkSiteId,
+            'ip_type' => 'wifi',
+            'ip_address' => '10.77.77.2',
+            'status' => 'aktif',
+        ])->assertCreated()->json('id');
+        $networkCredentialId = $this->postJson('/api/network-credentials', [
+            'device_id' => $networkDeviceId,
+            'site_id' => $networkSiteId,
+            'label' => 'Delete Credential',
+            'access_method' => 'ssh',
+            'username' => 'admin',
+        ])->assertCreated()->json('id');
         $userId = $this->postJson('/api/users', [
             'nama' => 'Delete User',
             'email' => 'delete.user@langkatkab.go.id',
@@ -660,7 +768,11 @@ class CmdbApiTest extends TestCase
             "data-assets/{$assetId}",
             "data-classifications/{$classificationId}",
             "soc-tools/{$socId}",
+            "network-credentials/{$networkCredentialId}",
+            "network-ip-configs/{$networkIpConfigId}",
+            "network-installations/{$networkInstallationId}",
             "network-devices/{$networkDeviceId}",
+            "network-sites/{$networkSiteId}",
             "ups-devices/{$upsId}",
             "applications/{$appId}",
             "vms/{$vmId}",

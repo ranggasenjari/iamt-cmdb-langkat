@@ -63,10 +63,10 @@ const menuSections = [
   {
     label: 'Consumer Networking',
     items: [
+      { id: 'network-sites', label: 'Site / Node', icon: Building2 },
       { id: 'network-devices', label: 'Perangkat', icon: Network },
-      { id: 'network-specs', label: 'Spesifikasi', icon: HardDrive },
+      { id: 'network-installations', label: 'Instalasi & Pergantian', icon: GitBranch },
       { id: 'network-ip-configs', label: 'Konfigurasi IP', icon: Network },
-      { id: 'network-installations', label: 'Lokasi Instalasi', icon: Building2 },
       { id: 'network-credentials', label: 'Kredensial', icon: ShieldCheck },
     ],
   },
@@ -134,7 +134,7 @@ const bulkLabelQrUrls = ref({});
 const bulkLabelGenerating = ref(false);
 
 const dashboard = ref(null);
-const references = ref({ opd: [], classifications: [], data_centers: [], racks: [], isps: [], servers: [], vms: [], ips: [], backup_media: [], network_devices: [] });
+const references = ref({ opd: [], classifications: [], data_centers: [], racks: [], isps: [], servers: [], vms: [], ips: [], backup_media: [], network_devices: [], network_sites: [] });
 const dataCenters = ref([]);
 const racks = ref([]);
 const isps = ref([]);
@@ -149,7 +149,11 @@ const backupMedia = ref([]);
 const backupJobs = ref([]);
 const upsDevices = ref([]);
 const socTools = ref([]);
+const networkSites = ref([]);
 const networkDevices = ref([]);
+const networkInstallations = ref([]);
+const networkIpConfigs = ref([]);
+const networkCredentials = ref([]);
 const users = ref([]);
 const dependencyMap = ref([]);
 const compliance = ref(null);
@@ -180,6 +184,7 @@ const printableLabelModules = new Set([
   'backup-jobs',
   'ups-devices',
   'soc-tools',
+  'network-sites',
   'network-devices',
 ]);
 
@@ -309,6 +314,22 @@ const socToolForm = reactive({
   application_ids: [],
 });
 
+const networkSiteForm = reactive({
+  kode: '',
+  nama: '',
+  jenis: '',
+  status: '',
+  opd_id: '',
+  dc_id: '',
+  rack_id: '',
+  alamat: '',
+  lokasi_detail: '',
+  titik_koordinat: '',
+  pic_nama: '',
+  pic_kontak: '',
+  catatan: '',
+});
+
 const networkDeviceForm = reactive({
   nama: '',
   jenis: '',
@@ -325,27 +346,47 @@ const networkDeviceForm = reactive({
   frekuensi: '',
   bandwidth: '',
   deskripsi: '',
-  management_ip: '',
+});
+
+const networkInstallationForm = reactive({
+  site_id: '',
+  device_id: '',
+  replaced_by_device_id: '',
+  role: '',
+  status: '',
+  installed_at: '',
+  removed_at: '',
+  installed_by: '',
+  notes: '',
+});
+
+const networkIpConfigForm = reactive({
+  device_id: '',
+  site_id: '',
+  ip_address_id: '',
+  interface_name: '',
+  ip_type: '',
+  ip_address: '',
   subnet_mask: '',
   gateway: '',
   dns: '',
   vlan: '',
   ssid: '',
-  ip_public: '',
   dhcp_enabled: false,
-  ip_address_id: '',
-  upstream_device_id: '',
-  dc_id: '',
-  rack_id: '',
-  opd_id: '',
-  lokasi_instalasi: '',
-  titik_koordinat: '',
-  tanggal_pasang: '',
-  penanggung_jawab: '',
+  status: '',
+  notes: '',
+});
+
+const networkCredentialForm = reactive({
+  device_id: '',
+  site_id: '',
+  label: '',
+  access_method: '',
   management_url: '',
-  credential_username: '',
-  credential_password: '',
-  credential_notes: '',
+  username: '',
+  password: '',
+  notes: '',
+  last_rotated_at: '',
 });
 
 const userForm = reactive({
@@ -412,7 +453,50 @@ const networkDeviceTypeOptions = [
   { value: 'lainnya', label: 'Lainnya' },
 ];
 
+const networkSiteTypeOptions = [
+  { value: 'kantor', label: 'Kantor / OPD' },
+  { value: 'dc', label: 'Data Center' },
+  { value: 'rack', label: 'Rack / Ruang Server' },
+  { value: 'tower', label: 'Tower / Tiang' },
+  { value: 'ruang', label: 'Ruang' },
+  { value: 'outdoor', label: 'Outdoor' },
+  { value: 'lainnya', label: 'Lainnya' },
+];
+
+const networkInstallationRoleOptions = [
+  { value: 'primary', label: 'Primary' },
+  { value: 'backup', label: 'Backup' },
+  { value: 'distribution', label: 'Distribution' },
+  { value: 'access', label: 'Access' },
+  { value: 'uplink', label: 'Uplink' },
+  { value: 'client', label: 'Client / Edge' },
+  { value: 'lainnya', label: 'Lainnya' },
+];
+
+const networkIpTypeOptions = [
+  { value: 'management', label: 'Management' },
+  { value: 'wan', label: 'WAN' },
+  { value: 'lan', label: 'LAN' },
+  { value: 'wifi', label: 'Wi-Fi' },
+  { value: 'loopback', label: 'Loopback' },
+  { value: 'lainnya', label: 'Lainnya' },
+];
+
+const networkAccessMethodOptions = [
+  { value: 'web', label: 'Web' },
+  { value: 'ssh', label: 'SSH' },
+  { value: 'winbox', label: 'Winbox' },
+  { value: 'snmp', label: 'SNMP' },
+  { value: 'api', label: 'API' },
+  { value: 'vpn', label: 'VPN' },
+  { value: 'lainnya', label: 'Lainnya' },
+];
+
 const networkDeviceTypeLabel = (value) => networkDeviceTypeOptions.find((option) => option.value === value)?.label || value || '-';
+const networkSiteTypeLabel = (value) => networkSiteTypeOptions.find((option) => option.value === value)?.label || value || '-';
+const networkInstallationRoleLabel = (value) => networkInstallationRoleOptions.find((option) => option.value === value)?.label || value || '-';
+const networkIpTypeLabel = (value) => networkIpTypeOptions.find((option) => option.value === value)?.label || value || '-';
+const networkAccessMethodLabel = (value) => networkAccessMethodOptions.find((option) => option.value === value)?.label || value || '-';
 
 function functionClassificationLabel(value) {
   return functionClassificationOptions.find((option) => option.value === value)?.label || value;
@@ -549,7 +633,7 @@ async function loadAll() {
   loading.value = true;
   error.value = '';
   try {
-    const [dash, refs, dcRows, rackRows, ispRows, ipRows, serverRows, vmRows, appRows, dataAssetRows, documentRows, integrationRows, backupMediaRows, backupJobRows, upsRows, socRows, networkRows, userRows, mapRows, complianceRows, auditRows, changeRows] = await Promise.all([
+    const [dash, refs, dcRows, rackRows, ispRows, ipRows, serverRows, vmRows, appRows, dataAssetRows, documentRows, integrationRows, backupMediaRows, backupJobRows, upsRows, socRows, networkSiteRows, networkRows, networkInstallationRows, networkIpConfigRows, networkCredentialRows, userRows, mapRows, complianceRows, auditRows, changeRows] = await Promise.all([
       api('/dashboard'),
       api('/references'),
       api('/data-centers'),
@@ -566,7 +650,11 @@ async function loadAll() {
       api('/backup-jobs'),
       api('/ups-devices'),
       api('/soc-tools'),
+      api('/network-sites'),
       api('/network-devices'),
+      api('/network-installations'),
+      api('/network-ip-configs'),
+      api('/network-credentials'),
       api('/users'),
       api('/dependency-map'),
       api('/compliance'),
@@ -590,7 +678,11 @@ async function loadAll() {
     backupJobs.value = backupJobRows;
     upsDevices.value = upsRows;
     socTools.value = socRows;
+    networkSites.value = networkSiteRows;
     networkDevices.value = networkRows;
+    networkInstallations.value = networkInstallationRows;
+    networkIpConfigs.value = networkIpConfigRows;
+    networkCredentials.value = networkCredentialRows;
     users.value = userRows;
     dependencyMap.value = mapRows;
     compliance.value = complianceRows;
@@ -625,7 +717,11 @@ const moduleLabels = {
   'backup-jobs': 'Pencadangan',
   'ups-devices': 'UPS / Power Backup',
   'soc-tools': 'SOC',
+  'network-sites': 'Site / Node Jaringan',
   'network-devices': 'Perangkat Jaringan',
+  'network-installations': 'Instalasi & Pergantian',
+  'network-ip-configs': 'Konfigurasi IP Jaringan',
+  'network-credentials': 'Kredensial Jaringan',
   users: 'Pengguna & Role',
 };
 
@@ -644,6 +740,7 @@ const bulkLabelModuleOptions = [
   'backup-jobs',
   'ups-devices',
   'soc-tools',
+  'network-sites',
   'network-devices',
 ].map((value) => ({ value, label: moduleLabels[value] }));
 
@@ -675,6 +772,7 @@ function itemsForLabelModule(module) {
     'backup-jobs': backupJobs.value,
     'ups-devices': upsDevices.value,
     'soc-tools': socTools.value,
+    'network-sites': networkSites.value,
     'network-devices': networkDevices.value,
   }[module] || [];
 }
@@ -688,6 +786,9 @@ function assetName(row, module = '') {
   if (module === 'application-documents') return row.original_name || row.nama || '-';
   if (module === 'backup-jobs') return row.aplikasi?.nama ? `Backup ${row.aplikasi.nama}` : `Pencadangan #${row.id}`;
   if (module === 'app-integrations') return row.aplikasi?.nama ? `Integrasi ${row.aplikasi.nama}` : `Integrasi #${row.id}`;
+  if (module === 'network-installations') return `${row.device?.nama || '-'} @ ${row.site?.nama || '-'}`;
+  if (module === 'network-ip-configs') return `${row.device?.nama || '-'} / ${row.ip_address || row.ip_address_record?.ip || '-'}`;
+  if (module === 'network-credentials') return `${row.label || 'Akses'} / ${row.device?.nama || '-'}`;
   return row.nama || row.name || row.asset_code || '-';
 }
 
@@ -711,7 +812,8 @@ function assetLocation(module, row) {
   if (module === 'backup-jobs') return row.media?.nama || '-';
   if (module === 'ups-devices') return row.data_center?.nama || row.dc_id || '-';
   if (module === 'soc-tools') return row.jenis || '-';
-  if (module === 'network-devices') return [row.data_center?.nama, row.rack?.nama, row.opd?.nama, row.lokasi_instalasi].filter(Boolean).join(' / ') || '-';
+  if (module === 'network-sites') return [row.data_center?.nama, row.rack?.nama, row.opd?.nama, row.lokasi_detail, row.alamat].filter(Boolean).join(' / ') || '-';
+  if (module === 'network-devices') return row.active_installation?.site?.nama || [row.data_center?.nama, row.rack?.nama, row.opd?.nama, row.lokasi_instalasi].filter(Boolean).join(' / ') || '-';
   return row.lokasi || row.location || '-';
 }
 
@@ -932,6 +1034,23 @@ function resetModuleForm(module) {
   if (module === 'soc-tools') {
     Object.assign(socToolForm, { nama: '', deskripsi_fungsi: '', jenis: '', dc_ids: [], server_ids: [], vm_ids: [], application_ids: [] });
   }
+  if (module === 'network-sites') {
+    Object.assign(networkSiteForm, {
+      kode: '',
+      nama: '',
+      jenis: '',
+      status: '',
+      opd_id: '',
+      dc_id: '',
+      rack_id: '',
+      alamat: '',
+      lokasi_detail: '',
+      titik_koordinat: '',
+      pic_nama: '',
+      pic_kontak: '',
+      catatan: '',
+    });
+  }
   if (module === 'network-devices') {
     Object.assign(networkDeviceForm, {
       nama: '',
@@ -949,27 +1068,50 @@ function resetModuleForm(module) {
       frekuensi: '',
       bandwidth: '',
       deskripsi: '',
-      management_ip: '',
+    });
+  }
+  if (module === 'network-installations') {
+    Object.assign(networkInstallationForm, {
+      site_id: '',
+      device_id: '',
+      replaced_by_device_id: '',
+      role: '',
+      status: '',
+      installed_at: '',
+      removed_at: '',
+      installed_by: '',
+      notes: '',
+    });
+  }
+  if (module === 'network-ip-configs') {
+    Object.assign(networkIpConfigForm, {
+      device_id: '',
+      site_id: '',
+      ip_address_id: '',
+      interface_name: '',
+      ip_type: '',
+      ip_address: '',
       subnet_mask: '',
       gateway: '',
       dns: '',
       vlan: '',
       ssid: '',
-      ip_public: '',
       dhcp_enabled: false,
-      ip_address_id: '',
-      upstream_device_id: '',
-      dc_id: '',
-      rack_id: '',
-      opd_id: '',
-      lokasi_instalasi: '',
-      titik_koordinat: '',
-      tanggal_pasang: '',
-      penanggung_jawab: '',
+      status: '',
+      notes: '',
+    });
+  }
+  if (module === 'network-credentials') {
+    Object.assign(networkCredentialForm, {
+      device_id: '',
+      site_id: '',
+      label: '',
+      access_method: '',
       management_url: '',
-      credential_username: '',
-      credential_password: '',
-      credential_notes: '',
+      username: '',
+      password: '',
+      notes: '',
+      last_rotated_at: '',
     });
   }
   if (module === 'users') {
@@ -993,7 +1135,11 @@ function formFor(module) {
     'backup-jobs': backupJobForm,
     'ups-devices': upsDeviceForm,
     'soc-tools': socToolForm,
+    'network-sites': networkSiteForm,
     'network-devices': networkDeviceForm,
+    'network-installations': networkInstallationForm,
+    'network-ip-configs': networkIpConfigForm,
+    'network-credentials': networkCredentialForm,
     users: userForm,
   }[module];
 }
@@ -1129,6 +1275,23 @@ function openEdit(module, row) {
       application_ids: (row.applications || []).map((app) => app.id),
     });
   }
+  if (module === 'network-sites') {
+    Object.assign(networkSiteForm, {
+      kode: row.kode || '',
+      nama: row.nama || '',
+      jenis: row.jenis || '',
+      status: row.status || '',
+      opd_id: row.opd_id || '',
+      dc_id: row.dc_id || '',
+      rack_id: row.rack_id || '',
+      alamat: row.alamat || '',
+      lokasi_detail: row.lokasi_detail || '',
+      titik_koordinat: row.titik_koordinat || '',
+      pic_nama: row.pic_nama || '',
+      pic_kontak: row.pic_kontak || '',
+      catatan: row.catatan || '',
+    });
+  }
   if (module === 'network-devices') {
     Object.assign(networkDeviceForm, {
       nama: row.nama || '',
@@ -1146,27 +1309,50 @@ function openEdit(module, row) {
       frekuensi: row.frekuensi || '',
       bandwidth: row.bandwidth || '',
       deskripsi: row.deskripsi || '',
-      management_ip: row.management_ip || '',
+    });
+  }
+  if (module === 'network-installations') {
+    Object.assign(networkInstallationForm, {
+      site_id: row.site_id || '',
+      device_id: row.device_id || '',
+      replaced_by_device_id: row.replaced_by_device_id || '',
+      role: row.role || '',
+      status: row.status || '',
+      installed_at: row.installed_at ? String(row.installed_at).slice(0, 10) : '',
+      removed_at: row.removed_at ? String(row.removed_at).slice(0, 10) : '',
+      installed_by: row.installed_by || '',
+      notes: row.notes || '',
+    });
+  }
+  if (module === 'network-ip-configs') {
+    Object.assign(networkIpConfigForm, {
+      device_id: row.device_id || '',
+      site_id: row.site_id || '',
+      ip_address_id: row.ip_address_id || '',
+      interface_name: row.interface_name || '',
+      ip_type: row.ip_type || '',
+      ip_address: row.ip_address || '',
       subnet_mask: row.subnet_mask || '',
       gateway: row.gateway || '',
       dns: row.dns || '',
       vlan: row.vlan || '',
       ssid: row.ssid || '',
-      ip_public: row.ip_public || '',
       dhcp_enabled: Boolean(row.dhcp_enabled),
-      ip_address_id: row.ip_address_id || '',
-      upstream_device_id: row.upstream_device_id || '',
-      dc_id: row.dc_id || '',
-      rack_id: row.rack_id || '',
-      opd_id: row.opd_id || '',
-      lokasi_instalasi: row.lokasi_instalasi || '',
-      titik_koordinat: row.titik_koordinat || '',
-      tanggal_pasang: row.tanggal_pasang ? String(row.tanggal_pasang).slice(0, 10) : '',
-      penanggung_jawab: row.penanggung_jawab || '',
+      status: row.status || '',
+      notes: row.notes || '',
+    });
+  }
+  if (module === 'network-credentials') {
+    Object.assign(networkCredentialForm, {
+      device_id: row.device_id || '',
+      site_id: row.site_id || '',
+      label: row.label || '',
+      access_method: row.access_method || '',
       management_url: row.management_url || '',
-      credential_username: row.credential_username || '',
-      credential_password: '',
-      credential_notes: row.credential_notes || '',
+      username: row.username || '',
+      password: '',
+      notes: row.notes || '',
+      last_rotated_at: row.last_rotated_at ? String(row.last_rotated_at).slice(0, 10) : '',
     });
   }
   if (module === 'users') {
@@ -1506,9 +1692,29 @@ const filteredSocTools = computed(() => {
   return socTools.value.filter((row) => JSON.stringify(row).toLowerCase().includes(needle));
 });
 
+const filteredNetworkSites = computed(() => {
+  const needle = query.value.toLowerCase();
+  return networkSites.value.filter((row) => JSON.stringify(row).toLowerCase().includes(needle));
+});
+
 const filteredNetworkDevices = computed(() => {
   const needle = query.value.toLowerCase();
   return networkDevices.value.filter((row) => JSON.stringify(row).toLowerCase().includes(needle));
+});
+
+const filteredNetworkInstallations = computed(() => {
+  const needle = query.value.toLowerCase();
+  return networkInstallations.value.filter((row) => JSON.stringify(row).toLowerCase().includes(needle));
+});
+
+const filteredNetworkIpConfigs = computed(() => {
+  const needle = query.value.toLowerCase();
+  return networkIpConfigs.value.filter((row) => JSON.stringify(row).toLowerCase().includes(needle));
+});
+
+const filteredNetworkCredentials = computed(() => {
+  const needle = query.value.toLowerCase();
+  return networkCredentials.value.filter((row) => JSON.stringify(row).toLowerCase().includes(needle));
 });
 
 const filteredUsers = computed(() => {
@@ -2590,6 +2796,30 @@ onMounted(bootstrapAuth);
         </section>
         </section>
 
+        <section v-if="activeTab === 'network-sites'" class="content-grid">
+          <section class="surface wide">
+            <div class="module-header">
+              <div><p class="eyebrow">Consumer Networking</p><h3 class="yellow-title">Site / Node Instalasi</h3></div>
+              <button v-if="canWrite" class="action-button" type="button" @click="openCreate('network-sites')"><Plus :size="17" /> Tambah Site</button>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Site / Node</th><th>Jenis</th><th>Relasi Lokasi</th><th>PIC</th><th>Status</th><th>Aksi</th></tr></thead>
+                <tbody>
+                  <tr v-for="site in filteredNetworkSites" :key="site.id">
+                    <td><strong>{{ site.nama }}</strong><span>{{ assetCode(site) }}</span><span>{{ site.kode || '-' }}</span></td>
+                    <td><span class="status">{{ networkSiteTypeLabel(site.jenis) }}</span><span>{{ site.lokasi_detail || site.alamat || '' }}</span></td>
+                    <td>{{ assetLocation('network-sites', site) }}</td>
+                    <td>{{ site.pic_nama || '-' }}<span>{{ site.pic_kontak || '' }}</span></td>
+                    <td><span :class="statusClass(site.status)">{{ site.status || '-' }}</span><span>{{ site.installations_count || 0 }} perangkat</span></td>
+                    <td><div class="row-actions"><button class="icon-button" title="Cetak label site" @click="openLabel('network-sites', site)"><Printer :size="16" /></button><button v-if="canWrite" class="icon-button" title="Edit site" @click="openEdit('network-sites', site)"><Pencil :size="16" /></button><button v-if="canWrite" class="icon-button danger" title="Hapus site" @click="removeRow('network-sites', site.id)"><Trash2 :size="16" /></button></div></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </section>
+
         <section v-if="activeTab === 'network-devices'" class="content-grid">
           <section class="surface wide">
             <div class="module-header">
@@ -2598,13 +2828,13 @@ onMounted(bootstrapAuth);
             </div>
             <div class="table-wrap">
               <table>
-                <thead><tr><th>Perangkat</th><th>Jenis</th><th>Manajemen</th><th>Lokasi</th><th>Status</th><th>Aksi</th></tr></thead>
+                <thead><tr><th>Perangkat</th><th>Jenis</th><th>Spesifikasi Ringkas</th><th>Site Aktif</th><th>Status</th><th>Aksi</th></tr></thead>
                 <tbody>
                   <tr v-for="device in filteredNetworkDevices" :key="device.id">
-                    <td><strong>{{ device.nama }}</strong><span>{{ assetCode(device) }}</span><span>{{ device.merk || '-' }} {{ device.model || '' }}</span></td>
-                    <td><span class="status">{{ networkDeviceTypeLabel(device.jenis) }}</span><span>{{ device.upstream_device?.nama ? `Uplink: ${device.upstream_device.nama}` : '' }}</span></td>
-                    <td>{{ device.management_ip || '-' }}<span>{{ device.vlan ? `VLAN ${device.vlan}` : '' }}</span></td>
-                    <td>{{ assetLocation('network-devices', device) }}</td>
+                    <td><strong>{{ device.nama }}</strong><span>{{ assetCode(device) }}</span><span>{{ device.serial_number || device.mac_address || '-' }}</span></td>
+                    <td><span class="status">{{ networkDeviceTypeLabel(device.jenis) }}</span><span>{{ device.merk || '-' }} {{ device.model || '' }}</span></td>
+                    <td>{{ device.os_firmware || '-' }}<span>{{ device.kapasitas_port ? `${device.kapasitas_port} port` : '' }} {{ device.poe_support ? ' / PoE' : '' }} {{ device.wireless_standard || '' }}</span></td>
+                    <td>{{ device.active_installation?.site?.nama || '-' }}<span>{{ device.installations_count || 0 }} riwayat / {{ device.ip_configs_count || 0 }} IP</span></td>
                     <td><span :class="statusClass(device.status)">{{ device.status || '-' }}</span><span>{{ device.kondisi || '' }}</span></td>
                     <td><div class="row-actions"><button class="icon-button" title="Cetak label perangkat" @click="openLabel('network-devices', device)"><Printer :size="16" /></button><button v-if="canWrite" class="icon-button" title="Edit perangkat" @click="openEdit('network-devices', device)"><Pencil :size="16" /></button><button v-if="canWrite" class="icon-button danger" title="Hapus perangkat" @click="removeRow('network-devices', device.id)"><Trash2 :size="16" /></button></div></td>
                   </tr>
@@ -2614,23 +2844,24 @@ onMounted(bootstrapAuth);
           </section>
         </section>
 
-        <section v-if="activeTab === 'network-specs'" class="content-grid">
+        <section v-if="activeTab === 'network-installations'" class="content-grid">
           <section class="surface wide">
             <div class="module-header">
-              <div><p class="eyebrow">Consumer Networking</p><h3 class="yellow-title">Spesifikasi Perangkat</h3></div>
-              <button v-if="canWrite" class="action-button" type="button" @click="openCreate('network-devices')"><Plus :size="17" /> Tambah Perangkat</button>
+              <div><p class="eyebrow">Consumer Networking</p><h3 class="yellow-title">Instalasi & Pergantian</h3></div>
+              <button v-if="canWrite" class="action-button" type="button" @click="openCreate('network-installations')"><Plus :size="17" /> Tambah Riwayat</button>
             </div>
             <div class="table-wrap">
               <table>
-                <thead><tr><th>Perangkat</th><th>Merk / Model</th><th>Serial / MAC</th><th>Firmware</th><th>Port / Wireless</th><th>Aksi</th></tr></thead>
+                <thead><tr><th>Site / Node</th><th>Perangkat</th><th>Role</th><th>Periode</th><th>Pengganti</th><th>Status</th><th>Aksi</th></tr></thead>
                 <tbody>
-                  <tr v-for="device in filteredNetworkDevices" :key="device.id">
-                    <td><strong>{{ device.nama }}</strong><span>{{ networkDeviceTypeLabel(device.jenis) }}</span></td>
-                    <td>{{ device.merk || '-' }}<span>{{ device.model || '' }}</span></td>
-                    <td>{{ device.serial_number || '-' }}<span>{{ device.mac_address || '' }}</span></td>
-                    <td>{{ device.os_firmware || '-' }}</td>
-                    <td>{{ device.kapasitas_port || '-' }} port<span>{{ device.poe_support ? 'PoE' : 'Non-PoE' }} {{ device.wireless_standard || '' }} {{ device.frekuensi || '' }}</span></td>
-                    <td><div class="row-actions"><button v-if="canWrite" class="icon-button" title="Edit spesifikasi" @click="openEdit('network-devices', device)"><Pencil :size="16" /></button></div></td>
+                  <tr v-for="row in filteredNetworkInstallations" :key="row.id">
+                    <td><strong>{{ row.site?.nama || '-' }}</strong><span>{{ row.site?.kode || row.site?.asset_code || '' }}</span></td>
+                    <td>{{ row.device?.nama || '-' }}<span>{{ networkDeviceTypeLabel(row.device?.jenis) }}</span></td>
+                    <td>{{ networkInstallationRoleLabel(row.role) }}<span>{{ row.installed_by || '' }}</span></td>
+                    <td>{{ row.installed_at ? String(row.installed_at).slice(0, 10) : '-' }}<span>{{ row.removed_at ? `s.d. ${String(row.removed_at).slice(0, 10)}` : 'masih tercatat' }}</span></td>
+                    <td>{{ row.replacement_device?.nama || '-' }}</td>
+                    <td><span :class="statusClass(row.status)">{{ row.status }}</span></td>
+                    <td><div class="row-actions"><button v-if="canWrite" class="icon-button" title="Edit riwayat instalasi" @click="openEdit('network-installations', row)"><Pencil :size="16" /></button><button v-if="canWrite" class="icon-button danger" title="Hapus riwayat instalasi" @click="removeRow('network-installations', row.id)"><Trash2 :size="16" /></button></div></td>
                   </tr>
                 </tbody>
               </table>
@@ -2642,43 +2873,20 @@ onMounted(bootstrapAuth);
           <section class="surface wide">
             <div class="module-header">
               <div><p class="eyebrow">Consumer Networking</p><h3 class="yellow-title">Konfigurasi IP</h3></div>
-              <button v-if="canWrite" class="action-button" type="button" @click="openCreate('network-devices')"><Plus :size="17" /> Tambah Perangkat</button>
+              <button v-if="canWrite" class="action-button" type="button" @click="openCreate('network-ip-configs')"><Plus :size="17" /> Tambah IP Config</button>
             </div>
             <div class="table-wrap">
               <table>
-                <thead><tr><th>Perangkat</th><th>Management IP</th><th>Gateway / DNS</th><th>VLAN / SSID</th><th>Uplink</th><th>Aksi</th></tr></thead>
+                <thead><tr><th>Perangkat</th><th>Site</th><th>Interface</th><th>IP / Gateway</th><th>VLAN / SSID</th><th>Status</th><th>Aksi</th></tr></thead>
                 <tbody>
-                  <tr v-for="device in filteredNetworkDevices" :key="device.id">
-                    <td><strong>{{ device.nama }}</strong><span>{{ assetCode(device) }}</span></td>
-                    <td>{{ device.management_ip || '-' }}<span>{{ device.subnet_mask || '' }}</span></td>
-                    <td>{{ device.gateway || '-' }}<span>{{ device.dns || '' }}</span></td>
-                    <td>{{ device.vlan || '-' }}<span>{{ device.ssid || '' }}</span></td>
-                    <td>{{ device.upstream_device?.nama || '-' }}<span>{{ device.dhcp_enabled ? 'DHCP aktif' : 'DHCP nonaktif' }}</span></td>
-                    <td><div class="row-actions"><button v-if="canWrite" class="icon-button" title="Edit konfigurasi IP" @click="openEdit('network-devices', device)"><Pencil :size="16" /></button></div></td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </section>
-        </section>
-
-        <section v-if="activeTab === 'network-installations'" class="content-grid">
-          <section class="surface wide">
-            <div class="module-header">
-              <div><p class="eyebrow">Consumer Networking</p><h3 class="yellow-title">Lokasi Instalasi</h3></div>
-              <button v-if="canWrite" class="action-button" type="button" @click="openCreate('network-devices')"><Plus :size="17" /> Tambah Perangkat</button>
-            </div>
-            <div class="table-wrap">
-              <table>
-                <thead><tr><th>Perangkat</th><th>DC / Rack</th><th>OPD</th><th>Lokasi Pasang</th><th>Penanggung Jawab</th><th>Aksi</th></tr></thead>
-                <tbody>
-                  <tr v-for="device in filteredNetworkDevices" :key="device.id">
-                    <td><strong>{{ device.nama }}</strong><span>{{ networkDeviceTypeLabel(device.jenis) }}</span></td>
-                    <td>{{ device.data_center?.nama || '-' }}<span>{{ device.rack?.nama || '' }}</span></td>
-                    <td>{{ device.opd?.nama || '-' }}</td>
-                    <td>{{ device.lokasi_instalasi || '-' }}<span>{{ device.titik_koordinat || '' }} {{ device.tanggal_pasang ? ` / ${String(device.tanggal_pasang).slice(0, 10)}` : '' }}</span></td>
-                    <td>{{ device.penanggung_jawab || '-' }}</td>
-                    <td><div class="row-actions"><button v-if="canWrite" class="icon-button" title="Edit lokasi instalasi" @click="openEdit('network-devices', device)"><Pencil :size="16" /></button></div></td>
+                  <tr v-for="config in filteredNetworkIpConfigs" :key="config.id">
+                    <td><strong>{{ config.device?.nama || '-' }}</strong><span>{{ networkDeviceTypeLabel(config.device?.jenis) }}</span></td>
+                    <td>{{ config.site?.nama || '-' }}</td>
+                    <td>{{ config.interface_name || '-' }}<span>{{ networkIpTypeLabel(config.ip_type) }}</span></td>
+                    <td>{{ config.ip_address || config.ip_address_record?.ip || '-' }}<span>{{ config.gateway ? `GW ${config.gateway}` : '' }} {{ config.dhcp_enabled ? ' / DHCP' : '' }}</span></td>
+                    <td>{{ config.vlan || '-' }}<span>{{ config.ssid || '' }}</span></td>
+                    <td><span :class="statusClass(config.status)">{{ config.status || '-' }}</span></td>
+                    <td><div class="row-actions"><button v-if="canWrite" class="icon-button" title="Edit konfigurasi IP" @click="openEdit('network-ip-configs', config)"><Pencil :size="16" /></button><button v-if="canWrite" class="icon-button danger" title="Hapus konfigurasi IP" @click="removeRow('network-ip-configs', config.id)"><Trash2 :size="16" /></button></div></td>
                   </tr>
                 </tbody>
               </table>
@@ -2689,20 +2897,21 @@ onMounted(bootstrapAuth);
         <section v-if="activeTab === 'network-credentials'" class="content-grid">
           <section class="surface wide">
             <div class="module-header">
-              <div><p class="eyebrow">Consumer Networking</p><h3 class="yellow-title">Kredensial Perangkat</h3></div>
-              <button v-if="canWrite" class="action-button" type="button" @click="openCreate('network-devices')"><Plus :size="17" /> Tambah Perangkat</button>
+              <div><p class="eyebrow">Consumer Networking</p><h3 class="yellow-title">Kredensial Manajemen</h3></div>
+              <button v-if="canWrite" class="action-button" type="button" @click="openCreate('network-credentials')"><Plus :size="17" /> Tambah Kredensial</button>
             </div>
             <div class="table-wrap">
               <table>
-                <thead><tr><th>Perangkat</th><th>URL Manajemen</th><th>Username</th><th>Password</th><th>Catatan</th><th>Aksi</th></tr></thead>
+                <thead><tr><th>Label</th><th>Perangkat</th><th>Metode</th><th>URL / Username</th><th>Password</th><th>Rotasi</th><th>Aksi</th></tr></thead>
                 <tbody>
-                  <tr v-for="device in filteredNetworkDevices" :key="device.id">
-                    <td><strong>{{ device.nama }}</strong><span>{{ assetCode(device) }}</span></td>
-                    <td>{{ device.management_url || '-' }}</td>
-                    <td>{{ device.credential_username || '-' }}</td>
-                    <td><span :class="statusClass(device.has_credential ? 'aktif' : 'nonaktif')">{{ device.has_credential ? 'Tersimpan' : 'Belum ada' }}</span></td>
-                    <td>{{ device.credential_notes || '-' }}<span>{{ device.credential_updated_at ? `Update: ${String(device.credential_updated_at).slice(0, 10)}` : '' }}</span></td>
-                    <td><div class="row-actions"><button v-if="canWrite" class="icon-button" title="Edit kredensial" @click="openEdit('network-devices', device)"><Pencil :size="16" /></button></div></td>
+                  <tr v-for="credential in filteredNetworkCredentials" :key="credential.id">
+                    <td><strong>{{ credential.label }}</strong><span>{{ credential.site?.nama || '' }}</span></td>
+                    <td>{{ credential.device?.nama || '-' }}<span>{{ networkDeviceTypeLabel(credential.device?.jenis) }}</span></td>
+                    <td>{{ networkAccessMethodLabel(credential.access_method) }}</td>
+                    <td>{{ credential.management_url || '-' }}<span>{{ credential.username || '' }}</span></td>
+                    <td><span :class="statusClass(credential.has_password ? 'aktif' : 'nonaktif')">{{ credential.has_password ? 'Tersimpan' : 'Belum ada' }}</span></td>
+                    <td>{{ credential.last_rotated_at ? String(credential.last_rotated_at).slice(0, 10) : '-' }}</td>
+                    <td><div class="row-actions"><button v-if="canWrite" class="icon-button" title="Edit kredensial" @click="openEdit('network-credentials', credential)"><Pencil :size="16" /></button><button v-if="canWrite" class="icon-button danger" title="Hapus kredensial" @click="removeRow('network-credentials', credential.id)"><Trash2 :size="16" /></button></div></td>
                   </tr>
                 </tbody>
               </table>
@@ -3419,6 +3628,49 @@ onMounted(bootstrapAuth);
             </div>
           </div>
 
+          <div v-if="modal.module === 'network-sites'" class="modal-form">
+            <div class="two-col">
+              <input v-model="networkSiteForm.nama" required placeholder="Nama site / node" />
+              <input v-model="networkSiteForm.kode" placeholder="Kode site, contoh: OPD-DISKOMINFO-LT2" />
+            </div>
+            <div class="three-col">
+              <select v-model="networkSiteForm.jenis" required>
+                <option value="">Jenis site</option>
+                <option v-for="option in networkSiteTypeOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
+              </select>
+              <select v-model="networkSiteForm.status">
+                <option value="">Status</option>
+                <option value="aktif">Aktif</option>
+                <option value="maintenance">Maintenance</option>
+                <option value="nonaktif">Nonaktif</option>
+              </select>
+              <select v-model="networkSiteForm.opd_id">
+                <option value="">OPD / pemilik lokasi</option>
+                <option v-for="opd in references.opd" :key="opd.id" :value="opd.id">{{ opd.nama }}</option>
+              </select>
+            </div>
+            <div class="two-col">
+              <select v-model="networkSiteForm.dc_id">
+                <option value="">Gedung / Ruang DC terkait</option>
+                <option v-for="dc in references.data_centers" :key="dc.id" :value="dc.id">{{ dc.nama }}</option>
+              </select>
+              <select v-model="networkSiteForm.rack_id">
+                <option value="">Rack terkait</option>
+                <option v-for="rack in references.racks" :key="rack.id" :value="rack.id">{{ rack.nama }}</option>
+              </select>
+            </div>
+            <div class="two-col">
+              <input v-model="networkSiteForm.alamat" placeholder="Alamat / area pemasangan" />
+              <input v-model="networkSiteForm.lokasi_detail" placeholder="Detail lokasi, contoh: Lantai 2 ruang command center" />
+            </div>
+            <div class="three-col">
+              <input v-model="networkSiteForm.titik_koordinat" placeholder="Titik koordinat" />
+              <input v-model="networkSiteForm.pic_nama" placeholder="Nama PIC lokasi" />
+              <input v-model="networkSiteForm.pic_kontak" placeholder="Kontak PIC" />
+            </div>
+            <textarea v-model="networkSiteForm.catatan" placeholder="Catatan site / node"></textarea>
+          </div>
+
           <div v-if="modal.module === 'network-devices'" class="modal-form">
             <input v-model="networkDeviceForm.nama" required placeholder="Nama perangkat jaringan" />
             <div class="three-col">
@@ -3461,64 +3713,118 @@ onMounted(bootstrapAuth);
               </label>
             </div>
             <textarea v-model="networkDeviceForm.deskripsi" placeholder="Deskripsi perangkat / fungsi"></textarea>
+          </div>
 
+          <div v-if="modal.module === 'network-installations'" class="modal-form">
             <div class="two-col">
-              <input v-model="networkDeviceForm.management_ip" placeholder="Management IP" />
-              <input v-model="networkDeviceForm.subnet_mask" placeholder="Subnet mask / CIDR" />
+              <select v-model="networkInstallationForm.site_id" required>
+                <option value="">Site / node</option>
+                <option v-for="site in networkSites" :key="site.id" :value="site.id">{{ site.nama }}</option>
+              </select>
+              <select v-model="networkInstallationForm.device_id" required>
+                <option value="">Perangkat</option>
+                <option v-for="device in networkDevices" :key="device.id" :value="device.id">{{ device.nama }}</option>
+              </select>
             </div>
             <div class="three-col">
-              <input v-model="networkDeviceForm.gateway" placeholder="Gateway" />
-              <input v-model="networkDeviceForm.dns" placeholder="DNS" />
-              <input v-model="networkDeviceForm.ip_public" placeholder="IP publik jika ada" />
+              <select v-model="networkInstallationForm.role">
+                <option value="">Role perangkat</option>
+                <option v-for="option in networkInstallationRoleOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
+              </select>
+              <select v-model="networkInstallationForm.status" required>
+                <option value="">Status riwayat</option>
+                <option value="aktif">Aktif</option>
+                <option value="diganti">Diganti</option>
+                <option value="dilepas">Dilepas</option>
+                <option value="rusak">Rusak</option>
+                <option value="maintenance">Maintenance</option>
+              </select>
+              <select v-model="networkInstallationForm.replaced_by_device_id">
+                <option value="">Perangkat pengganti</option>
+                <option v-for="device in networkDevices.filter((item) => item.id !== networkInstallationForm.device_id)" :key="device.id" :value="device.id">{{ device.nama }}</option>
+              </select>
             </div>
             <div class="three-col">
-              <input v-model="networkDeviceForm.vlan" placeholder="VLAN" />
-              <input v-model="networkDeviceForm.ssid" placeholder="SSID" />
+              <input v-model="networkInstallationForm.installed_at" type="date" />
+              <input v-model="networkInstallationForm.removed_at" type="date" />
+              <input v-model="networkInstallationForm.installed_by" placeholder="Dipasang / dicatat oleh" />
+            </div>
+            <textarea v-model="networkInstallationForm.notes" placeholder="Catatan pemasangan, pergantian, atau pelepasan perangkat"></textarea>
+          </div>
+
+          <div v-if="modal.module === 'network-ip-configs'" class="modal-form">
+            <div class="two-col">
+              <select v-model="networkIpConfigForm.device_id" required>
+                <option value="">Perangkat</option>
+                <option v-for="device in networkDevices" :key="device.id" :value="device.id">{{ device.nama }}</option>
+              </select>
+              <select v-model="networkIpConfigForm.site_id">
+                <option value="">Site / node terkait</option>
+                <option v-for="site in networkSites" :key="site.id" :value="site.id">{{ site.nama }}</option>
+              </select>
+            </div>
+            <div class="three-col">
+              <input v-model="networkIpConfigForm.interface_name" placeholder="Interface, contoh: ether1 / wlan1" />
+              <select v-model="networkIpConfigForm.ip_type">
+                <option value="">Tipe IP</option>
+                <option v-for="option in networkIpTypeOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
+              </select>
+              <select v-model="networkIpConfigForm.status">
+                <option value="">Status</option>
+                <option value="aktif">Aktif</option>
+                <option value="nonaktif">Nonaktif</option>
+              </select>
+            </div>
+            <div class="two-col">
+              <input v-model="networkIpConfigForm.ip_address" placeholder="IP address manual" />
+              <select v-model="networkIpConfigForm.ip_address_id">
+                <option value="">Atau relasi IP Address CMDB</option>
+                <option v-for="ip in references.ips" :key="ip.id" :value="ip.id">{{ ip.ip }}</option>
+              </select>
+            </div>
+            <div class="three-col">
+              <input v-model="networkIpConfigForm.subnet_mask" placeholder="Subnet mask / CIDR" />
+              <input v-model="networkIpConfigForm.gateway" placeholder="Gateway" />
+              <input v-model="networkIpConfigForm.dns" placeholder="DNS" />
+            </div>
+            <div class="three-col">
+              <input v-model="networkIpConfigForm.vlan" placeholder="VLAN" />
+              <input v-model="networkIpConfigForm.ssid" placeholder="SSID" />
               <label class="toggle">
-                <input v-model="networkDeviceForm.dhcp_enabled" type="checkbox" />
+                <input v-model="networkIpConfigForm.dhcp_enabled" type="checkbox" />
                 <span>DHCP aktif</span>
               </label>
             </div>
-            <div class="two-col">
-              <select v-model="networkDeviceForm.ip_address_id">
-                <option value="">Relasi IP Address CMDB</option>
-                <option v-for="ip in references.ips" :key="ip.id" :value="ip.id">{{ ip.ip }}</option>
-              </select>
-              <select v-model="networkDeviceForm.upstream_device_id">
-                <option value="">Uplink / parent device</option>
-                <option v-for="device in networkDevices.filter((item) => item.id !== modal.id)" :key="device.id" :value="device.id">{{ device.nama }}</option>
-              </select>
-            </div>
+            <textarea v-model="networkIpConfigForm.notes" placeholder="Catatan konfigurasi IP"></textarea>
+          </div>
 
-            <div class="three-col">
-              <select v-model="networkDeviceForm.dc_id">
-                <option value="">Gedung / Ruang DC</option>
-                <option v-for="dc in references.data_centers" :key="dc.id" :value="dc.id">{{ dc.nama }}</option>
+          <div v-if="modal.module === 'network-credentials'" class="modal-form">
+            <div class="two-col">
+              <select v-model="networkCredentialForm.device_id" required>
+                <option value="">Perangkat</option>
+                <option v-for="device in networkDevices" :key="device.id" :value="device.id">{{ device.nama }}</option>
               </select>
-              <select v-model="networkDeviceForm.rack_id">
-                <option value="">Rack</option>
-                <option v-for="rack in references.racks" :key="rack.id" :value="rack.id">{{ rack.nama }}</option>
-              </select>
-              <select v-model="networkDeviceForm.opd_id">
-                <option value="">OPD / lokasi pemilik</option>
-                <option v-for="opd in references.opd" :key="opd.id" :value="opd.id">{{ opd.nama }}</option>
+              <select v-model="networkCredentialForm.site_id">
+                <option value="">Site / node terkait</option>
+                <option v-for="site in networkSites" :key="site.id" :value="site.id">{{ site.nama }}</option>
               </select>
             </div>
             <div class="two-col">
-              <input v-model="networkDeviceForm.lokasi_instalasi" placeholder="Lokasi instalasi / pemasangan" />
-              <input v-model="networkDeviceForm.titik_koordinat" placeholder="Titik koordinat" />
+              <input v-model="networkCredentialForm.label" required placeholder="Label akses, contoh: Admin Web Router" />
+              <select v-model="networkCredentialForm.access_method" required>
+                <option value="">Metode akses</option>
+                <option v-for="option in networkAccessMethodOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
+              </select>
             </div>
             <div class="two-col">
-              <input v-model="networkDeviceForm.tanggal_pasang" type="date" />
-              <input v-model="networkDeviceForm.penanggung_jawab" placeholder="Penanggung jawab / PIC" />
+              <input v-model="networkCredentialForm.management_url" placeholder="URL / address manajemen" />
+              <input v-model="networkCredentialForm.username" placeholder="Username" />
             </div>
-
             <div class="two-col">
-              <input v-model="networkDeviceForm.management_url" placeholder="URL manajemen perangkat" />
-              <input v-model="networkDeviceForm.credential_username" placeholder="Username perangkat" />
+              <input v-model="networkCredentialForm.password" type="password" :placeholder="modal.mode === 'edit' ? 'Password baru (opsional)' : 'Password'" />
+              <input v-model="networkCredentialForm.last_rotated_at" type="date" />
             </div>
-            <input v-model="networkDeviceForm.credential_password" type="password" :placeholder="modal.mode === 'edit' ? 'Password baru (opsional)' : 'Password perangkat'" />
-            <textarea v-model="networkDeviceForm.credential_notes" placeholder="Catatan kredensial / prosedur akses"></textarea>
+            <textarea v-model="networkCredentialForm.notes" placeholder="Catatan prosedur akses / rotasi"></textarea>
           </div>
 
           <div v-if="modal.module === 'users'" class="modal-form">
