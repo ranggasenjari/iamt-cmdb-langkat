@@ -78,6 +78,7 @@ Route::middleware('auth.api_token')->group(function () {
         Route::apiResource('/network-devices', ConsumerNetworkDeviceController::class)->parameters(['network-devices' => 'networkDevice'])->only(['store', 'update', 'destroy']);
         Route::apiResource('/network-installations', ConsumerNetworkInstallationController::class)->parameters(['network-installations' => 'networkInstallation'])->only(['store', 'update', 'destroy']);
         Route::apiResource('/network-ip-configs', ConsumerNetworkIpConfigController::class)->parameters(['network-ip-configs' => 'networkIpConfig'])->only(['store', 'update', 'destroy']);
+        Route::post('/network-credentials/{networkCredential}/reveal-password', [ConsumerNetworkCredentialController::class, 'revealPassword']);
         Route::apiResource('/network-credentials', ConsumerNetworkCredentialController::class)->parameters(['network-credentials' => 'networkCredential'])->only(['store', 'update', 'destroy']);
         Route::apiResource('/data-assets', DataAssetController::class)->parameters(['data-assets' => 'dataAsset'])->only(['store', 'update', 'destroy']);
         Route::apiResource('/data-classifications', DataClassificationController::class)->parameters(['data-classifications' => 'dataClassification'])->only(['store', 'update', 'destroy']);

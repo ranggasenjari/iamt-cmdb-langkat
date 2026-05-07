@@ -360,6 +360,56 @@ class CmdbApiTest extends TestCase
             ->assertSee($siteAssetCode);
     }
 
+    public function test_full_user_can_reveal_network_credential_password_with_account_password_and_audit_log(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+        $this->authenticateAs();
+
+        $device = \App\Models\ConsumerNetworkDevice::create([
+            'nama' => 'Router Reveal Test',
+            'jenis' => 'router',
+            'status' => 'aktif',
+        ]);
+        $credential = \App\Models\ConsumerNetworkCredential::create([
+            'device_id' => $device->id,
+            'label' => 'Admin Router Reveal',
+            'access_method' => 'ssh',
+            'username' => 'admin',
+            'password' => 'super-secret-router',
+        ]);
+
+        $this->postJson("/api/network-credentials/{$credential->id}/reveal-password", [
+            'account_password' => 'wrong-password',
+        ])->assertStatus(422);
+
+        $this->assertDatabaseHas('audit_log', [
+            'aksi' => 'reveal_password_failed',
+            'tabel' => 'consumer_network_credentials',
+            'record_id' => $credential->id,
+        ]);
+
+        $this->postJson("/api/network-credentials/{$credential->id}/reveal-password", [
+            'account_password' => 'password',
+        ])->assertOk()
+            ->assertJsonPath('id', $credential->id)
+            ->assertJsonPath('password', 'super-secret-router');
+
+        $this->assertDatabaseHas('audit_log', [
+            'aksi' => 'reveal_password',
+            'tabel' => 'consumer_network_credentials',
+            'record_id' => $credential->id,
+        ]);
+
+        $this->getJson("/api/network-credentials/{$credential->id}")
+            ->assertOk()
+            ->assertJsonMissingPath('password');
+
+        $this->authenticateAs('read_only');
+        $this->postJson("/api/network-credentials/{$credential->id}/reveal-password", [
+            'account_password' => 'password',
+        ])->assertForbidden();
+    }
+
     public function test_server_and_vm_specification_changes_are_logged_with_reason(): void
     {
         $this->seed(DatabaseSeeder::class);

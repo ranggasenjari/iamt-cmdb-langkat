@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\ConsumerNetworkCredential;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\ValidationException;
 
 class ConsumerNetworkCredentialController extends Controller
 {
@@ -46,6 +48,50 @@ class ConsumerNetworkCredentialController extends Controller
         $this->audit('delete', $networkCredential, $before, null, $request);
 
         return response()->noContent();
+    }
+
+    public function revealPassword(Request $request, ConsumerNetworkCredential $networkCredential)
+    {
+        $data = $request->validate([
+            'account_password' => ['required', 'string'],
+        ]);
+
+        $user = $request->attributes->get('auth_user');
+
+        if (! Hash::check($data['account_password'], $user?->password ?? '')) {
+            $this->audit('reveal_password_failed', $networkCredential, null, [
+                'credential_id' => $networkCredential->id,
+                'label' => $networkCredential->label,
+                'reason' => 'invalid_account_password',
+            ], $request);
+
+            throw ValidationException::withMessages([
+                'account_password' => ['Password akun tidak sesuai.'],
+            ]);
+        }
+
+        if (blank($networkCredential->password)) {
+            $this->audit('reveal_password_failed', $networkCredential, null, [
+                'credential_id' => $networkCredential->id,
+                'label' => $networkCredential->label,
+                'reason' => 'empty_credential_password',
+            ], $request);
+
+            return response()->json(['message' => 'Password kredensial belum tersimpan.'], 422);
+        }
+
+        $this->audit('reveal_password', $networkCredential, null, [
+            'credential_id' => $networkCredential->id,
+            'label' => $networkCredential->label,
+            'device_id' => $networkCredential->device_id,
+            'site_id' => $networkCredential->site_id,
+        ], $request);
+
+        return [
+            'id' => $networkCredential->id,
+            'label' => $networkCredential->label,
+            'password' => $networkCredential->password,
+        ];
     }
 
     private function validated(Request $request): array

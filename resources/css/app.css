@@ -1064,6 +1064,21 @@ th {
   gap: 12px;
 }
 
+.secret-output {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 42px;
+  gap: 8px;
+}
+
+.secret-output input {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+}
+
+.field-label small {
+  color: var(--green-500);
+  font-weight: 800;
+}
+
 .modal-actions {
   justify-content: flex-end;
   margin-top: 18px;

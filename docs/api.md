@@ -526,6 +526,27 @@ Enum `access_method`: `web`, `ssh`, `winbox`, `snmp`, `api`, `vpn`, `lainnya`.
 
 Field `password` disimpan terenkripsi dan tidak dikembalikan pada response API. Saat update, kosongkan field ini jika tidak ingin mengganti password.
 
+Reveal password hanya tersedia untuk user role `full` dan wajib mengirim password akun user yang sedang login. Setiap percobaan reveal dicatat di `audit_log` dengan aksi `reveal_password` atau `reveal_password_failed`.
+
+```http
+POST /api/network-credentials/{id}/reveal-password
+Content-Type: application/json
+
+{
+  "account_password": "password-akun-login"
+}
+```
+
+Response sukses:
+
+```json
+{
+  "id": "uuid-network-credential",
+  "label": "Admin Web Router",
+  "password": "password-kredensial"
+}
+```
+
 ### Pengguna & Role: `users`
 
 ```json

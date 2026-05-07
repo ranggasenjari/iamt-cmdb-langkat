@@ -6,7 +6,9 @@ import {
   Box,
   Building2,
   CheckCircle2,
+  Copy,
   Database,
+  Eye,
   FileCheck2,
   GitBranch,
   HardDrive,
@@ -112,6 +114,15 @@ const deleteModal = reactive({
   kind: '',
   id: null,
   label: '',
+});
+const revealPasswordModal = reactive({
+  open: false,
+  loading: false,
+  credential: null,
+  account_password: '',
+  revealed_password: '',
+  error: '',
+  copied: false,
 });
 const labelModal = reactive({
   open: false,
@@ -1608,6 +1619,59 @@ async function confirmDelete() {
   }
 }
 
+function openRevealPassword(credential) {
+  if (!canWrite.value || !credential?.has_password) return;
+  Object.assign(revealPasswordModal, {
+    open: true,
+    loading: false,
+    credential,
+    account_password: '',
+    revealed_password: '',
+    error: '',
+    copied: false,
+  });
+}
+
+function closeRevealPasswordModal() {
+  if (revealPasswordModal.loading) return;
+  Object.assign(revealPasswordModal, {
+    open: false,
+    loading: false,
+    credential: null,
+    account_password: '',
+    revealed_password: '',
+    error: '',
+    copied: false,
+  });
+}
+
+async function submitRevealPassword() {
+  if (!canWrite.value || revealPasswordModal.loading || !revealPasswordModal.credential?.id) return;
+  revealPasswordModal.loading = true;
+  revealPasswordModal.error = '';
+  revealPasswordModal.revealed_password = '';
+  revealPasswordModal.copied = false;
+
+  try {
+    const response = await api(`/network-credentials/${revealPasswordModal.credential.id}/reveal-password`, {
+      method: 'POST',
+      body: JSON.stringify({ account_password: revealPasswordModal.account_password }),
+    });
+    revealPasswordModal.revealed_password = response.password || '';
+    revealPasswordModal.account_password = '';
+  } catch (err) {
+    revealPasswordModal.error = err.message;
+  } finally {
+    revealPasswordModal.loading = false;
+  }
+}
+
+async function copyRevealedPassword() {
+  if (!revealPasswordModal.revealed_password || !navigator.clipboard) return;
+  await navigator.clipboard.writeText(revealPasswordModal.revealed_password);
+  revealPasswordModal.copied = true;
+}
+
 function cleanPayload(source, options = {}) {
   return Object.fromEntries(
     Object.entries(source).filter(([, value]) => {
@@ -2924,7 +2988,13 @@ onMounted(bootstrapAuth);
                     <td>{{ credential.management_url || '-' }}<span>{{ credential.username || '' }}</span></td>
                     <td><span :class="statusClass(credential.has_password ? 'aktif' : 'nonaktif')">{{ credential.has_password ? 'Tersimpan' : 'Belum ada' }}</span></td>
                     <td>{{ credential.last_rotated_at ? String(credential.last_rotated_at).slice(0, 10) : '-' }}</td>
-                    <td><div class="row-actions"><button v-if="canWrite" class="icon-button" title="Edit kredensial" @click="openEdit('network-credentials', credential)"><Pencil :size="16" /></button><button v-if="canWrite" class="icon-button danger" title="Hapus kredensial" @click="removeRow('network-credentials', credential.id)"><Trash2 :size="16" /></button></div></td>
+                    <td>
+                      <div class="row-actions">
+                        <button v-if="canWrite && credential.has_password" class="icon-button" title="Reveal password" @click="openRevealPassword(credential)"><Eye :size="16" /></button>
+                        <button v-if="canWrite" class="icon-button" title="Edit kredensial" @click="openEdit('network-credentials', credential)"><Pencil :size="16" /></button>
+                        <button v-if="canWrite" class="icon-button danger" title="Hapus kredensial" @click="removeRow('network-credentials', credential.id)"><Trash2 :size="16" /></button>
+                      </div>
+                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -3865,6 +3935,44 @@ onMounted(bootstrapAuth);
           <footer class="modal-actions">
             <button class="action-button ghost" type="button" @click="closeModal">Batal</button>
             <button class="action-button" type="submit" :disabled="saving">{{ saving ? 'Menyimpan...' : (modal.mode === 'edit' ? 'Simpan Perubahan' : 'Simpan Data') }}</button>
+          </footer>
+        </form>
+      </div>
+
+      <div v-if="revealPasswordModal.open" class="modal-backdrop alert-backdrop" @pointerdown="handleBackdropPointerDown" @click="closeFromBackdrop($event, closeRevealPasswordModal)">
+        <form class="modal-card alert-modal-card" @submit.prevent="submitRevealPassword">
+          <header class="modal-header">
+            <div>
+              <p class="eyebrow">Kredensial</p>
+              <h3>Reveal Password</h3>
+            </div>
+            <button class="icon-button" type="button" title="Tutup reveal password" @click="closeRevealPasswordModal"><X :size="18" /></button>
+          </header>
+
+          <div class="modal-form">
+            <div class="detail-highlight">
+              <span>{{ revealPasswordModal.credential?.device?.nama || 'Perangkat' }}</span>
+              <strong>{{ revealPasswordModal.credential?.label || '-' }}</strong>
+              <small>{{ networkAccessMethodLabel(revealPasswordModal.credential?.access_method) }}</small>
+            </div>
+            <label class="field-label">
+              <span>Password Akun</span>
+              <input v-model="revealPasswordModal.account_password" required type="password" autocomplete="current-password" placeholder="Masukkan password akun Anda" />
+            </label>
+            <p v-if="revealPasswordModal.error" class="alert">{{ revealPasswordModal.error }}</p>
+            <label v-if="revealPasswordModal.revealed_password" class="field-label">
+              <span>Password Kredensial</span>
+              <div class="secret-output">
+                <input :value="revealPasswordModal.revealed_password" readonly />
+                <button class="icon-button" type="button" title="Copy password" @click="copyRevealedPassword"><Copy :size="16" /></button>
+              </div>
+              <small v-if="revealPasswordModal.copied">Password disalin</small>
+            </label>
+          </div>
+
+          <footer class="modal-actions">
+            <button class="action-button ghost" type="button" :disabled="revealPasswordModal.loading" @click="closeRevealPasswordModal">Tutup</button>
+            <button class="action-button" type="submit" :disabled="revealPasswordModal.loading">{{ revealPasswordModal.loading ? 'Memverifikasi...' : 'Reveal Password' }}</button>
           </footer>
         </form>
       </div>
