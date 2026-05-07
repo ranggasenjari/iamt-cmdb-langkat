@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\DataCenter;
 use App\Models\DataClassification;
 use App\Models\BackupMedia;
+use App\Models\ConsumerNetworkDevice;
 use App\Models\IpAddress;
 use App\Models\Isp;
 use App\Models\Opd;
@@ -27,6 +28,7 @@ class ReferenceController extends Controller
             'vms' => VirtualMachine::orderBy('nama')->get(['id', 'nama', 'server_id', 'status']),
             'ips' => IpAddress::orderBy('ip')->get(['id', 'ip', 'jenis']),
             'backup_media' => BackupMedia::orderBy('nama')->get(['id', 'nama', 'location', 'jenis_media']),
+            'network_devices' => ConsumerNetworkDevice::orderBy('nama')->get(['id', 'nama', 'jenis', 'asset_code', 'management_ip']),
         ];
     }
 }

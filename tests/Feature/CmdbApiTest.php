@@ -245,6 +245,73 @@ class CmdbApiTest extends TestCase
             ->assertJsonFragment(['nama' => 'SIEM Kabupaten Langkat']);
     }
 
+    public function test_consumer_networking_devices_can_be_managed(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+        $this->authenticateAs();
+
+        $dc = \App\Models\DataCenter::firstOrFail();
+        $rack = \App\Models\Rack::firstOrFail();
+        $opd = \App\Models\Opd::where('nama', 'Dinas Komunikasi Dan Informatika')->firstOrFail();
+
+        $deviceResponse = $this->postJson('/api/network-devices', [
+            'nama' => 'Router Utama Diskominfo',
+            'jenis' => 'router_utama',
+            'status' => 'aktif',
+            'kondisi' => 'baik',
+            'merk' => 'MikroTik',
+            'model' => 'CCR2004',
+            'serial_number' => 'RTR-LKT-001',
+            'os_firmware' => 'RouterOS 7',
+            'mac_address' => 'AA:BB:CC:DD:EE:FF',
+            'kapasitas_port' => 12,
+            'poe_support' => false,
+            'management_ip' => '10.10.10.1',
+            'subnet_mask' => '255.255.255.0',
+            'gateway' => '10.10.10.254',
+            'dns' => '10.10.10.10',
+            'vlan' => '10',
+            'dhcp_enabled' => true,
+            'dc_id' => $dc->id,
+            'rack_id' => $rack->id,
+            'opd_id' => $opd->id,
+            'lokasi_instalasi' => 'Rack core jaringan lantai 2',
+            'management_url' => 'https://router-core.example.test',
+            'credential_username' => 'admin',
+            'credential_password' => 'secret-password',
+        ])->assertCreated()
+            ->assertJsonPath('nama', 'Router Utama Diskominfo')
+            ->assertJsonPath('has_credential', true)
+            ->assertJsonMissingPath('credential_password');
+
+        $deviceId = $deviceResponse->json('id');
+        $assetCode = $deviceResponse->json('asset_code');
+        $this->assertMatchesRegularExpression('/^LKT-NET-\d{6}$/', $assetCode);
+
+        $this->putJson("/api/network-devices/{$deviceId}", [
+            'nama' => 'Router Utama Diskominfo',
+            'jenis' => 'router_utama',
+            'status' => 'maintenance',
+            'kondisi' => 'baik',
+            'merk' => 'MikroTik',
+            'model' => 'CCR2004',
+            'management_ip' => '10.10.10.2',
+            'dhcp_enabled' => false,
+        ])->assertOk()
+            ->assertJsonPath('status', 'maintenance')
+            ->assertJsonPath('management_ip', '10.10.10.2');
+
+        $this->getJson('/api/network-devices')
+            ->assertOk()
+            ->assertJsonFragment(['nama' => 'Router Utama Diskominfo'])
+            ->assertJsonMissingPath('0.credential_password');
+
+        $this->get("/asset/network-devices/{$deviceId}")
+            ->assertOk()
+            ->assertSee('Router Utama Diskominfo')
+            ->assertSee($assetCode);
+    }
+
     public function test_server_and_vm_specification_changes_are_logged_with_reason(): void
     {
         $this->seed(DatabaseSeeder::class);
@@ -469,6 +536,13 @@ class CmdbApiTest extends TestCase
             'jenis' => 'SIEM',
             'deskripsi_fungsi' => 'Detail endpoint test',
         ]);
+        $networkDevice = \App\Models\ConsumerNetworkDevice::create([
+            'nama' => 'Switch Detail Test',
+            'jenis' => 'switch',
+            'status' => 'aktif',
+            'kondisi' => 'baik',
+            'dc_id' => $dataCenter->id,
+        ]);
 
         $this->authenticateAs('read_only');
 
@@ -488,6 +562,7 @@ class CmdbApiTest extends TestCase
             'backup-jobs' => $backupJob->id,
             'ups-devices' => $upsDevice->id,
             'soc-tools' => $socTool->id,
+            'network-devices' => $networkDevice->id,
             'users' => \App\Models\Pengguna::where('email', 'viewer@langkatkab.go.id')->firstOrFail()->id,
         ];
 
@@ -563,6 +638,12 @@ class CmdbApiTest extends TestCase
             'nama' => 'SOC Delete Test',
             'jenis' => 'SIEM',
         ])->assertCreated()->json('id');
+        $networkDeviceId = $this->postJson('/api/network-devices', [
+            'nama' => 'AP Delete Test',
+            'jenis' => 'access_point',
+            'status' => 'aktif',
+            'kondisi' => 'baik',
+        ])->assertCreated()->json('id');
         $userId = $this->postJson('/api/users', [
             'nama' => 'Delete User',
             'email' => 'delete.user@langkatkab.go.id',
@@ -579,6 +660,7 @@ class CmdbApiTest extends TestCase
             "data-assets/{$assetId}",
             "data-classifications/{$classificationId}",
             "soc-tools/{$socId}",
+            "network-devices/{$networkDeviceId}",
             "ups-devices/{$upsId}",
             "applications/{$appId}",
             "vms/{$vmId}",

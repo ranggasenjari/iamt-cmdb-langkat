@@ -22,6 +22,7 @@ class AssetCodeGenerator
         'backup_jobs' => 'BKJ',
         'ups_devices' => 'UPS',
         'soc_tools' => 'SOC',
+        'consumer_network_devices' => 'NET',
     ];
 
     public static function next(string $table): string

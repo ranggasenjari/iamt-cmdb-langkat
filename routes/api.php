@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BackupJobController;
 use App\Http\Controllers\Api\BackupMediaController;
 use App\Http\Controllers\Api\CmdbController;
+use App\Http\Controllers\Api\ConsumerNetworkDeviceController;
 use App\Http\Controllers\Api\DataAssetController;
 use App\Http\Controllers\Api\DataClassificationController;
 use App\Http\Controllers\Api\DataCenterController;
@@ -46,6 +47,7 @@ Route::middleware('auth.api_token')->group(function () {
     Route::apiResource('/backup-jobs', BackupJobController::class)->parameters(['backup-jobs' => 'backupJob'])->only(['index', 'show']);
     Route::apiResource('/ups-devices', UpsDeviceController::class)->parameters(['ups-devices' => 'upsDevice'])->only(['index', 'show']);
     Route::apiResource('/soc-tools', SocToolController::class)->parameters(['soc-tools' => 'socTool'])->only(['index', 'show']);
+    Route::apiResource('/network-devices', ConsumerNetworkDeviceController::class)->parameters(['network-devices' => 'networkDevice'])->only(['index', 'show']);
     Route::apiResource('/data-assets', DataAssetController::class)->parameters(['data-assets' => 'dataAsset'])->only(['index', 'show']);
     Route::apiResource('/data-classifications', DataClassificationController::class)->parameters(['data-classifications' => 'dataClassification'])->only(['index', 'show']);
     Route::apiResource('/data-centers', DataCenterController::class)->parameters(['data-centers' => 'dataCenter'])->only(['index', 'show']);
@@ -64,6 +66,7 @@ Route::middleware('auth.api_token')->group(function () {
         Route::apiResource('/backup-jobs', BackupJobController::class)->parameters(['backup-jobs' => 'backupJob'])->only(['store', 'update', 'destroy']);
         Route::apiResource('/ups-devices', UpsDeviceController::class)->parameters(['ups-devices' => 'upsDevice'])->only(['store', 'update', 'destroy']);
         Route::apiResource('/soc-tools', SocToolController::class)->parameters(['soc-tools' => 'socTool'])->only(['store', 'update', 'destroy']);
+        Route::apiResource('/network-devices', ConsumerNetworkDeviceController::class)->parameters(['network-devices' => 'networkDevice'])->only(['store', 'update', 'destroy']);
         Route::apiResource('/data-assets', DataAssetController::class)->parameters(['data-assets' => 'dataAsset'])->only(['store', 'update', 'destroy']);
         Route::apiResource('/data-classifications', DataClassificationController::class)->parameters(['data-classifications' => 'dataClassification'])->only(['store', 'update', 'destroy']);
         Route::apiResource('/data-centers', DataCenterController::class)->parameters(['data-centers' => 'dataCenter'])->only(['store', 'update', 'destroy']);

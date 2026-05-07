@@ -7,6 +7,7 @@ use App\Models\AppIntegration;
 use App\Models\ApplicationDocument;
 use App\Models\BackupJob;
 use App\Models\BackupMedia;
+use App\Models\ConsumerNetworkDevice;
 use App\Models\DataAsset;
 use App\Models\DataCenter;
 use App\Models\IpAddress;
@@ -49,6 +50,7 @@ class PublicAssetController extends Controller
             'backup-jobs' => BackupJob::query()->with(['aplikasi:id,nama,asset_code', 'media:id,nama,asset_code']),
             'ups-devices' => UpsDevice::query()->with('dataCenter:id,nama,lokasi'),
             'soc-tools' => SocTool::query()->with(['dataCenters:id,nama', 'servers:id,nama', 'vms:id,nama', 'applications:id,nama']),
+            'network-devices' => ConsumerNetworkDevice::query()->with(['dataCenter:id,nama,lokasi', 'rack:id,nama', 'opd:id,nama', 'upstreamDevice:id,nama']),
         };
 
         $row = $query->findOrFail($id);
@@ -81,6 +83,7 @@ class PublicAssetController extends Controller
             'backup-jobs' => 'Pencadangan',
             'ups-devices' => 'UPS / Power Backup',
             'soc-tools' => 'SOC',
+            'network-devices' => 'Consumer Networking',
         ];
     }
 
@@ -111,6 +114,7 @@ class PublicAssetController extends Controller
             'backup-jobs' => trim(($row->repetisi_n ?? '-').' '.($row->repetisi_unit ?? '')),
             'ups-devices' => $row->kondisi ?? '-',
             'soc-tools' => $row->jenis ?? '-',
+            'network-devices' => trim(($row->jenis ?? '-').' / '.($row->status ?? '-')),
             default => '-',
         };
     }
@@ -132,6 +136,7 @@ class PublicAssetController extends Controller
             'backup-jobs' => $row->media?->nama ?? '-',
             'ups-devices' => collect([$row->dataCenter?->nama, $row->dataCenter?->lokasi])->filter()->join(' / ') ?: '-',
             'soc-tools' => 'DC '.$row->dataCenters->count().' / Server '.$row->servers->count().' / VM '.$row->vms->count().' / Aplikasi '.$row->applications->count(),
+            'network-devices' => collect([$row->dataCenter?->nama, $row->rack?->nama, $row->opd?->nama, $row->lokasi_instalasi])->filter()->join(' / ') ?: '-',
             default => '-',
         };
     }
@@ -162,6 +167,11 @@ class PublicAssetController extends Controller
                 'Retensi' => ($row->retensi_n ?? '-').' '.($row->retensi_unit ?? ''),
                 'Repetisi' => ($row->repetisi_n ?? '-').' '.($row->repetisi_unit ?? ''),
                 'Media' => $row->media?->nama ?? '-',
+            ],
+            'network-devices' => [
+                'Merk / Model' => trim(($row->merk ?? '-').' '.($row->model ?? '')),
+                'Firmware' => $row->os_firmware ?? '-',
+                'Uplink' => $row->upstreamDevice?->nama ?? '-',
             ],
             default => [],
         };

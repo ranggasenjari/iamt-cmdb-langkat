@@ -13,6 +13,7 @@ Aplikasi CMDB untuk manajemen aset digital Kabupaten Langkat. Stack utama:
 - Manajemen aplikasi: aplikasi, tech stack, klasifikasi fungsi, dokumen aplikasi, klasifikasi aset data, dan interoperabilitas.
 - Klasifikasi data berdasarkan skor kerahasiaan, integritas, dan ketersediaan sesuai acuan Permenkomdigi No. 5 Tahun 2025.
 - Manajemen keamanan informasi: media pencadangan, jadwal pencadangan, dan SOC tools beserta coverage DC, server, VM, dan aplikasi.
+- Consumer Networking: pendataan router utama, switch, access point, perangkat CPE, spesifikasi, konfigurasi IP, lokasi instalasi, dan kredensial manajemen perangkat.
 - Mapping aplikasi ke VM, server, dan IP address.
 - Impact analysis server ke aplikasi terdampak.
 - Compliance check PSE/SPBE ringan dan security gap.
