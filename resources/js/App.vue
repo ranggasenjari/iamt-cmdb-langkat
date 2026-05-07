@@ -132,6 +132,7 @@ const detailModal = reactive({
 const labelQrDataUrl = ref('');
 const bulkLabelQrUrls = ref({});
 const bulkLabelGenerating = ref(false);
+const backdropPointerStartedOnSelf = ref(false);
 
 const dashboard = ref(null);
 const references = ref({ opd: [], classifications: [], data_centers: [], racks: [], isps: [], servers: [], vms: [], ips: [], backup_media: [], network_devices: [], network_sites: [] });
@@ -1424,7 +1425,7 @@ async function saveModal() {
     const endpoint = modal.mode === 'edit' ? `/${modal.module}/${modal.id}` : `/${modal.module}`;
     await api(endpoint, {
       method: modal.mode === 'edit' ? 'PUT' : 'POST',
-      body: JSON.stringify(cleanPayload(formFor(modal.module))),
+      body: JSON.stringify(cleanPayload(formFor(modal.module), { includeEmpty: modal.mode === 'edit' })),
     });
     closeModal();
     await loadAll();
@@ -1607,13 +1608,25 @@ async function confirmDelete() {
   }
 }
 
-function cleanPayload(source) {
+function cleanPayload(source, options = {}) {
   return Object.fromEntries(
     Object.entries(source).filter(([, value]) => {
       if (Array.isArray(value)) return true;
+      if (options.includeEmpty) return value !== undefined;
       return value !== '' && value !== null && value !== undefined;
     }),
   );
+}
+
+function handleBackdropPointerDown(event) {
+  backdropPointerStartedOnSelf.value = event.target === event.currentTarget;
+}
+
+function closeFromBackdrop(event, closeFn) {
+  const shouldClose = backdropPointerStartedOnSelf.value && event.target === event.currentTarget;
+  backdropPointerStartedOnSelf.value = false;
+
+  if (shouldClose) closeFn();
 }
 
 function toggleInArray(list, id) {
@@ -3154,7 +3167,7 @@ onMounted(bootstrapAuth);
         </section>
       </section>
 
-      <div v-if="modal.open" class="modal-backdrop" @click.self="closeModal">
+      <div v-if="modal.open" class="modal-backdrop" @pointerdown="handleBackdropPointerDown" @click="closeFromBackdrop($event, closeModal)">
         <form class="modal-card" @submit.prevent="saveModal">
           <header class="modal-header">
             <div>
@@ -3856,7 +3869,7 @@ onMounted(bootstrapAuth);
         </form>
       </div>
 
-      <div v-if="labelModal.open && labelModal.item" class="modal-backdrop label-backdrop" @click.self="closeLabelModal">
+      <div v-if="labelModal.open && labelModal.item" class="modal-backdrop label-backdrop" @pointerdown="handleBackdropPointerDown" @click="closeFromBackdrop($event, closeLabelModal)">
         <section class="modal-card label-modal-card">
           <header class="modal-header">
             <div>
@@ -3898,7 +3911,7 @@ onMounted(bootstrapAuth);
         </section>
       </div>
 
-      <div v-if="detailModal.open" class="modal-backdrop" @click.self="closeDetailModal">
+      <div v-if="detailModal.open" class="modal-backdrop" @pointerdown="handleBackdropPointerDown" @click="closeFromBackdrop($event, closeDetailModal)">
         <section class="modal-card detail-modal-card">
           <header class="modal-header">
             <div>
@@ -3926,7 +3939,7 @@ onMounted(bootstrapAuth);
         </section>
       </div>
 
-      <div v-if="deleteModal.open" class="modal-backdrop alert-backdrop" @click.self="closeDeleteModal">
+      <div v-if="deleteModal.open" class="modal-backdrop alert-backdrop" @pointerdown="handleBackdropPointerDown" @click="closeFromBackdrop($event, closeDeleteModal)">
         <section class="modal-card alert-modal-card">
           <header class="modal-header">
             <div>
@@ -3947,7 +3960,7 @@ onMounted(bootstrapAuth);
         </section>
       </div>
 
-      <div v-if="alertModal.open" class="modal-backdrop alert-backdrop" @click.self="closeAlert">
+      <div v-if="alertModal.open" class="modal-backdrop alert-backdrop" @pointerdown="handleBackdropPointerDown" @click="closeFromBackdrop($event, closeAlert)">
         <section class="modal-card alert-modal-card">
           <header class="modal-header">
             <div>

@@ -414,6 +414,26 @@ class CmdbApiTest extends TestCase
             ->assertJsonPath('0.changed_fields.vcpu.after', $newVcpu);
     }
 
+    public function test_updates_can_clear_nullable_fields_with_empty_values(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+        $this->authenticateAs();
+
+        $server = Server::where('nama', 'SRV-PROD-01')->firstOrFail();
+
+        $this->putJson("/api/servers/{$server->id}", [
+            'nama' => $server->nama,
+            'status' => '',
+            'merk_processor' => '',
+            'rack_size_u' => null,
+            'penanggung_jawab' => '',
+        ])->assertOk()
+            ->assertJsonPath('status', null)
+            ->assertJsonPath('merk_processor', null)
+            ->assertJsonPath('rack_size_u', null)
+            ->assertJsonPath('penanggung_jawab', null);
+    }
+
     public function test_authentication_and_read_only_role_enforcement(): void
     {
         $this->seed(DatabaseSeeder::class);
