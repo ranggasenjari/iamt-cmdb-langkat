@@ -7,7 +7,10 @@ use App\Models\AppIntegration;
 use App\Models\ApplicationDocument;
 use App\Models\BackupJob;
 use App\Models\BackupMedia;
+use App\Models\ConsumerNetworkCredential;
 use App\Models\ConsumerNetworkDevice;
+use App\Models\ConsumerNetworkInstallation;
+use App\Models\ConsumerNetworkIpConfig;
 use App\Models\ConsumerNetworkSite;
 use App\Models\DataAsset;
 use App\Models\DataCenter;
@@ -53,6 +56,9 @@ class PublicAssetController extends Controller
             'soc-tools' => SocTool::query()->with(['dataCenters:id,nama', 'servers:id,nama', 'vms:id,nama', 'applications:id,nama']),
             'network-sites' => ConsumerNetworkSite::query()->with(['dataCenter:id,nama,lokasi', 'rack:id,nama', 'opd:id,nama']),
             'network-devices' => ConsumerNetworkDevice::query()->with(['dataCenter:id,nama,lokasi', 'rack:id,nama', 'opd:id,nama', 'upstreamDevice:id,nama', 'activeInstallation.site:id,nama,kode,asset_code']),
+            'network-installations' => ConsumerNetworkInstallation::query()->with(['site:id,nama,kode,asset_code', 'device:id,nama,jenis,asset_code', 'replacementDevice:id,nama,jenis,asset_code']),
+            'network-ip-configs' => ConsumerNetworkIpConfig::query()->with(['device:id,nama,jenis,asset_code', 'site:id,nama,kode,asset_code', 'ipAddressRecord:id,ip,jenis']),
+            'network-credentials' => ConsumerNetworkCredential::query()->with(['device:id,nama,jenis,asset_code', 'site:id,nama,kode,asset_code']),
         };
 
         $row = $query->findOrFail($id);
@@ -60,7 +66,7 @@ class PublicAssetController extends Controller
         return [
             'module' => $module,
             'module_label' => $this->modules()[$module],
-            'asset_code' => $row->asset_code,
+            'asset_code' => $row->asset_code ?? $this->fallbackCode($module, $row),
             'name' => $this->nameFor($module, $row),
             'status' => $this->statusFor($module, $row),
             'location' => $this->locationFor($module, $row),
@@ -87,6 +93,9 @@ class PublicAssetController extends Controller
             'soc-tools' => 'SOC',
             'network-sites' => 'Site / Node Jaringan',
             'network-devices' => 'Consumer Networking',
+            'network-installations' => 'Instalasi & Pergantian Jaringan',
+            'network-ip-configs' => 'Konfigurasi IP Jaringan',
+            'network-credentials' => 'Kredensial Jaringan',
         ];
     }
 
@@ -98,6 +107,9 @@ class PublicAssetController extends Controller
             'application-documents' => $row->original_name ?? $row->nama ?? '-',
             'app-integrations' => 'Integrasi '.$row->aplikasi?->nama,
             'backup-jobs' => 'Backup '.$row->aplikasi?->nama,
+            'network-installations' => collect([$row->device?->nama, $row->site?->nama])->filter()->join(' @ ') ?: '-',
+            'network-ip-configs' => collect([$row->device?->nama, $row->ip_address ?: ($row->ipAddressRecord?->ip)])->filter()->join(' / ') ?: '-',
+            'network-credentials' => collect([$row->label, $row->device?->nama])->filter()->join(' / ') ?: '-',
             default => $row->nama ?? '-',
         };
     }
@@ -119,6 +131,9 @@ class PublicAssetController extends Controller
             'soc-tools' => $row->jenis ?? '-',
             'network-sites' => trim(($row->jenis ?? '-').' / '.($row->status ?? '-')),
             'network-devices' => trim(($row->jenis ?? '-').' / '.($row->status ?? '-')),
+            'network-installations' => trim(($row->role ?? '-').' / '.($row->status ?? '-')),
+            'network-ip-configs' => trim(($row->ip_type ?? '-').' / '.($row->status ?? '-')),
+            'network-credentials' => trim(($row->access_method ?? '-').' / '.($row->has_password ? 'Password tersimpan' : 'Tanpa password')),
             default => '-',
         };
     }
@@ -142,6 +157,9 @@ class PublicAssetController extends Controller
             'soc-tools' => 'DC '.$row->dataCenters->count().' / Server '.$row->servers->count().' / VM '.$row->vms->count().' / Aplikasi '.$row->applications->count(),
             'network-sites' => collect([$row->dataCenter?->nama, $row->rack?->nama, $row->opd?->nama, $row->lokasi_detail, $row->alamat])->filter()->join(' / ') ?: '-',
             'network-devices' => collect([$row->dataCenter?->nama, $row->rack?->nama, $row->opd?->nama, $row->lokasi_instalasi])->filter()->join(' / ') ?: '-',
+            'network-installations' => $row->site?->nama ?? '-',
+            'network-ip-configs' => $row->site?->nama ?? $row->device?->nama ?? '-',
+            'network-credentials' => $row->site?->nama ?? $row->device?->nama ?? '-',
             default => '-',
         };
     }
@@ -178,14 +196,46 @@ class PublicAssetController extends Controller
                 'Firmware' => $row->os_firmware ?? '-',
                 'Site Aktif' => $row->activeInstallation?->site?->nama ?? '-',
                 'Uplink' => $row->upstreamDevice?->nama ?? '-',
+                'Catatan / Deskripsi' => $row->deskripsi ?? '-',
             ],
             'network-sites' => [
                 'Kode Site' => $row->kode ?? '-',
                 'PIC' => collect([$row->pic_nama, $row->pic_kontak])->filter()->join(' / ') ?: '-',
                 'Koordinat' => $row->titik_koordinat ?? '-',
+                'Catatan' => $row->catatan ?? '-',
+            ],
+            'network-installations' => [
+                'Perangkat' => $row->device?->nama ?? '-',
+                'Site / Node' => $row->site?->nama ?? '-',
+                'Tanggal Pasang' => optional($row->installed_at)->format('Y-m-d') ?? '-',
+                'Tanggal Lepas' => optional($row->removed_at)->format('Y-m-d') ?? '-',
+                'Perangkat Pengganti' => $row->replacementDevice?->nama ?? '-',
+                'Catatan' => $row->notes ?? '-',
+            ],
+            'network-ip-configs' => [
+                'Perangkat' => $row->device?->nama ?? '-',
+                'Site / Node' => $row->site?->nama ?? '-',
+                'Interface' => $row->interface_name ?? '-',
+                'IP Address' => $row->ip_address ?: ($row->ipAddressRecord?->ip ?? '-'),
+                'Gateway' => $row->gateway ?? '-',
+                'VLAN / SSID' => collect([$row->vlan, $row->ssid])->filter()->join(' / ') ?: '-',
+                'Catatan' => $row->notes ?? '-',
+            ],
+            'network-credentials' => [
+                'Perangkat' => $row->device?->nama ?? '-',
+                'Site / Node' => $row->site?->nama ?? '-',
+                'Metode Akses' => $row->access_method ?? '-',
+                'Username' => $row->username ?? '-',
+                'Password' => $row->has_password ? 'Tersimpan, tidak ditampilkan pada halaman publik' : 'Belum ada',
+                'Catatan' => $row->notes ?? '-',
             ],
             default => [],
         };
+    }
+
+    private function fallbackCode(string $module, object $row): string
+    {
+        return strtoupper($module).'-'.strtoupper(substr((string) $row->id, 0, 8));
     }
 
     private function logoDataUri(): ?string

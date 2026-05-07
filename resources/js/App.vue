@@ -198,6 +198,9 @@ const printableLabelModules = new Set([
   'soc-tools',
   'network-sites',
   'network-devices',
+  'network-installations',
+  'network-ip-configs',
+  'network-credentials',
 ]);
 
 const dataCenterForm = reactive({
@@ -754,6 +757,9 @@ const bulkLabelModuleOptions = [
   'soc-tools',
   'network-sites',
   'network-devices',
+  'network-installations',
+  'network-ip-configs',
+  'network-credentials',
 ].map((value) => ({ value, label: moduleLabels[value] }));
 
 const activeModuleLabel = computed(() => moduleLabels[modal.module] || 'Data');
@@ -786,6 +792,9 @@ function itemsForLabelModule(module) {
     'soc-tools': socTools.value,
     'network-sites': networkSites.value,
     'network-devices': networkDevices.value,
+    'network-installations': networkInstallations.value,
+    'network-ip-configs': networkIpConfigs.value,
+    'network-credentials': networkCredentials.value,
   }[module] || [];
 }
 
@@ -805,7 +814,7 @@ function assetName(row, module = '') {
 }
 
 function assetCode(row) {
-  return row?.asset_code || 'Kode belum dibuat';
+  return row?.asset_code || (row?.id ? `ID ${String(row.id).slice(0, 8).toUpperCase()}` : 'Kode belum dibuat');
 }
 
 function assetLocation(module, row) {
@@ -826,6 +835,9 @@ function assetLocation(module, row) {
   if (module === 'soc-tools') return row.jenis || '-';
   if (module === 'network-sites') return [row.data_center?.nama, row.rack?.nama, row.opd?.nama, row.lokasi_detail, row.alamat].filter(Boolean).join(' / ') || '-';
   if (module === 'network-devices') return row.active_installation?.site?.nama || [row.data_center?.nama, row.rack?.nama, row.opd?.nama, row.lokasi_instalasi].filter(Boolean).join(' / ') || '-';
+  if (module === 'network-installations') return row.site?.nama || row.device?.nama || '-';
+  if (module === 'network-ip-configs') return row.site?.nama || row.device?.nama || '-';
+  if (module === 'network-credentials') return row.site?.nama || row.device?.nama || '-';
   return row.lokasi || row.location || '-';
 }
 
@@ -2938,7 +2950,7 @@ onMounted(bootstrapAuth);
                     <td>{{ row.installed_at ? String(row.installed_at).slice(0, 10) : '-' }}<span>{{ row.removed_at ? `s.d. ${String(row.removed_at).slice(0, 10)}` : 'masih tercatat' }}</span></td>
                     <td>{{ row.replacement_device?.nama || '-' }}</td>
                     <td><span :class="statusClass(row.status)">{{ row.status }}</span></td>
-                    <td><div class="row-actions"><button v-if="canWrite" class="icon-button" title="Edit riwayat instalasi" @click="openEdit('network-installations', row)"><Pencil :size="16" /></button><button v-if="canWrite" class="icon-button danger" title="Hapus riwayat instalasi" @click="removeRow('network-installations', row.id)"><Trash2 :size="16" /></button></div></td>
+                    <td><div class="row-actions"><button class="icon-button" title="Cetak label instalasi" @click="openLabel('network-installations', row)"><Printer :size="16" /></button><button v-if="canWrite" class="icon-button" title="Edit riwayat instalasi" @click="openEdit('network-installations', row)"><Pencil :size="16" /></button><button v-if="canWrite" class="icon-button danger" title="Hapus riwayat instalasi" @click="removeRow('network-installations', row.id)"><Trash2 :size="16" /></button></div></td>
                   </tr>
                 </tbody>
               </table>
@@ -2963,7 +2975,7 @@ onMounted(bootstrapAuth);
                     <td>{{ config.ip_address || config.ip_address_record?.ip || '-' }}<span>{{ config.gateway ? `GW ${config.gateway}` : '' }} {{ config.dhcp_enabled ? ' / DHCP' : '' }}</span></td>
                     <td>{{ config.vlan || '-' }}<span>{{ config.ssid || '' }}</span></td>
                     <td><span :class="statusClass(config.status)">{{ config.status || '-' }}</span></td>
-                    <td><div class="row-actions"><button v-if="canWrite" class="icon-button" title="Edit konfigurasi IP" @click="openEdit('network-ip-configs', config)"><Pencil :size="16" /></button><button v-if="canWrite" class="icon-button danger" title="Hapus konfigurasi IP" @click="removeRow('network-ip-configs', config.id)"><Trash2 :size="16" /></button></div></td>
+                    <td><div class="row-actions"><button class="icon-button" title="Cetak label konfigurasi IP" @click="openLabel('network-ip-configs', config)"><Printer :size="16" /></button><button v-if="canWrite" class="icon-button" title="Edit konfigurasi IP" @click="openEdit('network-ip-configs', config)"><Pencil :size="16" /></button><button v-if="canWrite" class="icon-button danger" title="Hapus konfigurasi IP" @click="removeRow('network-ip-configs', config.id)"><Trash2 :size="16" /></button></div></td>
                   </tr>
                 </tbody>
               </table>
@@ -2990,6 +3002,7 @@ onMounted(bootstrapAuth);
                     <td>{{ credential.last_rotated_at ? String(credential.last_rotated_at).slice(0, 10) : '-' }}</td>
                     <td>
                       <div class="row-actions">
+                        <button class="icon-button" title="Cetak label kredensial" @click="openLabel('network-credentials', credential)"><Printer :size="16" /></button>
                         <button v-if="canWrite && credential.has_password" class="icon-button" title="Reveal password" @click="openRevealPassword(credential)"><Eye :size="16" /></button>
                         <button v-if="canWrite" class="icon-button" title="Edit kredensial" @click="openEdit('network-credentials', credential)"><Pencil :size="16" /></button>
                         <button v-if="canWrite" class="icon-button danger" title="Hapus kredensial" @click="removeRow('network-credentials', credential.id)"><Trash2 :size="16" /></button>

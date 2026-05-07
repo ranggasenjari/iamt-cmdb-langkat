@@ -264,6 +264,7 @@ class CmdbApiTest extends TestCase
             'rack_id' => $rack->id,
             'lokasi_detail' => 'Rack core jaringan lantai 2',
             'pic_nama' => 'Tim Infrastruktur TIK',
+            'catatan' => 'Catatan node core untuk label QR.',
         ])->assertCreated()
             ->assertJsonPath('nama', 'Node Core Diskominfo Lantai 2');
 
@@ -283,6 +284,7 @@ class CmdbApiTest extends TestCase
             'mac_address' => 'AA:BB:CC:DD:EE:FF',
             'kapasitas_port' => 12,
             'poe_support' => false,
+            'deskripsi' => 'Catatan perangkat router utama untuk QR.',
         ])->assertCreated()
             ->assertJsonPath('nama', 'Router Utama Diskominfo')
             ->assertJsonMissingPath('credential_password');
@@ -298,11 +300,12 @@ class CmdbApiTest extends TestCase
             'status' => 'aktif',
             'installed_at' => '2026-05-08',
             'installed_by' => 'Admin Infrastruktur',
+            'notes' => 'Catatan pemasangan router core.',
         ])->assertCreated()
             ->assertJsonPath('site.nama', 'Node Core Diskominfo Lantai 2')
             ->json('id');
 
-        $this->postJson('/api/network-ip-configs', [
+        $ipConfigId = $this->postJson('/api/network-ip-configs', [
             'device_id' => $deviceId,
             'site_id' => $siteId,
             'interface_name' => 'ether1',
@@ -314,11 +317,13 @@ class CmdbApiTest extends TestCase
             'vlan' => '10',
             'dhcp_enabled' => true,
             'status' => 'aktif',
+            'notes' => 'Catatan konfigurasi IP manajemen.',
         ])->assertCreated()
             ->assertJsonPath('ip_address', '10.10.10.1')
-            ->assertJsonPath('dhcp_enabled', true);
+            ->assertJsonPath('dhcp_enabled', true)
+            ->json('id');
 
-        $this->postJson('/api/network-credentials', [
+        $credentialId = $this->postJson('/api/network-credentials', [
             'device_id' => $deviceId,
             'site_id' => $siteId,
             'label' => 'Admin Web Router',
@@ -326,9 +331,11 @@ class CmdbApiTest extends TestCase
             'management_url' => 'https://router-core.example.test',
             'username' => 'admin',
             'password' => 'secret-password',
+            'notes' => 'Catatan prosedur akses tanpa password.',
         ])->assertCreated()
             ->assertJsonPath('has_password', true)
-            ->assertJsonMissingPath('password');
+            ->assertJsonMissingPath('password')
+            ->json('id');
 
         $this->putJson("/api/network-devices/{$deviceId}", [
             'nama' => 'Router Utama Diskominfo',
@@ -337,6 +344,7 @@ class CmdbApiTest extends TestCase
             'kondisi' => 'baik',
             'merk' => 'MikroTik',
             'model' => 'CCR2004',
+            'deskripsi' => 'Catatan perangkat router utama untuk QR.',
         ])->assertOk()
             ->assertJsonPath('status', 'maintenance');
 
@@ -352,12 +360,27 @@ class CmdbApiTest extends TestCase
         $this->get("/asset/network-devices/{$deviceId}")
             ->assertOk()
             ->assertSee('Router Utama Diskominfo')
+            ->assertSee('Catatan perangkat router utama untuk QR.')
             ->assertSee($assetCode);
 
         $this->get("/asset/network-sites/{$siteId}")
             ->assertOk()
             ->assertSee('Node Core Diskominfo Lantai 2')
+            ->assertSee('Catatan node core untuk label QR.')
             ->assertSee($siteAssetCode);
+
+        $this->get("/asset/network-installations/{$installationId}")
+            ->assertOk()
+            ->assertSee('Catatan pemasangan router core.');
+
+        $this->get("/asset/network-ip-configs/{$ipConfigId}")
+            ->assertOk()
+            ->assertSee('Catatan konfigurasi IP manajemen.');
+
+        $this->get("/asset/network-credentials/{$credentialId}")
+            ->assertOk()
+            ->assertSee('Catatan prosedur akses tanpa password.')
+            ->assertDontSee('secret-password');
     }
 
     public function test_full_user_can_reveal_network_credential_password_with_account_password_and_audit_log(): void
