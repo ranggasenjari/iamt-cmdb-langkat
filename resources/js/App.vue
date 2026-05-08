@@ -4456,10 +4456,6 @@ onMounted(bootstrapAuth);
                 <span>Speedtest</span>
                 <strong>{{ monitoringSpeedSummary(monitoringReportModal.item) }}</strong>
               </div>
-              <div>
-                <span>Menara</span>
-                <strong>{{ monitoringTowerSummary(monitoringReportModal.item) }}</strong>
-              </div>
             </section>
 
             <section class="report-section">
