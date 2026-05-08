@@ -4443,7 +4443,7 @@ onMounted(bootstrapAuth);
               <div>
                 <span>Kode Laporan</span>
                 <strong>{{ assetCode(monitoringReportModal.item) }}</strong>
-                <small>{{ assetDetailUrl('network-monitorings', monitoringReportModal.item) }}</small>
+                <small>QR publik menuju detail monitoring</small>
               </div>
             </section>
 
