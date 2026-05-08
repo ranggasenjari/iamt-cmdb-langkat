@@ -208,14 +208,17 @@ class ConsumerNetworkMonitoringController extends Controller
         $directory = public_path('uploads/network-monitoring-attachments');
         File::ensureDirectoryExists($directory);
 
+        $originalName = $file->getClientOriginalName();
+        $mimeType = $file->getMimeType();
+        $size = $file->getSize();
         $filename = (string) Str::uuid().'.'.$file->getClientOriginalExtension();
         $file->move($directory, $filename);
 
         return [
             'path' => "uploads/network-monitoring-attachments/{$filename}",
-            'original_name' => $file->getClientOriginalName(),
-            'mime_type' => $file->getMimeType(),
-            'size_bytes' => $file->getSize(),
+            'original_name' => $originalName,
+            'mime_type' => $mimeType,
+            'size_bytes' => $size,
         ];
     }
 

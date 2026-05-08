@@ -4045,7 +4045,10 @@ onMounted(bootstrapAuth);
                 <option value="">Site / node pemantauan</option>
                 <option v-for="site in networkSites" :key="site.id" :value="site.id">{{ site.nama }}</option>
               </select>
-              <input v-model="networkMonitoringForm.monitoring_at" required type="datetime-local" />
+              <label class="field-label">
+                <span>Tanggal & Jam Pemantauan</span>
+                <input v-model="networkMonitoringForm.monitoring_at" required type="datetime-local" />
+              </label>
             </div>
             <div class="two-col">
               <input v-model="networkMonitoringForm.period_month" type="month" placeholder="Periode bulan" />
@@ -4203,9 +4206,18 @@ onMounted(bootstrapAuth);
               </select>
             </div>
             <div class="three-col">
-              <input v-model="networkInstallationForm.installed_at" type="date" />
-              <input v-model="networkInstallationForm.removed_at" type="date" />
-              <input v-model="networkInstallationForm.installed_by" placeholder="Dipasang / dicatat oleh" />
+              <label class="field-label">
+                <span>Tanggal Pasang</span>
+                <input v-model="networkInstallationForm.installed_at" type="date" />
+              </label>
+              <label class="field-label">
+                <span>Tanggal Lepas / Diganti</span>
+                <input v-model="networkInstallationForm.removed_at" type="date" />
+              </label>
+              <label class="field-label">
+                <span>Dipasang / Dicatat Oleh</span>
+                <input v-model="networkInstallationForm.installed_by" placeholder="Nama petugas" />
+              </label>
             </div>
             <textarea v-model="networkInstallationForm.notes" placeholder="Catatan pemasangan, pergantian, atau pelepasan perangkat"></textarea>
           </div>
