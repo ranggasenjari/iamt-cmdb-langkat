@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Models\Server;
+use App\Support\Ping\IpPingService;
+use App\Support\Ping\PingResult;
 use Database\Seeders\DatabaseSeeder;
 use Database\Seeders\OpdSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -109,12 +111,78 @@ class CmdbApiTest extends TestCase
             'ip' => '10.99.10.12',
             'jenis' => 'private',
             'isp_id' => $ispId,
-        ])->assertCreated()->assertJsonPath('ip', '10.99.10.12');
+            'assignment' => 'IP management switch DR',
+        ])->assertCreated()
+            ->assertJsonPath('ip', '10.99.10.12')
+            ->assertJsonPath('assignment', 'IP management switch DR');
 
         $this->getJson('/api/data-centers')->assertOk()->assertJsonFragment(['nama' => 'DR Center Langkat']);
         $this->getJson('/api/racks')->assertOk()->assertJsonFragment(['nama' => 'Rack DR-01']);
         $this->getJson('/api/isps')->assertOk()->assertJsonFragment(['nama' => 'Metro Langkat Backup']);
         $this->getJson('/api/ip-addresses')->assertOk()->assertJsonFragment(['ip' => '10.99.10.12']);
+    }
+
+    public function test_ip_addresses_support_cidr_bulk_assignment_vm_names_and_manual_ping(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+        $this->authenticateAs();
+
+        $singleIpId = $this->postJson('/api/ip-addresses', [
+            'ip' => '10.240.1.10',
+            'jenis' => 'private',
+            'assignment' => 'IP management test',
+        ])->assertCreated()
+            ->assertJsonPath('assignment', 'IP management test')
+            ->json('id');
+
+        $vm = \App\Models\VirtualMachine::firstOrFail();
+        $vm->ipAddresses()->attach($singleIpId);
+
+        $this->getJson('/api/ip-addresses')
+            ->assertOk()
+            ->assertJsonFragment(['nama' => $vm->nama])
+            ->assertJsonFragment(['assignment' => 'IP management test']);
+
+        $this->postJson('/api/ip-addresses', [
+            'ip' => '10.240.2.0/30',
+            'jenis' => 'private',
+            'assignment' => 'Subnet kamera CCTV',
+        ])->assertCreated()
+            ->assertJsonPath('total_created', 2)
+            ->assertJsonPath('total_skipped', 0)
+            ->assertJsonPath('created.0.ip', '10.240.2.1')
+            ->assertJsonPath('created.1.ip', '10.240.2.2');
+
+        $this->postJson('/api/ip-addresses', [
+            'ip' => '10.240.2.0/30',
+            'jenis' => 'private',
+            'assignment' => 'Subnet kamera CCTV',
+        ])->assertCreated()
+            ->assertJsonPath('total_created', 0)
+            ->assertJsonPath('total_skipped', 2);
+
+        $this->postJson('/api/ip-addresses', [
+            'ip' => '10.240.0.0/23',
+            'jenis' => 'private',
+        ])->assertUnprocessable();
+
+        $this->app->bind(IpPingService::class, fn () => new class extends IpPingService {
+            public function ping(string $ip): PingResult
+            {
+                return new PingResult($ip === '10.240.1.10' ? 'up' : 'down', $ip === '10.240.1.10' ? 4.25 : null);
+            }
+        });
+
+        $this->postJson("/api/ip-addresses/{$singleIpId}/ping")
+            ->assertOk()
+            ->assertJsonPath('ping_status', 'up')
+            ->assertJsonPath('ping_latency_ms', '4.25')
+            ->assertJsonPath('vms.0.nama', $vm->nama);
+
+        $this->postJson('/api/ip-addresses/ping')
+            ->assertOk()
+            ->assertJsonPath('total', \App\Models\IpAddress::count())
+            ->assertJsonPath('up', 1);
     }
 
     public function test_application_data_assets_can_be_classified(): void

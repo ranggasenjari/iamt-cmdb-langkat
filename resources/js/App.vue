@@ -89,6 +89,8 @@ const activeTab = ref('dashboard');
 const loading = ref(false);
 const saving = ref(false);
 const deleting = ref(false);
+const pingingAllIps = ref(false);
+const pingingIps = ref({});
 const assetDeepLinkHandled = ref(false);
 const error = ref('');
 const query = ref('');
@@ -232,6 +234,7 @@ const ispForm = reactive({
 const ipAddressForm = reactive({
   ip: '',
   jenis: '',
+  assignment: '',
   isp_id: '',
 });
 
@@ -933,6 +936,23 @@ function monitoringDocumentAttachments(row) {
   return (row?.attachments || []).filter((attachment) => !attachment.is_image);
 }
 
+function ipVmNames(row) {
+  return (row?.vms || []).map((vm) => vm.nama).filter(Boolean).join(', ') || '-';
+}
+
+function pingLabel(row) {
+  if (row?.ping_status === 'up') return 'Up';
+  if (row?.ping_status === 'down') return 'Down';
+  return 'Belum dicek';
+}
+
+function pingMeta(row) {
+  const parts = [];
+  if (row?.ping_latency_ms !== null && row?.ping_latency_ms !== undefined) parts.push(`${row.ping_latency_ms} ms`);
+  if (row?.ping_checked_at) parts.push(formatDateTime(row.ping_checked_at));
+  return parts.join(' / ');
+}
+
 function bulkLabelKey(module, row) {
   return `${module}:${row.id}`;
 }
@@ -1109,11 +1129,44 @@ function printMonitoringReport() {
   window.print();
 }
 
+function replaceIpAddressRow(row) {
+  const index = ipAddresses.value.findIndex((item) => item.id === row.id);
+  if (index >= 0) ipAddresses.value.splice(index, 1, row);
+}
+
+async function refreshIpPing(row) {
+  if (!canWrite.value || pingingIps.value[row.id]) return;
+  pingingIps.value = { ...pingingIps.value, [row.id]: true };
+  try {
+    const response = await api(`/ip-addresses/${row.id}/ping`, { method: 'POST', body: JSON.stringify({}) });
+    replaceIpAddressRow(response);
+  } catch (err) {
+    error.value = err.message;
+  } finally {
+    const { [row.id]: _removed, ...rest } = pingingIps.value;
+    pingingIps.value = rest;
+  }
+}
+
+async function refreshAllIpPings() {
+  if (!canWrite.value || pingingAllIps.value) return;
+  pingingAllIps.value = true;
+  try {
+    const response = await api('/ip-addresses/ping', { method: 'POST', body: JSON.stringify({}) });
+    ipAddresses.value = response.items || [];
+    showAlert('Ping selesai', `${response.up || 0} IP up, ${response.down || 0} IP down dari ${response.total || 0} IP.`);
+  } catch (err) {
+    error.value = err.message;
+  } finally {
+    pingingAllIps.value = false;
+  }
+}
+
 function resetModuleForm(module) {
   if (module === 'data-centers') Object.assign(dataCenterForm, { nama: '', lokasi: '', tipe: '' });
   if (module === 'racks') Object.assign(rackForm, { dc_id: '', nama: '', kapasitas_u: null });
   if (module === 'isps') Object.assign(ispForm, { nama: '', tipe: '', bandwidth: '', kontak: '' });
-  if (module === 'ip-addresses') Object.assign(ipAddressForm, { ip: '', jenis: '', isp_id: '' });
+  if (module === 'ip-addresses') Object.assign(ipAddressForm, { ip: '', jenis: '', assignment: '', isp_id: '' });
   if (module === 'servers') {
     Object.assign(serverForm, {
       nama: '',
@@ -1367,7 +1420,7 @@ function openEdit(module, row) {
     Object.assign(ispForm, { nama: row.nama || '', tipe: row.tipe || '', bandwidth: row.bandwidth || '', kontak: row.kontak || '' });
   }
   if (module === 'ip-addresses') {
-    Object.assign(ipAddressForm, { ip: row.ip || '', jenis: row.jenis || '', isp_id: row.isp_id || '' });
+    Object.assign(ipAddressForm, { ip: row.ip || '', jenis: row.jenis || '', assignment: row.assignment || '', isp_id: row.isp_id || '' });
   }
   if (module === 'servers') {
     Object.assign(serverForm, {
@@ -1653,13 +1706,21 @@ async function saveModal() {
       return;
     }
 
-    const endpoint = modal.mode === 'edit' ? `/${modal.module}/${modal.id}` : `/${modal.module}`;
-    await api(endpoint, {
-      method: modal.mode === 'edit' ? 'PUT' : 'POST',
-      body: JSON.stringify(cleanPayload(formFor(modal.module), { includeEmpty: modal.mode === 'edit' })),
+    const savedModule = modal.module;
+    const savedMode = modal.mode;
+    const endpoint = savedMode === 'edit' ? `/${savedModule}/${modal.id}` : `/${savedModule}`;
+    const response = await api(endpoint, {
+      method: savedMode === 'edit' ? 'PUT' : 'POST',
+      body: JSON.stringify(cleanPayload(formFor(savedModule), { includeEmpty: savedMode === 'edit' })),
     });
     closeModal();
     await loadAll();
+    if (savedMode === 'create' && savedModule === 'ip-addresses' && response?.created) {
+      showAlert(
+        'Bulk IP selesai',
+        `${response.total_created || 0} IP dibuat. ${response.total_skipped || 0} IP dilewati karena sudah ada.`,
+      );
+    }
   } catch (err) {
     error.value = err.message;
   } finally {
@@ -1776,9 +1837,12 @@ async function createIpAddress() {
   if (!canWrite.value || saving.value) return;
   saving.value = true;
   try {
-    await api('/ip-addresses', { method: 'POST', body: JSON.stringify(cleanPayload(ipAddressForm)) });
+    const response = await api('/ip-addresses', { method: 'POST', body: JSON.stringify(cleanPayload(ipAddressForm)) });
     resetModuleForm('ip-addresses');
     await loadAll();
+    if (response?.created) {
+      showAlert('Bulk IP selesai', `${response.total_created || 0} IP dibuat. ${response.total_skipped || 0} IP dilewati karena sudah ada.`);
+    }
   } catch (err) {
     error.value = err.message;
   } finally {
@@ -2383,7 +2447,7 @@ onMounted(bootstrapAuth);
 
             <form class="form-panel" @submit.prevent="createIpAddress">
               <h4>IP Address Baru</h4>
-              <input v-model="ipAddressForm.ip" required placeholder="Alamat IP" />
+              <input v-model="ipAddressForm.ip" required placeholder="Alamat IP atau network CIDR" />
               <div class="two-col">
                 <select v-model="ipAddressForm.jenis" required>
                   <option value="">Jenis IP</option>
@@ -2395,6 +2459,7 @@ onMounted(bootstrapAuth);
                   <option v-for="isp in references.isps" :key="isp.id" :value="isp.id">{{ isp.nama }}</option>
                 </select>
               </div>
+              <input v-model="ipAddressForm.assignment" placeholder="Assignment / penggunaan IP" />
               <button class="action-button secondary" type="submit" :disabled="saving"><Plus :size="17" /> Tambah IP</button>
             </form>
           </div>
@@ -2537,7 +2602,7 @@ onMounted(bootstrapAuth);
                     <td><strong>{{ ip.ip }}</strong></td>
                     <td><span :class="statusClass(ip.jenis)">{{ ip.jenis }}</span></td>
                     <td>{{ ip.isp?.nama || '-' }}<span>{{ ip.isp?.bandwidth || '' }}</span></td>
-                    <td>{{ ip.vms_count || 0 }}</td>
+                    <td>{{ ipVmNames(ip) }}<span>{{ ip.vms_count || 0 }} VM</span></td>
                     <td><button v-if="canWrite" class="icon-button danger" title="Hapus IP address" @click="removeRow('ip-addresses', ip.id)"><Trash2 :size="16" /></button></td>
                   </tr>
                 </tbody>
@@ -2799,7 +2864,10 @@ onMounted(bootstrapAuth);
               <p class="eyebrow">Network</p>
               <h3 class="yellow-title">IP Address</h3>
             </div>
-            <button v-if="canWrite" class="action-button" type="button" @click="openCreate('ip-addresses')"><Plus :size="17" /> Tambah IP Address</button>
+            <div class="row-actions">
+              <button v-if="canWrite" class="action-button ghost compact-button" type="button" :disabled="pingingAllIps" @click="refreshAllIpPings"><RefreshCw :size="17" :class="{ spin: pingingAllIps }" /> Ping Semua</button>
+              <button v-if="canWrite" class="action-button" type="button" @click="openCreate('ip-addresses')"><Plus :size="17" /> Tambah IP Address</button>
+            </div>
           </div>
           <div class="table-wrap">
             <table>
@@ -2807,7 +2875,9 @@ onMounted(bootstrapAuth);
                 <tr>
                   <th>IP Address</th>
                   <th>Jenis</th>
+                  <th>Assignment</th>
                   <th>ISP</th>
+                  <th>Ping</th>
                   <th>VM Terkait</th>
                   <th>Aksi</th>
                 </tr>
@@ -2816,11 +2886,14 @@ onMounted(bootstrapAuth);
                 <tr v-for="ip in filteredIpAddresses" :key="ip.id">
                   <td><strong>{{ ip.ip }}</strong><span>{{ assetCode(ip) }}</span></td>
                   <td><span :class="statusClass(ip.jenis)">{{ ip.jenis }}</span></td>
+                  <td>{{ ip.assignment || '-' }}</td>
                   <td>{{ ip.isp?.nama || '-' }}<span>{{ ip.isp?.bandwidth || '' }}</span></td>
-                  <td>{{ ip.vms_count || 0 }}</td>
+                  <td><span :class="statusClass(ip.ping_status || 'unknown')">{{ pingLabel(ip) }}</span><span>{{ pingMeta(ip) }}</span></td>
+                  <td>{{ ipVmNames(ip) }}<span>{{ ip.vms_count || 0 }} VM</span></td>
                   <td>
                     <div class="row-actions">
                       <button class="icon-button" title="Cetak label IP address" @click="openLabel('ip-addresses', ip)"><Printer :size="16" /></button>
+                      <button v-if="canWrite" class="icon-button" title="Refresh ping" :disabled="pingingIps[ip.id]" @click="refreshIpPing(ip)"><RefreshCw :size="16" :class="{ spin: pingingIps[ip.id] }" /></button>
                       <button v-if="canWrite" class="icon-button" title="Edit IP address" @click="openEdit('ip-addresses', ip)"><Pencil :size="16" /></button>
                       <button v-if="canWrite" class="icon-button danger" title="Hapus IP address" @click="removeRow('ip-addresses', ip.id)"><Trash2 :size="16" /></button>
                     </div>
@@ -3637,7 +3710,7 @@ onMounted(bootstrapAuth);
           </div>
 
           <div v-if="modal.module === 'ip-addresses'" class="modal-form">
-            <input v-model="ipAddressForm.ip" required placeholder="Alamat IP" />
+            <input v-model="ipAddressForm.ip" required placeholder="Alamat IP atau network, contoh: 10.10.10.10 / 10.10.10.0/24" />
             <div class="two-col">
               <select v-model="ipAddressForm.jenis" required>
                 <option value="">Jenis IP</option>
@@ -3649,6 +3722,7 @@ onMounted(bootstrapAuth);
                 <option v-for="isp in references.isps" :key="isp.id" :value="isp.id">{{ isp.nama }}</option>
               </select>
             </div>
+            <input v-model="ipAddressForm.assignment" placeholder="Assignment, contoh: Gateway router OPD / VM Portal / IP management switch" />
           </div>
 
           <div v-if="modal.module === 'isps'" class="modal-form">

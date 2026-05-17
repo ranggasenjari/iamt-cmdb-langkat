@@ -14,9 +14,14 @@ class IpAddress extends Model
 
     protected $table = 'ip_address';
 
-    protected $fillable = ['asset_code', 'ip', 'jenis', 'isp_id'];
+    protected $fillable = ['asset_code', 'ip', 'jenis', 'assignment', 'isp_id', 'ping_status', 'ping_latency_ms', 'ping_checked_at'];
 
     public $timestamps = false;
+
+    protected $casts = [
+        'ping_latency_ms' => 'decimal:2',
+        'ping_checked_at' => 'datetime',
+    ];
 
     public function isp(): BelongsTo
     {

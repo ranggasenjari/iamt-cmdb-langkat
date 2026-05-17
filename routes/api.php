@@ -88,6 +88,8 @@ Route::middleware('auth.api_token')->group(function () {
         Route::apiResource('/data-centers', DataCenterController::class)->parameters(['data-centers' => 'dataCenter'])->only(['store', 'update', 'destroy']);
         Route::apiResource('/racks', RackController::class)->only(['store', 'update', 'destroy']);
         Route::apiResource('/isps', IspController::class)->only(['store', 'update', 'destroy']);
+        Route::post('/ip-addresses/ping', [IpAddressController::class, 'pingAll']);
+        Route::post('/ip-addresses/{ipAddress}/ping', [IpAddressController::class, 'ping']);
         Route::apiResource('/ip-addresses', IpAddressController::class)->parameters(['ip-addresses' => 'ipAddress'])->only(['store', 'update', 'destroy']);
         Route::apiResource('/users', UserController::class)->parameters(['users' => 'user'])->only(['store', 'update', 'destroy']);
     });

@@ -214,11 +214,60 @@ Enum `status`: `running`, `stopped`, `suspended`, `maintenance`.
 {
   "ip": "10.30.1.24",
   "jenis": "private",
+  "assignment": "IP management switch core",
   "isp_id": "uuid-isp"
 }
 ```
 
 Enum `jenis`: `publik`, `private`.
+
+Field `ip` juga menerima CIDR IPv4 untuk bulk insert, maksimal `/24`. Contoh `10.30.1.0/24` akan membuat semua host valid kecuali IP network dan broadcast. IP yang sudah ada akan dilewati tanpa menggagalkan seluruh proses.
+
+Response bulk:
+
+```json
+{
+  "created": [
+    {
+      "id": "uuid-ip",
+      "ip": "10.30.1.1",
+      "jenis": "private",
+      "assignment": "Subnet perangkat OPD"
+    }
+  ],
+  "skipped": [
+    {
+      "ip": "10.30.1.2",
+      "reason": "already_exists"
+    }
+  ],
+  "total_created": 1,
+  "total_skipped": 1
+}
+```
+
+Response list/detail menyertakan status ping terakhir dan relasi VM:
+
+```json
+{
+  "ip": "10.30.1.24",
+  "ping_status": "up",
+  "ping_latency_ms": "4.25",
+  "ping_checked_at": "2026-05-17T10:00:00.000000Z",
+  "vms": [
+    { "id": "uuid-vm", "nama": "VM-PORTAL-LANGKAT", "status": "running" }
+  ]
+}
+```
+
+Enum `ping_status`: `unknown`, `up`, `down`.
+
+Refresh ping manual membutuhkan role `full`:
+
+```http
+POST /api/ip-addresses/{id}/ping
+POST /api/ip-addresses/ping
+```
 
 ### Aplikasi: `applications`
 

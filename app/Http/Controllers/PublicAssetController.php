@@ -46,7 +46,7 @@ class PublicAssetController extends Controller
             'servers' => Server::query()->with(['dataCenter:id,nama,lokasi', 'rack:id,nama']),
             'vms' => VirtualMachine::query()->with('server:id,nama,asset_code'),
             'isps' => Isp::query()->withCount('ipAddresses'),
-            'ip-addresses' => IpAddress::query()->with('isp:id,nama,asset_code'),
+            'ip-addresses' => IpAddress::query()->with(['isp:id,nama,asset_code', 'vms:id,nama,status']),
             'applications' => Aplikasi::query()->with('opd:id,nama'),
             'data-assets' => DataAsset::query()->with(['aplikasi:id,nama,asset_code', 'classification:id,code,name,risk_level']),
             'application-documents' => ApplicationDocument::query()->with('aplikasi:id,nama,asset_code'),
@@ -191,6 +191,17 @@ class PublicAssetController extends Controller
                 'Tipe Data' => $row->type ?? '-',
                 'Klasifikasi' => $row->classification?->code ?? '-',
                 'Aplikasi' => $row->aplikasi?->nama ?? '-',
+            ],
+            'ip-addresses' => [
+                'Jenis' => $row->jenis ?? '-',
+                'Assignment' => $row->assignment ?? '-',
+                'ISP' => $row->isp?->nama ?? '-',
+                'Ping Terakhir' => collect([
+                    $row->ping_status ?? 'unknown',
+                    filled($row->ping_latency_ms) ? $row->ping_latency_ms.' ms' : null,
+                    optional($row->ping_checked_at)->format('Y-m-d H:i'),
+                ])->filter()->join(' / ') ?: '-',
+                'VM Terkait' => $row->vms->pluck('nama')->join(', ') ?: '-',
             ],
             'backup-jobs' => [
                 'Retensi' => ($row->retensi_n ?? '-').' '.($row->retensi_unit ?? ''),
