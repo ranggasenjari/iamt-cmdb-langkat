@@ -1676,6 +1676,17 @@ function openEdit(module, row) {
   Object.assign(modal, { open: true, module, mode: 'edit', id: row.id });
 }
 
+function openCopy(module, row) {
+  if (!canWrite.value) return;
+  openEdit(module, row);
+
+  if (module === 'ip-addresses') ipAddressForm.ip = '';
+  if (module === 'network-sites') networkSiteForm.kode = '';
+  if (module === 'users') userForm.email = '';
+
+  Object.assign(modal, { open: true, module, mode: 'create', id: null });
+}
+
 function closeModal() {
   Object.assign(modal, { open: false, module: '', mode: 'create', id: null });
 }
@@ -2718,7 +2729,7 @@ onMounted(bootstrapAuth);
                   <td>
                     <div class="row-actions">
                       <button class="icon-button" title="Cetak label data center" @click="openLabel('data-centers', dc)"><Printer :size="16" /></button>
-                      <button v-if="canWrite" class="icon-button" title="Edit data center" @click="openEdit('data-centers', dc)"><Pencil :size="16" /></button>
+                      <button v-if="canWrite" class="icon-button" title="Edit data center" @click="openEdit('data-centers', dc)"><Pencil :size="16" /></button><button v-if="canWrite" class="icon-button" title="Salin data center" @click="openCopy('data-centers', dc)"><Copy :size="16" /></button>
                       <button v-if="canWrite" class="icon-button danger" title="Hapus data center" @click="removeRow('data-centers', dc.id)"><Trash2 :size="16" /></button>
                     </div>
                   </td>
@@ -2758,7 +2769,7 @@ onMounted(bootstrapAuth);
                   <td>
                     <div class="row-actions">
                       <button class="icon-button" title="Cetak label rack" @click="openLabel('racks', rack)"><Printer :size="16" /></button>
-                      <button v-if="canWrite" class="icon-button" title="Edit rack" @click="openEdit('racks', rack)"><Pencil :size="16" /></button>
+                      <button v-if="canWrite" class="icon-button" title="Edit rack" @click="openEdit('racks', rack)"><Pencil :size="16" /></button><button v-if="canWrite" class="icon-button" title="Salin rack" @click="openCopy('racks', rack)"><Copy :size="16" /></button>
                       <button v-if="canWrite" class="icon-button danger" title="Hapus rack" @click="removeRow('racks', rack.id)"><Trash2 :size="16" /></button>
                     </div>
                   </td>
@@ -2802,7 +2813,7 @@ onMounted(bootstrapAuth);
                   <td>
                     <div class="row-actions">
                       <button class="icon-button" title="Cetak label server" @click="openLabel('servers', server)"><Printer :size="16" /></button>
-                      <button v-if="canWrite" class="icon-button" title="Edit server" @click="openEdit('servers', server)"><Pencil :size="16" /></button>
+                      <button v-if="canWrite" class="icon-button" title="Edit server" @click="openEdit('servers', server)"><Pencil :size="16" /></button><button v-if="canWrite" class="icon-button" title="Salin server" @click="openCopy('servers', server)"><Copy :size="16" /></button>
                       <button v-if="canWrite" class="icon-button danger" title="Hapus server" @click="removeRow('servers', server.id)"><Trash2 :size="16" /></button>
                     </div>
                   </td>
@@ -2846,7 +2857,7 @@ onMounted(bootstrapAuth);
                   <td>
                     <div class="row-actions">
                       <button class="icon-button" title="Cetak label VM" @click="openLabel('vms', vm)"><Printer :size="16" /></button>
-                      <button v-if="canWrite" class="icon-button" title="Edit VM" @click="openEdit('vms', vm)"><Pencil :size="16" /></button>
+                      <button v-if="canWrite" class="icon-button" title="Edit VM" @click="openEdit('vms', vm)"><Pencil :size="16" /></button><button v-if="canWrite" class="icon-button" title="Salin VM" @click="openCopy('vms', vm)"><Copy :size="16" /></button>
                       <button v-if="canWrite" class="icon-button danger" title="Hapus VM" @click="removeRow('vms', vm.id)"><Trash2 :size="16" /></button>
                     </div>
                   </td>
@@ -2894,7 +2905,7 @@ onMounted(bootstrapAuth);
                     <div class="row-actions">
                       <button class="icon-button" title="Cetak label IP address" @click="openLabel('ip-addresses', ip)"><Printer :size="16" /></button>
                       <button v-if="canWrite" class="icon-button" title="Refresh ping" :disabled="pingingIps[ip.id]" @click="refreshIpPing(ip)"><RefreshCw :size="16" :class="{ spin: pingingIps[ip.id] }" /></button>
-                      <button v-if="canWrite" class="icon-button" title="Edit IP address" @click="openEdit('ip-addresses', ip)"><Pencil :size="16" /></button>
+                      <button v-if="canWrite" class="icon-button" title="Edit IP address" @click="openEdit('ip-addresses', ip)"><Pencil :size="16" /></button><button v-if="canWrite" class="icon-button" title="Salin IP address" @click="openCopy('ip-addresses', ip)"><Copy :size="16" /></button>
                       <button v-if="canWrite" class="icon-button danger" title="Hapus IP address" @click="removeRow('ip-addresses', ip.id)"><Trash2 :size="16" /></button>
                     </div>
                   </td>
@@ -2936,7 +2947,7 @@ onMounted(bootstrapAuth);
                   <td>
                     <div class="row-actions">
                       <button class="icon-button" title="Cetak label ISP" @click="openLabel('isps', isp)"><Printer :size="16" /></button>
-                      <button v-if="canWrite" class="icon-button" title="Edit ISP" @click="openEdit('isps', isp)"><Pencil :size="16" /></button>
+                      <button v-if="canWrite" class="icon-button" title="Edit ISP" @click="openEdit('isps', isp)"><Pencil :size="16" /></button><button v-if="canWrite" class="icon-button" title="Salin ISP" @click="openCopy('isps', isp)"><Copy :size="16" /></button>
                       <button v-if="canWrite" class="icon-button danger" title="Hapus ISP" @click="removeRow('isps', isp.id)"><Trash2 :size="16" /></button>
                     </div>
                   </td>
@@ -2988,7 +2999,7 @@ onMounted(bootstrapAuth);
                   <td>
                     <div class="row-actions">
                       <button class="icon-button" title="Cetak label aplikasi" @click="openLabel('applications', app)"><Printer :size="16" /></button>
-                      <button v-if="canWrite" class="icon-button" title="Edit aplikasi" @click="openEdit('applications', app)"><Pencil :size="16" /></button>
+                      <button v-if="canWrite" class="icon-button" title="Edit aplikasi" @click="openEdit('applications', app)"><Pencil :size="16" /></button><button v-if="canWrite" class="icon-button" title="Salin aplikasi" @click="openCopy('applications', app)"><Copy :size="16" /></button>
                       <button v-if="canWrite" class="icon-button danger" title="Hapus aplikasi" @click="removeRow('applications', app.id)"><Trash2 :size="16" /></button>
                     </div>
                   </td>
@@ -3040,7 +3051,7 @@ onMounted(bootstrapAuth);
                   <td>
                     <div class="row-actions">
                       <button class="icon-button" title="Cetak label data aplikasi" @click="openLabel('data-assets', asset)"><Printer :size="16" /></button>
-                      <button v-if="canWrite" class="icon-button" title="Edit data aplikasi" @click="openEdit('data-assets', asset)"><Pencil :size="16" /></button>
+                      <button v-if="canWrite" class="icon-button" title="Edit data aplikasi" @click="openEdit('data-assets', asset)"><Pencil :size="16" /></button><button v-if="canWrite" class="icon-button" title="Salin data aplikasi" @click="openCopy('data-assets', asset)"><Copy :size="16" /></button>
                       <button v-if="canWrite" class="icon-button danger" title="Hapus data aplikasi" @click="removeRow('data-assets', asset.id)"><Trash2 :size="16" /></button>
                     </div>
                   </td>
@@ -3067,7 +3078,7 @@ onMounted(bootstrapAuth);
                   <td><strong>{{ doc.original_name || doc.nama }}</strong><span>{{ assetCode(doc) }}</span><span>{{ doc.path || '-' }}</span></td>
                   <td>{{ doc.size_bytes ? Math.round(doc.size_bytes / 1024) + ' KB' : '-' }}</td>
                   <td>{{ doc.tanggal || '-' }}</td>
-                  <td><div class="row-actions"><button class="icon-button" title="Cetak label dokumen" @click="openLabel('application-documents', doc)"><Printer :size="16" /></button><button v-if="canWrite" class="icon-button" title="Edit dokumen" @click="openEdit('application-documents', doc)"><Pencil :size="16" /></button><button v-if="canWrite" class="icon-button danger" title="Hapus dokumen" @click="removeRow('application-documents', doc.id)"><Trash2 :size="16" /></button></div></td>
+                  <td><div class="row-actions"><button class="icon-button" title="Cetak label dokumen" @click="openLabel('application-documents', doc)"><Printer :size="16" /></button><button v-if="canWrite" class="icon-button" title="Edit dokumen" @click="openEdit('application-documents', doc)"><Pencil :size="16" /></button><button v-if="canWrite" class="icon-button" title="Salin dokumen" @click="openCopy('application-documents', doc)"><Copy :size="16" /></button><button v-if="canWrite" class="icon-button danger" title="Hapus dokumen" @click="removeRow('application-documents', doc.id)"><Trash2 :size="16" /></button></div></td>
                 </tr>
               </tbody>
             </table>
@@ -3092,7 +3103,7 @@ onMounted(bootstrapAuth);
                   <td>{{ (integration.target_applications || []).map((app) => app.nama).join(', ') || integration.external_endpoints || '-' }}</td>
                   <td>{{ (integration.data_assets || []).map((asset) => asset.name).join(', ') || '-' }}</td>
                   <td>{{ integration.documents?.length || 0 }}</td>
-                  <td><div class="row-actions"><button class="icon-button" title="Cetak label integrasi" @click="openLabel('app-integrations', integration)"><Printer :size="16" /></button><button v-if="canWrite" class="icon-button" title="Edit integrasi" @click="openEdit('app-integrations', integration)"><Pencil :size="16" /></button><button v-if="canWrite" class="icon-button danger" title="Hapus integrasi" @click="removeRow('app-integrations', integration.id)"><Trash2 :size="16" /></button></div></td>
+                  <td><div class="row-actions"><button class="icon-button" title="Cetak label integrasi" @click="openLabel('app-integrations', integration)"><Printer :size="16" /></button><button v-if="canWrite" class="icon-button" title="Edit integrasi" @click="openEdit('app-integrations', integration)"><Pencil :size="16" /></button><button v-if="canWrite" class="icon-button" title="Salin integrasi" @click="openCopy('app-integrations', integration)"><Copy :size="16" /></button><button v-if="canWrite" class="icon-button danger" title="Hapus integrasi" @click="removeRow('app-integrations', integration.id)"><Trash2 :size="16" /></button></div></td>
                 </tr>
               </tbody>
             </table>
@@ -3117,7 +3128,7 @@ onMounted(bootstrapAuth);
                   <td>{{ media.kapasitas_gb || 0 }} GB</td>
                   <td>{{ media.address_url || '-' }}</td>
                   <td>{{ media.backup_jobs_count || 0 }}</td>
-                  <td><div class="row-actions"><button class="icon-button" title="Cetak label media" @click="openLabel('backup-media', media)"><Printer :size="16" /></button><button v-if="canWrite" class="icon-button" title="Edit media" @click="openEdit('backup-media', media)"><Pencil :size="16" /></button><button v-if="canWrite" class="icon-button danger" title="Hapus media" @click="removeRow('backup-media', media.id)"><Trash2 :size="16" /></button></div></td>
+                  <td><div class="row-actions"><button class="icon-button" title="Cetak label media" @click="openLabel('backup-media', media)"><Printer :size="16" /></button><button v-if="canWrite" class="icon-button" title="Edit media" @click="openEdit('backup-media', media)"><Pencil :size="16" /></button><button v-if="canWrite" class="icon-button" title="Salin media" @click="openCopy('backup-media', media)"><Copy :size="16" /></button><button v-if="canWrite" class="icon-button danger" title="Hapus media" @click="removeRow('backup-media', media.id)"><Trash2 :size="16" /></button></div></td>
                 </tr>
               </tbody>
             </table>
@@ -3140,7 +3151,7 @@ onMounted(bootstrapAuth);
                   <td>{{ job.media?.nama || '-' }}<span>{{ job.media?.jenis_media || '' }}</span></td>
                   <td>{{ job.retensi_n }} {{ job.retensi_unit }}</td>
                   <td>{{ job.repetisi_n }} {{ job.repetisi_unit }}</td>
-                  <td><div class="row-actions"><button class="icon-button" title="Cetak label pencadangan" @click="openLabel('backup-jobs', job)"><Printer :size="16" /></button><button v-if="canWrite" class="icon-button" title="Edit pencadangan" @click="openEdit('backup-jobs', job)"><Pencil :size="16" /></button><button v-if="canWrite" class="icon-button danger" title="Hapus pencadangan" @click="removeRow('backup-jobs', job.id)"><Trash2 :size="16" /></button></div></td>
+                  <td><div class="row-actions"><button class="icon-button" title="Cetak label pencadangan" @click="openLabel('backup-jobs', job)"><Printer :size="16" /></button><button v-if="canWrite" class="icon-button" title="Edit pencadangan" @click="openEdit('backup-jobs', job)"><Pencil :size="16" /></button><button v-if="canWrite" class="icon-button" title="Salin pencadangan" @click="openCopy('backup-jobs', job)"><Copy :size="16" /></button><button v-if="canWrite" class="icon-button danger" title="Hapus pencadangan" @click="removeRow('backup-jobs', job.id)"><Trash2 :size="16" /></button></div></td>
                 </tr>
               </tbody>
             </table>
@@ -3163,7 +3174,7 @@ onMounted(bootstrapAuth);
                   <td>{{ ups.kapasitas_va }} VA</td>
                   <td><span :class="statusClass(ups.kondisi)">{{ ups.kondisi }}</span></td>
                   <td>{{ ups.data_center?.nama || '-' }}<span>{{ ups.data_center?.lokasi || '' }}</span></td>
-                  <td><div class="row-actions"><button class="icon-button" title="Cetak label UPS" @click="openLabel('ups-devices', ups)"><Printer :size="16" /></button><button v-if="canWrite" class="icon-button" title="Edit UPS" @click="openEdit('ups-devices', ups)"><Pencil :size="16" /></button><button v-if="canWrite" class="icon-button danger" title="Hapus UPS" @click="removeRow('ups-devices', ups.id)"><Trash2 :size="16" /></button></div></td>
+                  <td><div class="row-actions"><button class="icon-button" title="Cetak label UPS" @click="openLabel('ups-devices', ups)"><Printer :size="16" /></button><button v-if="canWrite" class="icon-button" title="Edit UPS" @click="openEdit('ups-devices', ups)"><Pencil :size="16" /></button><button v-if="canWrite" class="icon-button" title="Salin UPS" @click="openCopy('ups-devices', ups)"><Copy :size="16" /></button><button v-if="canWrite" class="icon-button danger" title="Hapus UPS" @click="removeRow('ups-devices', ups.id)"><Trash2 :size="16" /></button></div></td>
                 </tr>
               </tbody>
             </table>
@@ -3191,7 +3202,7 @@ onMounted(bootstrapAuth);
                     <span>VM: {{ tool.vms?.length || 0 }}</span>
                     <span>Aplikasi: {{ tool.applications?.length || 0 }}</span>
                   </td>
-                  <td><div class="row-actions"><button class="icon-button" title="Cetak label SOC" @click="openLabel('soc-tools', tool)"><Printer :size="16" /></button><button v-if="canWrite" class="icon-button" title="Edit SOC" @click="openEdit('soc-tools', tool)"><Pencil :size="16" /></button><button v-if="canWrite" class="icon-button danger" title="Hapus SOC" @click="removeRow('soc-tools', tool.id)"><Trash2 :size="16" /></button></div></td>
+                  <td><div class="row-actions"><button class="icon-button" title="Cetak label SOC" @click="openLabel('soc-tools', tool)"><Printer :size="16" /></button><button v-if="canWrite" class="icon-button" title="Edit SOC" @click="openEdit('soc-tools', tool)"><Pencil :size="16" /></button><button v-if="canWrite" class="icon-button" title="Salin SOC" @click="openCopy('soc-tools', tool)"><Copy :size="16" /></button><button v-if="canWrite" class="icon-button danger" title="Hapus SOC" @click="removeRow('soc-tools', tool.id)"><Trash2 :size="16" /></button></div></td>
                 </tr>
               </tbody>
             </table>
@@ -3215,7 +3226,7 @@ onMounted(bootstrapAuth);
                     <td>{{ assetLocation('network-sites', site) }}</td>
                     <td>{{ site.pic_nama || '-' }}<span>{{ site.pic_kontak || '' }}</span></td>
                     <td><span :class="statusClass(site.status)">{{ site.status || '-' }}</span><span>{{ site.installations_count || 0 }} perangkat</span></td>
-                    <td><div class="row-actions"><button class="icon-button" title="Cetak label site" @click="openLabel('network-sites', site)"><Printer :size="16" /></button><button v-if="canWrite" class="icon-button" title="Edit site" @click="openEdit('network-sites', site)"><Pencil :size="16" /></button><button v-if="canWrite" class="icon-button danger" title="Hapus site" @click="removeRow('network-sites', site.id)"><Trash2 :size="16" /></button></div></td>
+                    <td><div class="row-actions"><button class="icon-button" title="Cetak label site" @click="openLabel('network-sites', site)"><Printer :size="16" /></button><button v-if="canWrite" class="icon-button" title="Edit site" @click="openEdit('network-sites', site)"><Pencil :size="16" /></button><button v-if="canWrite" class="icon-button" title="Salin site" @click="openCopy('network-sites', site)"><Copy :size="16" /></button><button v-if="canWrite" class="icon-button danger" title="Hapus site" @click="removeRow('network-sites', site.id)"><Trash2 :size="16" /></button></div></td>
                   </tr>
                 </tbody>
               </table>
@@ -3243,7 +3254,7 @@ onMounted(bootstrapAuth);
                     <td>
                       <div class="row-actions">
                         <button class="icon-button" title="Cetak laporan monitoring" @click="openMonitoringReport(row)"><Printer :size="16" /></button>
-                        <button v-if="canWrite" class="icon-button" title="Edit monitoring" @click="openEdit('network-monitorings', row)"><Pencil :size="16" /></button>
+                        <button v-if="canWrite" class="icon-button" title="Edit monitoring" @click="openEdit('network-monitorings', row)"><Pencil :size="16" /></button><button v-if="canWrite" class="icon-button" title="Salin monitoring" @click="openCopy('network-monitorings', row)"><Copy :size="16" /></button>
                         <button v-if="canWrite" class="icon-button danger" title="Hapus monitoring" @click="removeRow('network-monitorings', row.id)"><Trash2 :size="16" /></button>
                       </div>
                     </td>
@@ -3270,7 +3281,7 @@ onMounted(bootstrapAuth);
                     <td>{{ device.os_firmware || '-' }}<span>{{ device.kapasitas_port ? `${device.kapasitas_port} port` : '' }} {{ device.poe_support ? ' / PoE' : '' }} {{ device.wireless_standard || '' }}</span></td>
                     <td>{{ device.active_installation?.site?.nama || '-' }}<span>{{ device.installations_count || 0 }} riwayat / {{ device.ip_configs_count || 0 }} IP</span></td>
                     <td><span :class="statusClass(device.status)">{{ device.status || '-' }}</span><span>{{ device.kondisi || '' }}</span></td>
-                    <td><div class="row-actions"><button class="icon-button" title="Cetak label perangkat" @click="openLabel('network-devices', device)"><Printer :size="16" /></button><button v-if="canWrite" class="icon-button" title="Edit perangkat" @click="openEdit('network-devices', device)"><Pencil :size="16" /></button><button v-if="canWrite" class="icon-button danger" title="Hapus perangkat" @click="removeRow('network-devices', device.id)"><Trash2 :size="16" /></button></div></td>
+                    <td><div class="row-actions"><button class="icon-button" title="Cetak label perangkat" @click="openLabel('network-devices', device)"><Printer :size="16" /></button><button v-if="canWrite" class="icon-button" title="Edit perangkat" @click="openEdit('network-devices', device)"><Pencil :size="16" /></button><button v-if="canWrite" class="icon-button" title="Salin perangkat" @click="openCopy('network-devices', device)"><Copy :size="16" /></button><button v-if="canWrite" class="icon-button danger" title="Hapus perangkat" @click="removeRow('network-devices', device.id)"><Trash2 :size="16" /></button></div></td>
                   </tr>
                 </tbody>
               </table>
@@ -3295,7 +3306,7 @@ onMounted(bootstrapAuth);
                     <td>{{ row.installed_at ? String(row.installed_at).slice(0, 10) : '-' }}<span>{{ row.removed_at ? `s.d. ${String(row.removed_at).slice(0, 10)}` : 'masih tercatat' }}</span></td>
                     <td>{{ row.replacement_device?.nama || '-' }}</td>
                     <td><span :class="statusClass(row.status)">{{ row.status }}</span></td>
-                    <td><div class="row-actions"><button class="icon-button" title="Cetak label instalasi" @click="openLabel('network-installations', row)"><Printer :size="16" /></button><button v-if="canWrite" class="icon-button" title="Edit riwayat instalasi" @click="openEdit('network-installations', row)"><Pencil :size="16" /></button><button v-if="canWrite" class="icon-button danger" title="Hapus riwayat instalasi" @click="removeRow('network-installations', row.id)"><Trash2 :size="16" /></button></div></td>
+                    <td><div class="row-actions"><button class="icon-button" title="Cetak label instalasi" @click="openLabel('network-installations', row)"><Printer :size="16" /></button><button v-if="canWrite" class="icon-button" title="Edit riwayat instalasi" @click="openEdit('network-installations', row)"><Pencil :size="16" /></button><button v-if="canWrite" class="icon-button" title="Salin riwayat instalasi" @click="openCopy('network-installations', row)"><Copy :size="16" /></button><button v-if="canWrite" class="icon-button danger" title="Hapus riwayat instalasi" @click="removeRow('network-installations', row.id)"><Trash2 :size="16" /></button></div></td>
                   </tr>
                 </tbody>
               </table>
@@ -3320,7 +3331,7 @@ onMounted(bootstrapAuth);
                     <td>{{ config.ip_address || config.ip_address_record?.ip || '-' }}<span>{{ config.gateway ? `GW ${config.gateway}` : '' }} {{ config.dhcp_enabled ? ' / DHCP' : '' }}</span></td>
                     <td>{{ config.vlan || '-' }}<span>{{ config.ssid || '' }}</span></td>
                     <td><span :class="statusClass(config.status)">{{ config.status || '-' }}</span></td>
-                    <td><div class="row-actions"><button class="icon-button" title="Cetak label konfigurasi IP" @click="openLabel('network-ip-configs', config)"><Printer :size="16" /></button><button v-if="canWrite" class="icon-button" title="Edit konfigurasi IP" @click="openEdit('network-ip-configs', config)"><Pencil :size="16" /></button><button v-if="canWrite" class="icon-button danger" title="Hapus konfigurasi IP" @click="removeRow('network-ip-configs', config.id)"><Trash2 :size="16" /></button></div></td>
+                    <td><div class="row-actions"><button class="icon-button" title="Cetak label konfigurasi IP" @click="openLabel('network-ip-configs', config)"><Printer :size="16" /></button><button v-if="canWrite" class="icon-button" title="Edit konfigurasi IP" @click="openEdit('network-ip-configs', config)"><Pencil :size="16" /></button><button v-if="canWrite" class="icon-button" title="Salin konfigurasi IP" @click="openCopy('network-ip-configs', config)"><Copy :size="16" /></button><button v-if="canWrite" class="icon-button danger" title="Hapus konfigurasi IP" @click="removeRow('network-ip-configs', config.id)"><Trash2 :size="16" /></button></div></td>
                   </tr>
                 </tbody>
               </table>
@@ -3349,7 +3360,7 @@ onMounted(bootstrapAuth);
                       <div class="row-actions">
                         <button class="icon-button" title="Cetak label kredensial" @click="openLabel('network-credentials', credential)"><Printer :size="16" /></button>
                         <button v-if="canWrite && credential.has_password" class="icon-button" title="Reveal password" @click="openRevealPassword(credential)"><Eye :size="16" /></button>
-                        <button v-if="canWrite" class="icon-button" title="Edit kredensial" @click="openEdit('network-credentials', credential)"><Pencil :size="16" /></button>
+                        <button v-if="canWrite" class="icon-button" title="Edit kredensial" @click="openEdit('network-credentials', credential)"><Pencil :size="16" /></button><button v-if="canWrite" class="icon-button" title="Salin kredensial" @click="openCopy('network-credentials', credential)"><Copy :size="16" /></button>
                         <button v-if="canWrite" class="icon-button danger" title="Hapus kredensial" @click="removeRow('network-credentials', credential.id)"><Trash2 :size="16" /></button>
                       </div>
                     </td>
@@ -3379,6 +3390,7 @@ onMounted(bootstrapAuth);
                     <td>
                       <div v-if="canWrite" class="row-actions">
                         <button class="icon-button" title="Edit pengguna" @click="openEdit('users', user)"><Pencil :size="16" /></button>
+                        <button class="icon-button" title="Salin pengguna" @click="openCopy('users', user)"><Copy :size="16" /></button>
                         <button v-if="currentUser.id !== user.id" class="icon-button danger" title="Hapus pengguna" @click="removeRow('users', user.id)"><Trash2 :size="16" /></button>
                       </div>
                     </td>
