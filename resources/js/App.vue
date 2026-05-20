@@ -13,6 +13,7 @@ import {
   GitBranch,
   HardDrive,
   LayoutDashboard,
+  Menu,
   Network,
   Pencil,
   Plus,
@@ -26,7 +27,7 @@ import {
   X,
 } from 'lucide-vue-next';
 import QRCode from 'qrcode';
-import { computed, onMounted, reactive, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, onUpdated, reactive, ref, watch } from 'vue';
 import logoLangkat from '../img/logo_langkat.png';
 
 const menuSections = [
@@ -95,6 +96,7 @@ const assetDeepLinkHandled = ref(false);
 const error = ref('');
 const query = ref('');
 const selectedServerId = ref('');
+const mobileNavOpen = ref(false);
 const authToken = ref(localStorage.getItem('iamt_token') || '');
 const currentUser = ref(null);
 const authForm = reactive({
@@ -636,6 +638,7 @@ async function apiForm(path, formData, method = 'POST') {
 function clearAuth() {
   authToken.value = '';
   currentUser.value = null;
+  mobileNavOpen.value = false;
   localStorage.removeItem('iamt_token');
 }
 
@@ -678,6 +681,29 @@ async function bootstrapAuth() {
     await loadAll();
     await handleAssetDeepLink();
   }
+}
+
+function syncTableCardLabels() {
+  document.querySelectorAll('.table-wrap table').forEach((table) => {
+    const headerLabels = Array.from(table.querySelectorAll('thead th')).map((header, index, headers) => {
+      const label = header.textContent?.trim();
+      if (label) return label;
+      return index === headers.length - 1 ? 'Aksi' : `Kolom ${index + 1}`;
+    });
+
+    table.querySelectorAll('tbody tr').forEach((row) => {
+      Array.from(row.children).forEach((cell, index) => {
+        if (!(cell instanceof HTMLElement) || cell.tagName.toLowerCase() !== 'td') return;
+        cell.dataset.label = headerLabels[index] || `Kolom ${index + 1}`;
+      });
+    });
+  });
+}
+
+function selectMenu(item) {
+  if (item.disabled) return;
+  activeTab.value = item.id;
+  mobileNavOpen.value = false;
 }
 
 async function loadAll() {
@@ -2148,7 +2174,15 @@ watch(
   },
 );
 
-onMounted(bootstrapAuth);
+onMounted(async () => {
+  await bootstrapAuth();
+  await nextTick();
+  syncTableCardLabels();
+});
+
+onUpdated(() => {
+  nextTick(syncTableCardLabels);
+});
 </script>
 
 <template>
@@ -2206,7 +2240,9 @@ onMounted(bootstrapAuth);
   </div>
 
   <div v-else class="app-shell">
-    <aside class="sidebar">
+    <div class="mobile-nav-backdrop" :class="{ open: mobileNavOpen }" @click="mobileNavOpen = false"></div>
+
+    <aside class="sidebar" :class="{ open: mobileNavOpen }">
       <div class="brand">
         <div class="brand-mark">
           <img :src="logoLangkat" alt="Logo Kabupaten Langkat" />
@@ -2215,6 +2251,9 @@ onMounted(bootstrapAuth);
           <p class="eyebrow">Kabupaten Langkat</p>
           <h1>IAMT CMDB</h1>
         </div>
+        <button class="icon-button mobile-sidebar-close" type="button" title="Tutup menu" @click="mobileNavOpen = false">
+          <X :size="18" />
+        </button>
       </div>
 
       <nav class="nav-list">
@@ -2227,7 +2266,7 @@ onMounted(bootstrapAuth);
             :class="{ active: activeTab === item.id, disabled: item.disabled }"
             type="button"
             :disabled="item.disabled"
-            @click="!item.disabled && (activeTab = item.id)"
+            @click="selectMenu(item)"
           >
             <component :is="item.icon" :size="18" />
             <span>{{ item.label }}</span>
@@ -2245,6 +2284,9 @@ onMounted(bootstrapAuth);
 
     <main class="workspace">
       <header class="topbar">
+        <button class="icon-button primary mobile-menu-button" type="button" title="Buka menu" @click="mobileNavOpen = true">
+          <Menu :size="20" />
+        </button>
         <div>
           <p class="eyebrow">Single Source of Truth</p>
           <h2>Manajemen Aset Digital</h2>
