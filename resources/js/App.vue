@@ -962,6 +962,10 @@ function monitoringDocumentAttachments(row) {
   return (row?.attachments || []).filter((attachment) => !attachment.is_image);
 }
 
+function networkDeviceOptionLabel(device) {
+  return device ? `${device.nama || '-'} - ${assetCode(device)}` : '-';
+}
+
 function ipVmNames(row) {
   return (row?.vms || []).map((vm) => vm.nama).filter(Boolean).join(', ') || '-';
 }
@@ -4312,7 +4316,7 @@ onUpdated(() => {
               </select>
               <select v-model="networkInstallationForm.device_id" required>
                 <option value="">Perangkat</option>
-                <option v-for="device in networkDevices" :key="device.id" :value="device.id">{{ device.nama }}</option>
+                <option v-for="device in networkDevices" :key="device.id" :value="device.id">{{ networkDeviceOptionLabel(device) }}</option>
               </select>
             </div>
             <div class="three-col">
@@ -4330,7 +4334,7 @@ onUpdated(() => {
               </select>
               <select v-model="networkInstallationForm.replaced_by_device_id">
                 <option value="">Perangkat pengganti</option>
-                <option v-for="device in networkDevices.filter((item) => item.id !== networkInstallationForm.device_id)" :key="device.id" :value="device.id">{{ device.nama }}</option>
+                <option v-for="device in networkDevices.filter((item) => item.id !== networkInstallationForm.device_id)" :key="device.id" :value="device.id">{{ networkDeviceOptionLabel(device) }}</option>
               </select>
             </div>
             <div class="three-col">
@@ -4354,7 +4358,7 @@ onUpdated(() => {
             <div class="two-col">
               <select v-model="networkIpConfigForm.device_id" required>
                 <option value="">Perangkat</option>
-                <option v-for="device in networkDevices" :key="device.id" :value="device.id">{{ device.nama }}</option>
+                <option v-for="device in networkDevices" :key="device.id" :value="device.id">{{ networkDeviceOptionLabel(device) }}</option>
               </select>
               <select v-model="networkIpConfigForm.site_id">
                 <option value="">Site / node terkait</option>
@@ -4400,7 +4404,7 @@ onUpdated(() => {
             <div class="two-col">
               <select v-model="networkCredentialForm.device_id" required>
                 <option value="">Perangkat</option>
-                <option v-for="device in networkDevices" :key="device.id" :value="device.id">{{ device.nama }}</option>
+                <option v-for="device in networkDevices" :key="device.id" :value="device.id">{{ networkDeviceOptionLabel(device) }}</option>
               </select>
               <select v-model="networkCredentialForm.site_id">
                 <option value="">Site / node terkait</option>
