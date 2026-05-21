@@ -346,7 +346,7 @@ class CmdbApiTest extends TestCase
 
         $siteId = $siteResponse->json('id');
         $siteAssetCode = $siteResponse->json('asset_code');
-        $this->assertMatchesRegularExpression('/^LKT-NETS-\d{6}$/', $siteAssetCode);
+        $this->assertMatchesRegularExpression('/^LKT-SITE-\d{6}$/', $siteAssetCode);
 
         $deviceResponse = $this->postJson('/api/network-devices', [
             'nama' => 'Router Utama Diskominfo',

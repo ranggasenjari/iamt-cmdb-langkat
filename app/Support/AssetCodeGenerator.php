@@ -23,7 +23,7 @@ class AssetCodeGenerator
         'ups_devices' => 'UPS',
         'soc_tools' => 'SOC',
         'consumer_network_devices' => 'NET',
-        'consumer_network_sites' => 'NETS',
+        'consumer_network_sites' => 'SITE',
         'consumer_network_monitorings' => 'MON',
     ];
 

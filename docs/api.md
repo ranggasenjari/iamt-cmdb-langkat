@@ -84,7 +84,7 @@ Contoh pola kode:
 | `backup-jobs` | `LKT-BKJ` | `LKT-BKJ-000001` |
 | `ups-devices` | `LKT-UPS` | `LKT-UPS-000001` |
 | `soc-tools` | `LKT-SOC` | `LKT-SOC-000001` |
-| `network-sites` | `LKT-NETS` | `LKT-NETS-000001` |
+| `network-sites` | `LKT-SITE` | `LKT-SITE-000001` |
 | `network-devices` | `LKT-NET` | `LKT-NET-000001` |
 | `network-monitorings` | `LKT-MON` | `LKT-MON-000001` |
 
