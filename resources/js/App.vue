@@ -359,6 +359,7 @@ const networkSiteForm = reactive({
 
 const networkDeviceForm = reactive({
   nama: '',
+  site_id: '',
   jenis: '',
   status: '',
   kondisi: '',
@@ -966,6 +967,10 @@ function networkDeviceOptionLabel(device) {
   return device ? `${device.nama || '-'} - ${assetCode(device)}` : '-';
 }
 
+function networkSiteOptionLabel(site) {
+  return site ? `${site.nama || '-'} - ${assetCode(site)}` : '-';
+}
+
 function ipVmNames(row) {
   return (row?.vms || []).map((vm) => vm.nama).filter(Boolean).join(', ') || '-';
 }
@@ -1320,6 +1325,7 @@ function resetModuleForm(module) {
   if (module === 'network-devices') {
     Object.assign(networkDeviceForm, {
       nama: '',
+      site_id: '',
       jenis: '',
       status: '',
       kondisi: '',
@@ -1582,6 +1588,7 @@ function openEdit(module, row) {
   if (module === 'network-devices') {
     Object.assign(networkDeviceForm, {
       nama: row.nama || '',
+      site_id: '',
       jenis: row.jenis || '',
       status: row.status || '',
       kondisi: row.kondisi || '',
@@ -4266,6 +4273,10 @@ onUpdated(() => {
 
           <div v-if="modal.module === 'network-devices'" class="modal-form">
             <input v-model="networkDeviceForm.nama" required placeholder="Nama perangkat jaringan" />
+            <select v-if="modal.mode === 'create'" v-model="networkDeviceForm.site_id">
+              <option value="">Site / node pemasangan awal</option>
+              <option v-for="site in networkSites" :key="site.id" :value="site.id">{{ networkSiteOptionLabel(site) }}</option>
+            </select>
             <div class="three-col">
               <select v-model="networkDeviceForm.jenis" required>
                 <option value="">Jenis perangkat</option>

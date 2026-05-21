@@ -459,6 +459,65 @@ class CmdbApiTest extends TestCase
             ->assertDontSee('secret-password');
     }
 
+    public function test_network_device_create_can_make_initial_active_installation(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+        $this->authenticateAs();
+
+        $dc = \App\Models\DataCenter::firstOrFail();
+        $opd = \App\Models\Opd::where('nama', 'Dinas Komunikasi Dan Informatika')->firstOrFail();
+
+        $siteId = $this->postJson('/api/network-sites', [
+            'kode' => 'SITE-AWAL-PERANGKAT',
+            'nama' => 'Site Awal Perangkat',
+            'jenis' => 'kantor',
+            'status' => 'aktif',
+            'opd_id' => $opd->id,
+            'dc_id' => $dc->id,
+        ])->assertCreated()->json('id');
+
+        $this->postJson('/api/network-devices', [
+            'nama' => 'Switch Tanpa Site Awal',
+            'jenis' => 'switch',
+            'status' => 'aktif',
+        ])->assertCreated()
+            ->assertJsonPath('active_installation', null);
+
+        $deviceResponse = $this->postJson('/api/network-devices', [
+            'nama' => 'Switch Dengan Site Awal',
+            'jenis' => 'switch',
+            'status' => 'aktif',
+            'kondisi' => 'baik',
+            'site_id' => $siteId,
+        ])->assertCreated()
+            ->assertJsonPath('active_installation.status', 'aktif')
+            ->assertJsonPath('active_installation.site.nama', 'Site Awal Perangkat');
+
+        $deviceId = $deviceResponse->json('id');
+        $siteAssetCode = $deviceResponse->json('active_installation.site.asset_code');
+
+        $this->assertNotEmpty($siteAssetCode);
+        $this->assertDatabaseHas('consumer_network_installations', [
+            'site_id' => $siteId,
+            'device_id' => $deviceId,
+            'status' => 'aktif',
+            'installed_at' => now()->startOfDay()->toDateTimeString(),
+            'installed_by' => 'Administrator CMDB',
+            'notes' => 'Riwayat instalasi otomatis dari form tambah perangkat.',
+        ]);
+        $this->assertDatabaseHas('audit_log', [
+            'tabel' => 'consumer_network_installations',
+            'aksi' => 'create',
+        ]);
+
+        $this->postJson('/api/network-devices', [
+            'nama' => 'Switch Site Tidak Valid',
+            'jenis' => 'switch',
+            'site_id' => (string) Str::uuid(),
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors(['site_id']);
+    }
+
     public function test_consumer_network_site_monitoring_can_be_managed_with_universal_attachments(): void
     {
         $this->seed(DatabaseSeeder::class);

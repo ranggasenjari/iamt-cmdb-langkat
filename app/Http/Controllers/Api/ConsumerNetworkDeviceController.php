@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\ConsumerNetworkDevice;
+use App\Models\ConsumerNetworkInstallation;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class ConsumerNetworkDeviceController extends Controller
 {
@@ -26,9 +28,29 @@ class ConsumerNetworkDeviceController extends Controller
 
     public function store(Request $request)
     {
-        $data = $this->modelData($this->validated($request));
-        $device = ConsumerNetworkDevice::create($data);
-        $this->audit('create', $device, null, $device->toArray(), $request);
+        $data = $this->validated($request);
+        $siteId = $data['site_id'] ?? null;
+        unset($data['site_id']);
+
+        $device = DB::transaction(function () use ($data, $siteId, $request) {
+            $device = ConsumerNetworkDevice::create($this->modelData($data));
+            $this->audit('create', $device, null, $device->toArray(), $request);
+
+            if ($siteId) {
+                $installation = ConsumerNetworkInstallation::create([
+                    'site_id' => $siteId,
+                    'device_id' => $device->id,
+                    'status' => 'aktif',
+                    'installed_at' => now()->toDateString(),
+                    'installed_by' => $request->attributes->get('auth_user')?->nama,
+                    'notes' => 'Riwayat instalasi otomatis dari form tambah perangkat.',
+                ]);
+
+                $this->auditInstallation('create', $installation, null, $installation->toArray(), $request);
+            }
+
+            return $device;
+        });
 
         return response()->json($device->fresh($this->relations()), 201);
     }
@@ -91,11 +113,14 @@ class ConsumerNetworkDeviceController extends Controller
             'credential_username' => ['nullable', 'string', 'max:255'],
             'credential_password' => ['nullable', 'string', 'max:255'],
             'credential_notes' => ['nullable', 'string'],
+            'site_id' => ['nullable', 'uuid', 'exists:consumer_network_sites,id'],
         ]);
     }
 
     private function modelData(array $data, ?ConsumerNetworkDevice $device = null): array
     {
+        unset($data['site_id']);
+
         foreach (['poe_support', 'dhcp_enabled'] as $field) {
             $data[$field] = (bool) ($data[$field] ?? false);
         }
@@ -132,6 +157,20 @@ class ConsumerNetworkDeviceController extends Controller
             'aksi' => $action,
             'tabel' => 'consumer_network_devices',
             'record_id' => $device->id,
+            'before_data' => $before,
+            'after_data' => $after,
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+        ]);
+    }
+
+    private function auditInstallation(string $action, ConsumerNetworkInstallation $installation, ?array $before, ?array $after, Request $request): void
+    {
+        AuditLog::create([
+            'user_id' => $request->attributes->get('auth_user')?->id,
+            'aksi' => $action,
+            'tabel' => 'consumer_network_installations',
+            'record_id' => $installation->id,
             'before_data' => $before,
             'after_data' => $after,
             'ip_address' => $request->ip(),

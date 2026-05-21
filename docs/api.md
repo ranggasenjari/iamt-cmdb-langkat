@@ -497,12 +497,15 @@ Resource ini menyimpan inventaris perangkatnya saja. Lokasi aktif, IP, dan krede
   "mac_address": "AA:BB:CC:DD:EE:FF",
   "kapasitas_port": 12,
   "poe_support": false,
+  "site_id": "uuid-network-site",
   "wireless_standard": "Wi-Fi 6",
   "frekuensi": "2.4/5 GHz",
   "bandwidth": "1 Gbps",
   "deskripsi": "Router edge jaringan Diskominfo"
 }
 ```
+
+Field `site_id` opsional hanya berlaku saat create. Jika dikirim, sistem otomatis membuat riwayat `network-installations` berstatus `aktif` dengan tanggal hari ini sebagai pemasangan awal.
 
 Enum `jenis`: `router_utama`, `router`, `switch`, `access_point`, `wireless_controller`, `modem`, `cpe`, `repeater`, `bridge`, `firewall`, `lainnya`.
 
