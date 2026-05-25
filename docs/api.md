@@ -603,11 +603,12 @@ Response sukses:
 
 ### Consumer Networking - Monitoring Site: `network-monitorings`
 
-Resource ini mencatat pemantauan bulanan pada sebuah site. Create dan update memakai `multipart/form-data` karena dapat berisi banyak lampiran universal.
+Resource ini mencatat pemantauan bulanan pada sebuah site atau seluruh site dalam satu OPD/Pemilik. Create dan update memakai `multipart/form-data` karena dapat berisi banyak lampiran universal.
 
 | Field | Tipe | Keterangan |
 | --- | --- | --- |
-| `site_id` | UUID | Wajib |
+| `opd_id` | UUID | Wajib jika `site_id` kosong untuk opsi Semua Site/Node |
+| `site_id` | UUID | Opsional. Kosongkan untuk monitoring Semua Site/Node dalam OPD |
 | `monitoring_at` | datetime | Wajib |
 | `period_month` | `YYYY-MM` | Opsional, otomatis dari `monitoring_at` jika kosong |
 | `officers` | JSON array/string | Nama petugas, contoh `["Rangga","Tim NOC"]` |
@@ -646,6 +647,7 @@ POST /api/network-monitorings
 Authorization: Bearer {token}
 
 site_id=uuid-network-site
+opd_id=uuid-opd
 monitoring_at=2026-05-08T09:30
 period_month=2026-05
 officers=["Rangga","Tim Infrastruktur"]

@@ -500,6 +500,19 @@ td span,
   font-size: 26px;
 }
 
+.module-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.compact-select {
+  min-width: min(280px, 100%);
+  min-height: 42px;
+}
+
 .section-heading.compact {
   margin-bottom: 12px;
 }
@@ -1879,6 +1892,16 @@ th {
   .section-heading {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .module-actions {
+    align-items: stretch;
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .module-actions > * {
+    width: 100%;
   }
 
   .module-header h3,

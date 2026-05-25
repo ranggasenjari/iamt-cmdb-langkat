@@ -146,7 +146,8 @@ class ConsumerNetworkDeviceController extends Controller
             'opd:id,nama',
             'ipAddress:id,ip,jenis',
             'upstreamDevice:id,nama,jenis,asset_code',
-            'activeInstallation.site:id,nama,kode,jenis,asset_code',
+            'activeInstallation.site:id,nama,kode,jenis,asset_code,opd_id',
+            'activeInstallation.site.opd:id,nama',
         ];
     }
 

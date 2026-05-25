@@ -67,7 +67,8 @@ class ConsumerNetworkInstallationController extends Controller
     private function relations(): array
     {
         return [
-            'site:id,nama,kode,jenis,asset_code',
+            'site:id,nama,kode,jenis,asset_code,opd_id',
+            'site.opd:id,nama',
             'device:id,nama,jenis,asset_code',
             'replacementDevice:id,nama,jenis,asset_code',
         ];

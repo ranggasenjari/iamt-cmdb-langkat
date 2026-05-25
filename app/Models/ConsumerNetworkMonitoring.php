@@ -17,6 +17,7 @@ class ConsumerNetworkMonitoring extends Model
     protected $fillable = [
         'asset_code',
         'site_id',
+        'opd_id',
         'monitoring_at',
         'period_month',
         'officers',
@@ -43,6 +44,11 @@ class ConsumerNetworkMonitoring extends Model
     public function site(): BelongsTo
     {
         return $this->belongsTo(ConsumerNetworkSite::class, 'site_id');
+    }
+
+    public function opd(): BelongsTo
+    {
+        return $this->belongsTo(Opd::class, 'opd_id');
     }
 
     public function items(): HasMany

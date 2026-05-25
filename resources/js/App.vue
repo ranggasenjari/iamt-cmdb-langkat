@@ -95,6 +95,7 @@ const pingingIps = ref({});
 const assetDeepLinkHandled = ref(false);
 const error = ref('');
 const query = ref('');
+const networkDeviceOpdFilter = ref('');
 const selectedServerId = ref('');
 const mobileNavOpen = ref(false);
 const authToken = ref(localStorage.getItem('iamt_token') || '');
@@ -154,6 +155,7 @@ const monitoringReportQrDataUrl = ref('');
 const bulkLabelQrUrls = ref({});
 const bulkLabelGenerating = ref(false);
 const backdropPointerStartedOnSelf = ref(false);
+const ALL_NETWORK_SITES_VALUE = '__all_sites__';
 
 const dashboard = ref(null);
 const references = ref({ opd: [], classifications: [], data_centers: [], racks: [], isps: [], servers: [], vms: [], ips: [], backup_media: [], network_devices: [], network_sites: [] });
@@ -418,7 +420,8 @@ const networkCredentialForm = reactive({
 });
 
 const networkMonitoringForm = reactive({
-  site_id: '',
+  opd_id: '',
+  site_id: ALL_NETWORK_SITES_VALUE,
   monitoring_at: '',
   period_month: '',
   officers_text: '',
@@ -876,7 +879,7 @@ function assetName(row, module = '') {
   if (module === 'network-installations') return `${row.device?.nama || '-'} @ ${row.site?.nama || '-'}`;
   if (module === 'network-ip-configs') return `${row.device?.nama || '-'} / ${row.ip_address || row.ip_address_record?.ip || '-'}`;
   if (module === 'network-credentials') return `${row.label || 'Akses'} / ${row.device?.nama || '-'}`;
-  if (module === 'network-monitorings') return `Monitoring ${row.site?.nama || '-'} / ${formatDateTime(row.monitoring_at)}`;
+  if (module === 'network-monitorings') return `${monitoringScopeLabel(row)} / ${formatDateTime(row.monitoring_at)}`;
   return row.nama || row.name || row.asset_code || '-';
 }
 
@@ -905,7 +908,7 @@ function assetLocation(module, row) {
   if (module === 'network-installations') return row.site?.nama || row.device?.nama || '-';
   if (module === 'network-ip-configs') return row.site?.nama || row.device?.nama || '-';
   if (module === 'network-credentials') return row.site?.nama || row.device?.nama || '-';
-  if (module === 'network-monitorings') return [row.site?.nama, row.site?.lokasi_detail, row.site?.alamat].filter(Boolean).join(' / ') || '-';
+  if (module === 'network-monitorings') return [row.site?.nama, row.site?.lokasi_detail, row.site?.alamat, row.opd?.nama].filter(Boolean).join(' / ') || '-';
   return row.lokasi || row.location || '-';
 }
 
@@ -936,6 +939,13 @@ function formatFileSize(bytes) {
 
 function monitoringOfficersText(row) {
   return (row?.officers || []).filter(Boolean).join(', ') || '-';
+}
+
+function monitoringScopeLabel(row) {
+  if (row?.site?.nama) return row.site.nama;
+  if (row?.opd?.nama) return `Semua Site/Node - ${row.opd.nama}`;
+
+  return 'Semua Site/Node';
 }
 
 function monitoringSpeedSummary(row) {
@@ -969,6 +979,29 @@ function networkDeviceOptionLabel(device) {
 
 function networkSiteOptionLabel(site) {
   return site ? `${site.nama || '-'} - ${assetCode(site)}` : '-';
+}
+
+function siteOwnerId(site) {
+  return site?.opd_id || site?.opd?.id || '';
+}
+
+function siteOwnerName(site) {
+  return site?.opd?.nama || references.value.opd.find((opd) => opd.id === siteOwnerId(site))?.nama || '-';
+}
+
+function networkDeviceOwnerId(device) {
+  return device?.active_installation?.site?.opd_id
+    || device?.active_installation?.site?.opd?.id
+    || device?.opd_id
+    || device?.opd?.id
+    || '';
+}
+
+function networkDeviceOwnerName(device) {
+  return device?.active_installation?.site?.opd?.nama
+    || device?.opd?.nama
+    || references.value.opd.find((opd) => opd.id === networkDeviceOwnerId(device))?.nama
+    || '-';
 }
 
 function ipVmNames(row) {
@@ -1093,10 +1126,20 @@ function printLabel() {
   window.print();
 }
 
-function monitoringItemsForSite(siteId) {
-  if (!siteId) return [];
+const monitoringSiteOptions = computed(() => {
+  const ownerId = networkMonitoringForm.opd_id;
 
-  const scopedInstallations = networkInstallations.value.filter((row) => row.site_id === siteId);
+  return networkSites.value.filter((site) => !ownerId || siteOwnerId(site) === ownerId);
+});
+
+function monitoringItemsForScope(opdId, siteId) {
+  if (!opdId && (!siteId || siteId === ALL_NETWORK_SITES_VALUE)) return [];
+
+  const scopedInstallations = networkInstallations.value.filter((row) => {
+    if (siteId && siteId !== ALL_NETWORK_SITES_VALUE) return row.site_id === siteId;
+
+    return siteOwnerId(row.site) === opdId;
+  });
   const activeInstallations = scopedInstallations.filter((row) => row.status === 'aktif');
   const rows = activeInstallations.length ? activeInstallations : scopedInstallations;
   const seen = new Set();
@@ -1112,6 +1155,7 @@ function monitoringItemsForSite(siteId) {
       installation_id: row.id,
       device_name: row.device?.nama || '-',
       device_type: row.device?.jenis || '',
+      site_name: row.site?.nama || '',
       role: row.role || '',
       condition: '',
       note: '',
@@ -1121,7 +1165,7 @@ function monitoringItemsForSite(siteId) {
 
 function populateMonitoringItemsFromSite(preserveExisting = false) {
   const existing = new Map(networkMonitoringForm.items.map((item) => [item.device_id, item]));
-  networkMonitoringForm.items = monitoringItemsForSite(networkMonitoringForm.site_id).map((item) => {
+  networkMonitoringForm.items = monitoringItemsForScope(networkMonitoringForm.opd_id, networkMonitoringForm.site_id).map((item) => {
     const previous = existing.get(item.device_id);
     return {
       ...item,
@@ -1129,6 +1173,27 @@ function populateMonitoringItemsFromSite(preserveExisting = false) {
       note: preserveExisting ? previous?.note || '' : '',
     };
   });
+}
+
+function handleMonitoringOpdChange() {
+  if (networkMonitoringForm.site_id !== ALL_NETWORK_SITES_VALUE
+    && !monitoringSiteOptions.value.some((site) => site.id === networkMonitoringForm.site_id)) {
+    networkMonitoringForm.site_id = ALL_NETWORK_SITES_VALUE;
+  }
+
+  populateMonitoringItemsFromSite(false);
+}
+
+function handleMonitoringSiteChange() {
+  if (networkMonitoringForm.site_id && networkMonitoringForm.site_id !== ALL_NETWORK_SITES_VALUE) {
+    const site = networkSites.value.find((item) => item.id === networkMonitoringForm.site_id);
+
+    if (site && !networkMonitoringForm.opd_id) {
+      networkMonitoringForm.opd_id = siteOwnerId(site);
+    }
+  }
+
+  populateMonitoringItemsFromSite(false);
 }
 
 function parseOfficersText(text) {
@@ -1388,7 +1453,8 @@ function resetModuleForm(module) {
   }
   if (module === 'network-monitorings') {
     Object.assign(networkMonitoringForm, {
-      site_id: '',
+      opd_id: '',
+      site_id: ALL_NETWORK_SITES_VALUE,
       monitoring_at: '',
       period_month: '',
       officers_text: '',
@@ -1651,7 +1717,8 @@ function openEdit(module, row) {
   }
   if (module === 'network-monitorings') {
     Object.assign(networkMonitoringForm, {
-      site_id: row.site_id || '',
+      opd_id: row.opd_id || row.site?.opd_id || row.site?.opd?.id || '',
+      site_id: row.site_id || ALL_NETWORK_SITES_VALUE,
       monitoring_at: toDateTimeLocal(row.monitoring_at),
       period_month: row.period_month || '',
       officers_text: (row.officers || []).join('\n'),
@@ -1805,7 +1872,8 @@ function formDataFor(module) {
   }
 
   if (module === 'network-monitorings') {
-    appendValue(formData, 'site_id', networkMonitoringForm.site_id);
+    appendValue(formData, 'opd_id', networkMonitoringForm.opd_id);
+    appendValue(formData, 'site_id', networkMonitoringForm.site_id === ALL_NETWORK_SITES_VALUE ? '' : networkMonitoringForm.site_id);
     appendValue(formData, 'monitoring_at', networkMonitoringForm.monitoring_at);
     appendValue(formData, 'period_month', networkMonitoringForm.period_month);
     appendValue(formData, 'speedtest_download_mbps', networkMonitoringForm.speedtest_download_mbps);
@@ -2136,7 +2204,12 @@ const filteredNetworkSites = computed(() => {
 
 const filteredNetworkDevices = computed(() => {
   const needle = query.value.toLowerCase();
-  return networkDevices.value.filter((row) => JSON.stringify(row).toLowerCase().includes(needle));
+  return networkDevices.value.filter((row) => {
+    const matchesSearch = JSON.stringify(row).toLowerCase().includes(needle);
+    const matchesOwner = !networkDeviceOpdFilter.value || networkDeviceOwnerId(row) === networkDeviceOpdFilter.value;
+
+    return matchesSearch && matchesOwner;
+  });
 });
 
 const filteredNetworkInstallations = computed(() => {
@@ -3298,7 +3371,7 @@ onUpdated(() => {
                 <thead><tr><th>Site / Periode</th><th>Speedtest</th><th>Menara</th><th>Petugas</th><th>Checklist</th><th>Lampiran</th><th>Aksi</th></tr></thead>
                 <tbody>
                   <tr v-for="row in filteredNetworkMonitorings" :key="row.id">
-                    <td><strong>{{ row.site?.nama || '-' }}</strong><span>{{ assetCode(row) }}</span><span>{{ formatDateTime(row.monitoring_at) }} / {{ row.period_month || '-' }}</span></td>
+                    <td><strong>{{ monitoringScopeLabel(row) }}</strong><span>{{ assetCode(row) }}</span><span>{{ formatDateTime(row.monitoring_at) }} / {{ row.period_month || '-' }}</span></td>
                     <td>{{ monitoringSpeedSummary(row) }}</td>
                     <td>{{ monitoringTowerSummary(row) }}<span>{{ row.tower_notes || '' }}</span></td>
                     <td>{{ monitoringOfficersText(row) }}</td>
@@ -3322,14 +3395,21 @@ onUpdated(() => {
           <section class="surface wide">
             <div class="module-header">
               <div><p class="eyebrow">Consumer Networking</p><h3 class="yellow-title">Perangkat Jaringan</h3></div>
-              <button v-if="canWrite" class="action-button" type="button" @click="openCreate('network-devices')"><Plus :size="17" /> Tambah Perangkat</button>
+              <div class="module-actions">
+                <select v-model="networkDeviceOpdFilter" class="compact-select">
+                  <option value="">Semua OPD / Pemilik</option>
+                  <option v-for="opd in references.opd" :key="opd.id" :value="opd.id">{{ opd.nama }}</option>
+                </select>
+                <button v-if="canWrite" class="action-button" type="button" @click="openCreate('network-devices')"><Plus :size="17" /> Tambah Perangkat</button>
+              </div>
             </div>
             <div class="table-wrap">
               <table>
-                <thead><tr><th>Perangkat</th><th>Jenis</th><th>Spesifikasi Ringkas</th><th>Site Aktif</th><th>Status</th><th>Aksi</th></tr></thead>
+                <thead><tr><th>Perangkat</th><th>OPD / Pemilik</th><th>Jenis</th><th>Spesifikasi Ringkas</th><th>Site Aktif</th><th>Status</th><th>Aksi</th></tr></thead>
                 <tbody>
                   <tr v-for="device in filteredNetworkDevices" :key="device.id">
                     <td><strong>{{ device.nama }}</strong><span>{{ assetCode(device) }}</span><span>{{ device.serial_number || device.mac_address || '-' }}</span></td>
+                    <td>{{ networkDeviceOwnerName(device) }}</td>
                     <td><span class="status">{{ networkDeviceTypeLabel(device.jenis) }}</span><span>{{ device.merk || '-' }} {{ device.model || '' }}</span></td>
                     <td>{{ device.os_firmware || '-' }}<span>{{ device.kapasitas_port ? `${device.kapasitas_port} port` : '' }} {{ device.poe_support ? ' / PoE' : '' }} {{ device.wireless_standard || '' }}</span></td>
                     <td>{{ device.active_installation?.site?.nama || '-' }}<span>{{ device.installations_count || 0 }} riwayat / {{ device.ip_configs_count || 0 }} IP</span></td>
@@ -4180,17 +4260,23 @@ onUpdated(() => {
 
           <div v-if="modal.module === 'network-monitorings'" class="modal-form monitoring-form">
             <div class="two-col">
-              <select v-model="networkMonitoringForm.site_id" required @change="populateMonitoringItemsFromSite(false)">
-                <option value="">Site / node pemantauan</option>
-                <option v-for="site in networkSites" :key="site.id" :value="site.id">{{ site.nama }}</option>
+              <select v-model="networkMonitoringForm.opd_id" @change="handleMonitoringOpdChange">
+                <option value="">OPD / pemilik</option>
+                <option v-for="opd in references.opd" :key="opd.id" :value="opd.id">{{ opd.nama }}</option>
               </select>
+              <select v-model="networkMonitoringForm.site_id" required @change="handleMonitoringSiteChange">
+                <option :value="ALL_NETWORK_SITES_VALUE">Semua Site/Node</option>
+                <option v-for="site in monitoringSiteOptions" :key="site.id" :value="site.id">{{ site.nama }} - {{ siteOwnerName(site) }}</option>
+              </select>
+            </div>
+            <div class="two-col">
               <label class="field-label">
                 <span>Tanggal & Jam Pemantauan</span>
                 <input v-model="networkMonitoringForm.monitoring_at" required type="datetime-local" />
               </label>
+              <input v-model="networkMonitoringForm.period_month" type="month" placeholder="Periode bulan" />
             </div>
             <div class="two-col">
-              <input v-model="networkMonitoringForm.period_month" type="month" placeholder="Periode bulan" />
               <textarea v-model="networkMonitoringForm.officers_text" required placeholder="Nama petugas monitoring, pisahkan dengan koma atau baris baru"></textarea>
             </div>
 
@@ -4231,9 +4317,9 @@ onUpdated(() => {
             <section class="monitoring-form-section">
               <div class="section-heading compact">
                 <h4>Checklist Perangkat di Site</h4>
-                <button class="action-button ghost compact-button" type="button" :disabled="!networkMonitoringForm.site_id" @click="populateMonitoringItemsFromSite(true)">Muat Ulang</button>
+                <button class="action-button ghost compact-button" type="button" :disabled="networkMonitoringForm.site_id === ALL_NETWORK_SITES_VALUE && !networkMonitoringForm.opd_id" @click="populateMonitoringItemsFromSite(true)">Muat Ulang</button>
               </div>
-              <div v-if="!networkMonitoringForm.items.length" class="empty-note">Pilih site yang sudah memiliki riwayat instalasi perangkat aktif.</div>
+              <div v-if="!networkMonitoringForm.items.length" class="empty-note">Pilih OPD/Pemilik dan Site/Node yang sudah memiliki riwayat instalasi perangkat aktif.</div>
               <div v-else class="monitoring-checklist-table">
                 <div class="monitoring-checklist-head">
                   <span>Perangkat</span>
@@ -4243,7 +4329,7 @@ onUpdated(() => {
                 <div v-for="item in networkMonitoringForm.items" :key="item.device_id" class="monitoring-checklist-row">
                   <div>
                     <strong>{{ item.device_name }}</strong>
-                    <span>{{ networkDeviceTypeLabel(item.device_type) }} / {{ networkInstallationRoleLabel(item.role) }}</span>
+                    <span>{{ [item.site_name, networkDeviceTypeLabel(item.device_type), networkInstallationRoleLabel(item.role)].filter(Boolean).join(' / ') }}</span>
                   </div>
                   <select v-model="item.condition" required>
                     <option value="">Pilih kondisi</option>
@@ -4554,7 +4640,7 @@ onUpdated(() => {
           <header class="modal-header">
             <div>
               <p class="eyebrow">Laporan Monitoring</p>
-              <h3>{{ monitoringReportModal.item.site?.nama || '-' }}</h3>
+              <h3>{{ monitoringScopeLabel(monitoringReportModal.item) }}</h3>
             </div>
             <button class="icon-button" type="button" title="Tutup laporan" @click="closeMonitoringReport"><X :size="18" /></button>
           </header>
@@ -4580,7 +4666,7 @@ onUpdated(() => {
             <section class="report-title-block">
               <div>
                 <span>Site / Node</span>
-                <strong>{{ monitoringReportModal.item.site?.nama || '-' }}</strong>
+                <strong>{{ monitoringScopeLabel(monitoringReportModal.item) }}</strong>
                 <small>{{ assetLocation('network-monitorings', monitoringReportModal.item) }}</small>
               </div>
               <div>
@@ -4610,7 +4696,7 @@ onUpdated(() => {
                 <tbody>
                   <tr v-for="(item, index) in monitoringReportModal.item.items || []" :key="item.id || item.device_id">
                     <td>{{ index + 1 }}</td>
-                    <td><strong>{{ item.device?.nama || '-' }}</strong><span>{{ item.device?.asset_code || '' }}</span></td>
+                    <td><strong>{{ item.device?.nama || '-' }}</strong><span>{{ [item.device?.asset_code, item.installation?.site?.nama].filter(Boolean).join(' / ') }}</span></td>
                     <td>{{ networkDeviceTypeLabel(item.device?.jenis) }} / {{ networkInstallationRoleLabel(item.installation?.role) }}</td>
                     <td><span :class="statusClass(item.condition)">{{ monitoringConditionLabel(item.condition) }}</span></td>
                     <td>{{ item.note || '-' }}</td>

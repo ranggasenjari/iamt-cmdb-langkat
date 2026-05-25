@@ -56,11 +56,11 @@ class PublicAssetController extends Controller
             'ups-devices' => UpsDevice::query()->with('dataCenter:id,nama,lokasi'),
             'soc-tools' => SocTool::query()->with(['dataCenters:id,nama', 'servers:id,nama', 'vms:id,nama', 'applications:id,nama']),
             'network-sites' => ConsumerNetworkSite::query()->with(['dataCenter:id,nama,lokasi', 'rack:id,nama', 'opd:id,nama']),
-            'network-devices' => ConsumerNetworkDevice::query()->with(['dataCenter:id,nama,lokasi', 'rack:id,nama', 'opd:id,nama', 'upstreamDevice:id,nama', 'activeInstallation.site:id,nama,kode,asset_code']),
-            'network-installations' => ConsumerNetworkInstallation::query()->with(['site:id,nama,kode,asset_code', 'device:id,nama,jenis,asset_code', 'replacementDevice:id,nama,jenis,asset_code']),
+            'network-devices' => ConsumerNetworkDevice::query()->with(['dataCenter:id,nama,lokasi', 'rack:id,nama', 'opd:id,nama', 'upstreamDevice:id,nama', 'activeInstallation.site:id,nama,kode,asset_code,opd_id', 'activeInstallation.site.opd:id,nama']),
+            'network-installations' => ConsumerNetworkInstallation::query()->with(['site:id,nama,kode,asset_code,opd_id', 'site.opd:id,nama', 'device:id,nama,jenis,asset_code', 'replacementDevice:id,nama,jenis,asset_code']),
             'network-ip-configs' => ConsumerNetworkIpConfig::query()->with(['device:id,nama,jenis,asset_code', 'site:id,nama,kode,asset_code', 'ipAddressRecord:id,ip,jenis']),
             'network-credentials' => ConsumerNetworkCredential::query()->with(['device:id,nama,jenis,asset_code', 'site:id,nama,kode,asset_code']),
-            'network-monitorings' => ConsumerNetworkMonitoring::query()->with(['site:id,nama,kode,asset_code,alamat,lokasi_detail', 'items.device:id,nama,jenis,asset_code', 'attachments:id,monitoring_id,original_name,mime_type,size_bytes']),
+            'network-monitorings' => ConsumerNetworkMonitoring::query()->with(['site:id,nama,kode,asset_code,alamat,lokasi_detail,opd_id', 'site.opd:id,nama', 'opd:id,nama', 'items.device:id,nama,jenis,asset_code', 'items.installation:id,site_id,device_id,role,status,installed_at', 'items.installation.site:id,nama,kode,asset_code', 'attachments:id,monitoring_id,original_name,mime_type,size_bytes']),
         };
 
         $row = $query->findOrFail($id);
@@ -113,7 +113,7 @@ class PublicAssetController extends Controller
             'network-installations' => collect([$row->device?->nama, $row->site?->nama])->filter()->join(' @ ') ?: '-',
             'network-ip-configs' => collect([$row->device?->nama, $row->ip_address ?: ($row->ipAddressRecord?->ip)])->filter()->join(' / ') ?: '-',
             'network-credentials' => collect([$row->label, $row->device?->nama])->filter()->join(' / ') ?: '-',
-            'network-monitorings' => collect(['Monitoring', $row->site?->nama, optional($row->monitoring_at)->format('Y-m-d H:i')])->filter()->join(' / ') ?: '-',
+            'network-monitorings' => collect(['Monitoring', $row->site?->nama ?: ($row->opd?->nama ? 'Semua Site/Node - '.$row->opd->nama : 'Semua Site/Node'), optional($row->monitoring_at)->format('Y-m-d H:i')])->filter()->join(' / ') ?: '-',
             default => $row->nama ?? '-',
         };
     }
@@ -165,7 +165,7 @@ class PublicAssetController extends Controller
             'network-installations' => $row->site?->nama ?? '-',
             'network-ip-configs' => $row->site?->nama ?? $row->device?->nama ?? '-',
             'network-credentials' => $row->site?->nama ?? $row->device?->nama ?? '-',
-            'network-monitorings' => collect([$row->site?->nama, $row->site?->lokasi_detail, $row->site?->alamat])->filter()->join(' / ') ?: '-',
+            'network-monitorings' => collect([$row->site?->nama, $row->site?->lokasi_detail, $row->site?->alamat, $row->opd?->nama])->filter()->join(' / ') ?: '-',
             default => '-',
         };
     }
@@ -223,7 +223,7 @@ class PublicAssetController extends Controller
             ],
             'network-installations' => [
                 'Perangkat' => $row->device?->nama ?? '-',
-                'Site / Node' => $row->site?->nama ?? '-',
+                'Site / Node' => $row->site?->nama ?: ($row->opd?->nama ? 'Semua Site/Node - '.$row->opd->nama : 'Semua Site/Node'),
                 'Tanggal Pasang' => optional($row->installed_at)->format('Y-m-d') ?? '-',
                 'Tanggal Lepas' => optional($row->removed_at)->format('Y-m-d') ?? '-',
                 'Perangkat Pengganti' => $row->replacementDevice?->nama ?? '-',
@@ -262,7 +262,7 @@ class PublicAssetController extends Controller
                         'Pondasi: '.($row->tower_pondasi_condition ?? '-'),
                     ])->join(' / ')
                     : 'Tidak ada / tidak diperiksa',
-                'Checklist Perangkat' => $row->items->map(fn ($item) => ($item->device?->nama ?? '-').' - '.$item->condition.($item->note ? ' ('.$item->note.')' : ''))->join('; ') ?: '-',
+                'Checklist Perangkat' => $row->items->map(fn ($item) => collect([$item->device?->nama ?? '-', $item->installation?->site?->nama])->filter()->join(' @ ').' - '.$item->condition.($item->note ? ' ('.$item->note.')' : ''))->join('; ') ?: '-',
                 'Lampiran' => $row->attachments->pluck('original_name')->join(', ') ?: '-',
                 'Catatan' => $row->notes ?? '-',
             ],

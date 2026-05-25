@@ -5,10 +5,12 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\ConsumerNetworkMonitoring;
+use App\Models\ConsumerNetworkSite;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class ConsumerNetworkMonitoringController extends Controller
 {
@@ -76,8 +78,9 @@ class ConsumerNetworkMonitoringController extends Controller
     {
         $this->prepareArrayInputs($request);
 
-        return $request->validate([
-            'site_id' => ['required', 'uuid', 'exists:consumer_network_sites,id'],
+        $validated = $request->validate([
+            'site_id' => ['nullable', 'uuid', 'exists:consumer_network_sites,id'],
+            'opd_id' => ['nullable', 'uuid', 'exists:opd,id'],
             'monitoring_at' => ['required', 'date'],
             'period_month' => ['nullable', 'date_format:Y-m'],
             'officers' => ['nullable', 'array'],
@@ -101,6 +104,14 @@ class ConsumerNetworkMonitoringController extends Controller
             'items.*.condition' => ['required', 'in:baik,kurang_baik,rusak'],
             'items.*.note' => ['nullable', 'string'],
         ]);
+
+        if (blank($validated['site_id'] ?? null) && blank($validated['opd_id'] ?? null)) {
+            throw ValidationException::withMessages([
+                'opd_id' => 'Pilih OPD/Pemilik jika Site/Node menggunakan opsi Semua Site/Node.',
+            ]);
+        }
+
+        return $validated;
     }
 
     private function prepareArrayInputs(Request $request): void
@@ -141,6 +152,13 @@ class ConsumerNetworkMonitoringController extends Controller
 
     private function modelData(array $data): array
     {
+        $data['site_id'] = blank($data['site_id'] ?? null) ? null : $data['site_id'];
+        $data['opd_id'] = blank($data['opd_id'] ?? null) ? null : $data['opd_id'];
+
+        if ($data['site_id'] && ! $data['opd_id']) {
+            $data['opd_id'] = ConsumerNetworkSite::whereKey($data['site_id'])->value('opd_id');
+        }
+
         $data['tower_available'] = (bool) ($data['tower_available'] ?? false);
         $data['officers'] = collect($data['officers'] ?? [])
             ->map(fn ($officer) => trim((string) $officer))
@@ -239,9 +257,12 @@ class ConsumerNetworkMonitoringController extends Controller
     private function relations(): array
     {
         return [
-            'site:id,nama,kode,jenis,status,asset_code,alamat,lokasi_detail,pic_nama,pic_kontak',
+            'site:id,nama,kode,jenis,status,asset_code,alamat,lokasi_detail,pic_nama,pic_kontak,opd_id',
+            'site.opd:id,nama',
+            'opd:id,nama',
             'items.device:id,nama,jenis,asset_code,merk,model,serial_number',
             'items.installation:id,site_id,device_id,role,status,installed_at',
+            'items.installation.site:id,nama,kode,asset_code,opd_id',
             'attachments:id,monitoring_id,path,original_name,mime_type,size_bytes',
         ];
     }

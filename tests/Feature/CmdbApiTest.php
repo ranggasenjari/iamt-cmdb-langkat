@@ -617,6 +617,63 @@ class CmdbApiTest extends TestCase
             ->assertNoContent();
     }
 
+    public function test_network_monitoring_can_scope_all_sites_by_opd(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+        $this->authenticateAs();
+
+        $dc = \App\Models\DataCenter::firstOrFail();
+        $opd = \App\Models\Opd::where('nama', 'Dinas Komunikasi Dan Informatika')->firstOrFail();
+
+        $siteId = $this->postJson('/api/network-sites', [
+            'kode' => 'MONITORING-SEMUA-SITE',
+            'nama' => 'Site Scope OPD',
+            'jenis' => 'kantor',
+            'status' => 'aktif',
+            'opd_id' => $opd->id,
+            'dc_id' => $dc->id,
+        ])->assertCreated()->json('id');
+
+        $deviceResponse = $this->postJson('/api/network-devices', [
+            'nama' => 'Router Scope OPD',
+            'jenis' => 'router',
+            'status' => 'aktif',
+            'site_id' => $siteId,
+        ])->assertCreated();
+
+        $deviceId = $deviceResponse->json('id');
+        $installationId = $deviceResponse->json('active_installation.id');
+
+        $monitoringResponse = $this->postJson('/api/network-monitorings', [
+            'site_id' => null,
+            'opd_id' => $opd->id,
+            'monitoring_at' => '2026-05-20T09:00',
+            'officers' => ['Tim NOC'],
+            'items' => [[
+                'device_id' => $deviceId,
+                'installation_id' => $installationId,
+                'condition' => 'baik',
+                'note' => 'Monitoring seluruh site OPD.',
+            ]],
+        ])->assertCreated()
+            ->assertJsonPath('site', null)
+            ->assertJsonPath('opd.nama', 'Dinas Komunikasi Dan Informatika')
+            ->assertJsonPath('items.0.installation.site.nama', 'Site Scope OPD');
+
+        $this->assertDatabaseHas('consumer_network_monitorings', [
+            'id' => $monitoringResponse->json('id'),
+            'site_id' => null,
+            'opd_id' => $opd->id,
+            'period_month' => '2026-05',
+        ]);
+
+        $this->postJson('/api/network-monitorings', [
+            'site_id' => null,
+            'monitoring_at' => '2026-05-20T09:00',
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors(['opd_id']);
+    }
+
     public function test_full_user_can_reveal_network_credential_password_with_account_password_and_audit_log(): void
     {
         $this->seed(DatabaseSeeder::class);
