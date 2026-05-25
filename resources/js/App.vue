@@ -72,6 +72,7 @@ const menuSections = [
       { id: 'network-installations', label: 'Instalasi & Pergantian', icon: GitBranch },
       { id: 'network-ip-configs', label: 'Konfigurasi IP', icon: Network },
       { id: 'network-credentials', label: 'Kredensial', icon: ShieldCheck },
+      { id: 'network-owner-summary', label: 'Relasi OPD', icon: FileCheck2 },
     ],
   },
   {
@@ -143,6 +144,9 @@ const monitoringReportModal = reactive({
 const bulkLabelForm = reactive({
   module: 'servers',
   size: '60x40',
+});
+const networkSummaryForm = reactive({
+  opd_id: '',
 });
 const detailModal = reactive({
   open: false,
@@ -806,6 +810,7 @@ const moduleLabels = {
   'network-ip-configs': 'Konfigurasi IP Jaringan',
   'network-credentials': 'Kredensial Jaringan',
   'network-monitorings': 'Monitoring Site',
+  'network-owner-summary': 'Relasi OPD Consumer Networking',
   users: 'Pengguna & Role',
 };
 
@@ -1002,6 +1007,63 @@ function networkDeviceOwnerName(device) {
     || device?.opd?.nama
     || references.value.opd.find((opd) => opd.id === networkDeviceOwnerId(device))?.nama
     || '-';
+}
+
+const selectedNetworkSummaryOpd = computed(() => references.value.opd.find((opd) => opd.id === networkSummaryForm.opd_id) || null);
+
+const networkSummarySiteRows = computed(() => {
+  if (!networkSummaryForm.opd_id) return [];
+
+  return networkSites.value
+    .filter((site) => siteOwnerId(site) === networkSummaryForm.opd_id)
+    .map((site) => {
+      const seen = new Set();
+      const devices = networkInstallations.value
+        .filter((installation) => installation.site_id === site.id && installation.status === 'aktif')
+        .filter((installation) => {
+          if (!installation.device_id || seen.has(installation.device_id)) return false;
+          seen.add(installation.device_id);
+          return true;
+        })
+        .map((installation) => ({
+          installation,
+          device: installation.device || networkDevices.value.find((device) => device.id === installation.device_id),
+        }))
+        .filter((row) => row.device)
+        .sort((a, b) => (a.device.nama || '').localeCompare(b.device.nama || ''));
+
+      return { site, devices };
+    })
+    .sort((a, b) => (a.site.nama || '').localeCompare(b.site.nama || ''));
+});
+
+const networkSummaryUnassignedDevices = computed(() => {
+  if (!networkSummaryForm.opd_id) return [];
+
+  return networkDevices.value
+    .filter((device) => !device.active_installation?.site_id)
+    .filter((device) => (device.opd_id || device.opd?.id || '') === networkSummaryForm.opd_id)
+    .sort((a, b) => (a.nama || '').localeCompare(b.nama || ''));
+});
+
+const networkSummaryTotals = computed(() => {
+  const deviceIds = new Set(networkSummaryUnassignedDevices.value.map((device) => device.id));
+  networkSummarySiteRows.value.forEach((row) => {
+    row.devices.forEach(({ device }) => deviceIds.add(device.id));
+  });
+
+  return {
+    sites: networkSummarySiteRows.value.length,
+    devices: deviceIds.size,
+    emptySites: networkSummarySiteRows.value.filter((row) => !row.devices.length).length,
+  };
+});
+
+function networkSummaryPrintedAt() {
+  return new Date().toLocaleString('id-ID', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  });
 }
 
 function ipVmNames(row) {
@@ -1226,6 +1288,16 @@ function closeMonitoringReport() {
 }
 
 function printMonitoringReport() {
+  window.print();
+}
+
+async function printNetworkSummary() {
+  if (!networkSummaryForm.opd_id) {
+    showAlert('OPD / Pemilik belum dipilih', 'Pilih OPD/Pemilik terlebih dahulu sebelum mencetak ringkasan relasi perangkat.');
+    return;
+  }
+
+  await nextTick();
   window.print();
 }
 
@@ -3501,6 +3573,129 @@ onUpdated(() => {
                 </tbody>
               </table>
             </div>
+          </section>
+        </section>
+
+        <section v-if="activeTab === 'network-owner-summary'" class="content-grid">
+          <section class="surface wide">
+            <div class="module-header">
+              <div><p class="eyebrow">Consumer Networking</p><h3 class="yellow-title">Relasi Perangkat per OPD</h3></div>
+              <button class="action-button" type="button" :disabled="!networkSummaryForm.opd_id" @click="printNetworkSummary"><Printer :size="17" /> Cetak PDF</button>
+            </div>
+            <div class="bulk-label-controls">
+              <label class="field-label">
+                <span>OPD / Pemilik</span>
+                <select v-model="networkSummaryForm.opd_id">
+                  <option value="">Pilih OPD / Pemilik</option>
+                  <option v-for="opd in references.opd" :key="opd.id" :value="opd.id">{{ opd.nama }}</option>
+                </select>
+              </label>
+              <div class="bulk-label-summary">
+                <span>Total Site/Node</span>
+                <strong>{{ networkSummaryTotals.sites }}</strong>
+                <small>{{ selectedNetworkSummaryOpd?.nama || 'OPD belum dipilih' }}</small>
+              </div>
+              <div class="bulk-label-summary">
+                <span>Total Perangkat</span>
+                <strong>{{ networkSummaryTotals.devices }}</strong>
+                <small>Perangkat aktif dalam relasi OPD</small>
+              </div>
+            </div>
+          </section>
+
+          <section class="surface wide">
+            <div v-if="!selectedNetworkSummaryOpd" class="empty-state">
+              <strong>Pilih OPD / Pemilik</strong>
+              <p>Laporan relasi akan menampilkan seluruh Site/Node dan perangkat aktif di bawah OPD tersebut.</p>
+            </div>
+
+            <article v-else class="network-summary-print">
+              <header class="report-header">
+                <div class="report-brand">
+                  <img :src="logoLangkat" alt="Logo Kabupaten Langkat" />
+                  <div>
+                    <p>PEMERINTAH KABUPATEN LANGKAT</p>
+                    <h1>Ringkasan Relasi Perangkat Jaringan</h1>
+                    <span>IAMT CMDB Langkat</span>
+                  </div>
+                </div>
+              </header>
+
+              <section class="report-title-block">
+                <div>
+                  <span>OPD / Pemilik</span>
+                  <strong>{{ selectedNetworkSummaryOpd.nama }}</strong>
+                  <small>Relasi Site/Node dan perangkat aktif Consumer Networking</small>
+                </div>
+                <div>
+                  <span>Waktu Cetak</span>
+                  <strong>{{ networkSummaryPrintedAt() }}</strong>
+                  <small>Dokumen inventaris jaringan</small>
+                </div>
+              </section>
+
+              <section class="report-summary-grid compact-report-grid">
+                <div><span>Site/Node</span><strong>{{ networkSummaryTotals.sites }}</strong></div>
+                <div><span>Perangkat</span><strong>{{ networkSummaryTotals.devices }}</strong></div>
+                <div><span>Site Kosong</span><strong>{{ networkSummaryTotals.emptySites }}</strong></div>
+              </section>
+
+              <section class="report-section">
+                <h2>Daftar Site/Node dan Perangkat</h2>
+                <div v-if="!networkSummarySiteRows.length" class="report-note">Belum ada Site/Node yang terhubung ke OPD/Pemilik ini.</div>
+                <div v-for="row in networkSummarySiteRows" :key="row.site.id" class="summary-site-block">
+                  <div class="summary-site-heading">
+                    <div>
+                      <strong>{{ row.site.nama }}</strong>
+                      <span>{{ [row.site.kode || row.site.asset_code, networkSiteTypeLabel(row.site.jenis), row.site.status].filter(Boolean).join(' / ') }}</span>
+                    </div>
+                    <small>{{ [row.site.lokasi_detail, row.site.alamat].filter(Boolean).join(' / ') || '-' }}</small>
+                  </div>
+                  <table class="report-table">
+                    <thead><tr><th>Perangkat</th><th>Kode</th><th>Jenis / Role</th><th>Merk / Model</th><th>Status</th></tr></thead>
+                    <tbody v-if="row.devices.length">
+                      <tr v-for="{ installation, device } in row.devices" :key="installation.id">
+                        <td><strong>{{ device.nama }}</strong><span>{{ device.serial_number || device.mac_address || '-' }}</span></td>
+                        <td>{{ assetCode(device) }}</td>
+                        <td>{{ networkDeviceTypeLabel(device.jenis) }}<span>{{ networkInstallationRoleLabel(installation.role) }}</span></td>
+                        <td>{{ [device.merk, device.model].filter(Boolean).join(' / ') || '-' }}<span>{{ device.os_firmware || '' }}</span></td>
+                        <td><span :class="statusClass(device.status)">{{ device.status || '-' }}</span><span>{{ device.kondisi || '' }}</span></td>
+                      </tr>
+                    </tbody>
+                    <tbody v-else>
+                      <tr><td colspan="5">Belum ada perangkat aktif tercatat pada site/node ini.</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+
+              <section v-if="networkSummaryUnassignedDevices.length" class="report-section">
+                <h2>Perangkat Belum Terpasang di Site Aktif</h2>
+                <table class="report-table">
+                  <thead><tr><th>Perangkat</th><th>Kode</th><th>Jenis</th><th>Merk / Model</th><th>Status</th></tr></thead>
+                  <tbody>
+                    <tr v-for="device in networkSummaryUnassignedDevices" :key="device.id">
+                      <td><strong>{{ device.nama }}</strong><span>{{ device.serial_number || device.mac_address || '-' }}</span></td>
+                      <td>{{ assetCode(device) }}</td>
+                      <td>{{ networkDeviceTypeLabel(device.jenis) }}</td>
+                      <td>{{ [device.merk, device.model].filter(Boolean).join(' / ') || '-' }}</td>
+                      <td><span :class="statusClass(device.status)">{{ device.status || '-' }}</span><span>{{ device.kondisi || '' }}</span></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </section>
+
+              <footer class="report-footer">
+                <div>
+                  <span>Dokumen</span>
+                  <strong>Relasi OPD Consumer Networking</strong>
+                </div>
+                <div>
+                  <span>Sumber Data</span>
+                  <strong>IAMT CMDB Kabupaten Langkat</strong>
+                </div>
+              </footer>
+            </article>
           </section>
         </section>
 
