@@ -491,19 +491,56 @@ class CmdbApiTest extends TestCase
             'site_id' => $siteId,
         ])->assertCreated()
             ->assertJsonPath('active_installation.status', 'aktif')
+            ->assertJsonPath('active_installation.role', 'primary')
             ->assertJsonPath('active_installation.site.nama', 'Site Awal Perangkat');
 
         $deviceId = $deviceResponse->json('id');
+        $initialInstallationId = $deviceResponse->json('active_installation.id');
         $siteAssetCode = $deviceResponse->json('active_installation.site.asset_code');
 
         $this->assertNotEmpty($siteAssetCode);
         $this->assertDatabaseHas('consumer_network_installations', [
             'site_id' => $siteId,
             'device_id' => $deviceId,
+            'role' => 'primary',
             'status' => 'aktif',
             'installed_at' => now()->startOfDay()->toDateTimeString(),
             'installed_by' => 'Administrator CMDB',
             'notes' => 'Riwayat instalasi otomatis dari form tambah perangkat.',
+        ]);
+
+        $secondSiteId = $this->postJson('/api/network-sites', [
+            'kode' => 'SITE-RELOKASI-PERANGKAT',
+            'nama' => 'Site Relokasi Perangkat',
+            'jenis' => 'kantor',
+            'status' => 'aktif',
+            'opd_id' => $opd->id,
+            'dc_id' => $dc->id,
+        ])->assertCreated()->json('id');
+
+        $this->putJson("/api/network-devices/{$deviceId}", [
+            'nama' => 'Switch Dengan Site Awal',
+            'jenis' => 'switch',
+            'status' => 'aktif',
+            'kondisi' => 'baik',
+            'site_id' => $secondSiteId,
+        ])->assertOk()
+            ->assertJsonPath('active_installation.status', 'aktif')
+            ->assertJsonPath('active_installation.role', 'primary')
+            ->assertJsonPath('active_installation.site.nama', 'Site Relokasi Perangkat');
+
+        $this->assertDatabaseHas('consumer_network_installations', [
+            'id' => $initialInstallationId,
+            'status' => 'dilepas',
+            'removed_at' => now()->startOfDay()->toDateTimeString(),
+        ]);
+        $this->assertDatabaseHas('consumer_network_installations', [
+            'site_id' => $secondSiteId,
+            'device_id' => $deviceId,
+            'role' => 'primary',
+            'status' => 'aktif',
+            'installed_by' => 'Administrator CMDB',
+            'notes' => 'Riwayat instalasi otomatis dari form edit perangkat.',
         ]);
         $this->assertDatabaseHas('audit_log', [
             'tabel' => 'consumer_network_installations',

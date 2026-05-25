@@ -505,7 +505,7 @@ Resource ini menyimpan inventaris perangkatnya saja. Lokasi aktif, IP, dan krede
 }
 ```
 
-Field `site_id` opsional hanya berlaku saat create. Jika dikirim, sistem otomatis membuat riwayat `network-installations` berstatus `aktif` dengan tanggal hari ini sebagai pemasangan awal.
+Field `site_id` opsional saat create dan update perangkat. Jika dikirim saat create, sistem otomatis membuat riwayat `network-installations` berstatus `aktif`, role `primary`, dan tanggal hari ini sebagai pemasangan awal. Jika dikirim saat update dan berbeda dari site aktif saat ini, sistem menutup riwayat aktif lama menjadi `dilepas`, lalu membuat riwayat aktif baru dengan role `primary`.
 
 Enum `jenis`: `router_utama`, `router`, `switch`, `access_point`, `wireless_controller`, `modem`, `cpe`, `repeater`, `bridge`, `firewall`, `lainnya`.
 

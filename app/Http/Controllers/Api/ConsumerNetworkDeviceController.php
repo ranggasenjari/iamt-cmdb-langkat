@@ -40,6 +40,7 @@ class ConsumerNetworkDeviceController extends Controller
                 $installation = ConsumerNetworkInstallation::create([
                     'site_id' => $siteId,
                     'device_id' => $device->id,
+                    'role' => 'primary',
                     'status' => 'aktif',
                     'installed_at' => now()->toDateString(),
                     'installed_by' => $request->attributes->get('auth_user')?->nama,
@@ -57,9 +58,20 @@ class ConsumerNetworkDeviceController extends Controller
 
     public function update(Request $request, ConsumerNetworkDevice $networkDevice)
     {
-        $before = $networkDevice->toArray();
-        $networkDevice->update($this->modelData($this->validated($request), $networkDevice));
-        $after = $networkDevice->fresh()->toArray();
+        $before = $networkDevice->load($this->relations())->toArray();
+        $data = $this->validated($request);
+        $siteId = $data['site_id'] ?? null;
+        unset($data['site_id']);
+
+        DB::transaction(function () use ($networkDevice, $data, $siteId, $request) {
+            $networkDevice->update($this->modelData($data, $networkDevice));
+
+            if (filled($siteId)) {
+                $this->syncActiveInstallation($networkDevice->fresh($this->relations()), $siteId, $request);
+            }
+        });
+
+        $after = $networkDevice->fresh($this->relations())->toArray();
         $this->audit('update', $networkDevice, $before, $after, $request);
 
         return $networkDevice->fresh($this->relations());
@@ -177,5 +189,39 @@ class ConsumerNetworkDeviceController extends Controller
             'ip_address' => $request->ip(),
             'user_agent' => $request->userAgent(),
         ]);
+    }
+
+    private function syncActiveInstallation(ConsumerNetworkDevice $device, string $siteId, Request $request): void
+    {
+        $current = $device->activeInstallation;
+
+        if ($current?->site_id === $siteId) {
+            return;
+        }
+
+        if ($current) {
+            $before = $current->toArray();
+            $current->update([
+                'status' => 'dilepas',
+                'removed_at' => now()->toDateString(),
+                'notes' => trim(collect([
+                    $current->notes,
+                    'Ditutup otomatis karena Site/Node aktif perangkat diperbarui dari form edit perangkat.',
+                ])->filter()->join("\n")),
+            ]);
+            $this->auditInstallation('update', $current, $before, $current->fresh()->toArray(), $request);
+        }
+
+        $installation = ConsumerNetworkInstallation::create([
+            'site_id' => $siteId,
+            'device_id' => $device->id,
+            'role' => 'primary',
+            'status' => 'aktif',
+            'installed_at' => now()->toDateString(),
+            'installed_by' => $request->attributes->get('auth_user')?->nama,
+            'notes' => 'Riwayat instalasi otomatis dari form edit perangkat.',
+        ]);
+
+        $this->auditInstallation('create', $installation, null, $installation->toArray(), $request);
     }
 }

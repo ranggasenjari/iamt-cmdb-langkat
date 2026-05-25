@@ -1654,7 +1654,7 @@ function openEdit(module, row) {
   if (module === 'network-devices') {
     Object.assign(networkDeviceForm, {
       nama: row.nama || '',
-      site_id: '',
+      site_id: row.active_installation?.site_id || row.active_installation?.site?.id || '',
       jenis: row.jenis || '',
       status: row.status || '',
       kondisi: row.kondisi || '',
@@ -3434,7 +3434,7 @@ onUpdated(() => {
                 <tbody>
                   <tr v-for="row in filteredNetworkInstallations" :key="row.id">
                     <td><strong>{{ row.site?.nama || '-' }}</strong><span>{{ row.site?.kode || row.site?.asset_code || '' }}</span></td>
-                    <td>{{ row.device?.nama || '-' }}<span>{{ networkDeviceTypeLabel(row.device?.jenis) }}</span></td>
+                    <td>{{ row.device?.nama || '-' }}<span>{{ [row.device?.asset_code, networkDeviceTypeLabel(row.device?.jenis)].filter(Boolean).join(' / ') }}</span></td>
                     <td>{{ networkInstallationRoleLabel(row.role) }}<span>{{ row.installed_by || '' }}</span></td>
                     <td>{{ row.installed_at ? String(row.installed_at).slice(0, 10) : '-' }}<span>{{ row.removed_at ? `s.d. ${String(row.removed_at).slice(0, 10)}` : 'masih tercatat' }}</span></td>
                     <td>{{ row.replacement_device?.nama || '-' }}</td>
@@ -4359,8 +4359,8 @@ onUpdated(() => {
 
           <div v-if="modal.module === 'network-devices'" class="modal-form">
             <input v-model="networkDeviceForm.nama" required placeholder="Nama perangkat jaringan" />
-            <select v-if="modal.mode === 'create'" v-model="networkDeviceForm.site_id">
-              <option value="">Site / node pemasangan awal</option>
+            <select v-model="networkDeviceForm.site_id">
+              <option value="">{{ modal.mode === 'edit' ? 'Tidak mengubah site aktif' : 'Site / node pemasangan awal' }}</option>
               <option v-for="site in networkSites" :key="site.id" :value="site.id">{{ networkSiteOptionLabel(site) }}</option>
             </select>
             <div class="three-col">
