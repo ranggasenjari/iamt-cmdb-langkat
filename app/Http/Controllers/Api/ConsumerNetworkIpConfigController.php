@@ -79,7 +79,8 @@ class ConsumerNetworkIpConfigController extends Controller
     {
         return [
             'device:id,nama,jenis,asset_code',
-            'site:id,nama,kode,jenis,asset_code',
+            'site:id,nama,kode,jenis,asset_code,opd_id',
+            'site.opd:id,nama',
             'ipAddressRecord:id,ip,jenis',
         ];
     }

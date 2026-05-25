@@ -97,6 +97,7 @@ const assetDeepLinkHandled = ref(false);
 const error = ref('');
 const query = ref('');
 const networkDeviceOpdFilter = ref('');
+const networkIpConfigOpdFilter = ref('');
 const selectedServerId = ref('');
 const mobileNavOpen = ref(false);
 const authToken = ref(localStorage.getItem('iamt_token') || '');
@@ -1007,6 +1008,52 @@ function networkDeviceOwnerName(device) {
     || device?.opd?.nama
     || references.value.opd.find((opd) => opd.id === networkDeviceOwnerId(device))?.nama
     || '-';
+}
+
+function networkIpConfigOwnerId(config) {
+  return siteOwnerId(config?.site)
+    || networkDeviceOwnerId(networkDevices.value.find((device) => device.id === config?.device_id))
+    || '';
+}
+
+function networkIpConfigOwnerName(config) {
+  return config?.site?.opd?.nama
+    || references.value.opd.find((opd) => opd.id === networkIpConfigOwnerId(config))?.nama
+    || '-';
+}
+
+function devicesForNetworkSite(siteId, selectedDeviceId = '') {
+  if (!siteId) return [];
+
+  const seen = new Set();
+  const rows = networkInstallations.value
+    .filter((installation) => installation.site_id === siteId && installation.status === 'aktif')
+    .map((installation) => installation.device || networkDevices.value.find((device) => device.id === installation.device_id))
+    .filter(Boolean)
+    .filter((device) => {
+      if (!device.id || seen.has(device.id)) return false;
+      seen.add(device.id);
+      return true;
+    });
+
+  if (selectedDeviceId && !seen.has(selectedDeviceId)) {
+    const selectedDevice = networkDevices.value.find((device) => device.id === selectedDeviceId);
+    if (selectedDevice) rows.push(selectedDevice);
+  }
+
+  return rows.sort((a, b) => (a.nama || '').localeCompare(b.nama || ''));
+}
+
+const networkIpConfigDeviceOptions = computed(() => devicesForNetworkSite(
+  networkIpConfigForm.site_id,
+  networkIpConfigForm.device_id,
+));
+
+function handleNetworkIpConfigSiteChange() {
+  if (!networkIpConfigForm.device_id) return;
+
+  const stillInSite = devicesForNetworkSite(networkIpConfigForm.site_id).some((device) => device.id === networkIpConfigForm.device_id);
+  if (!stillInSite) networkIpConfigForm.device_id = '';
 }
 
 const selectedNetworkSummaryOpd = computed(() => references.value.opd.find((opd) => opd.id === networkSummaryForm.opd_id) || null);
@@ -2291,7 +2338,12 @@ const filteredNetworkInstallations = computed(() => {
 
 const filteredNetworkIpConfigs = computed(() => {
   const needle = query.value.toLowerCase();
-  return networkIpConfigs.value.filter((row) => JSON.stringify(row).toLowerCase().includes(needle));
+  return networkIpConfigs.value.filter((row) => {
+    const matchesSearch = JSON.stringify(row).toLowerCase().includes(needle);
+    const matchesOwner = !networkIpConfigOpdFilter.value || networkIpConfigOwnerId(row) === networkIpConfigOpdFilter.value;
+
+    return matchesSearch && matchesOwner;
+  });
 });
 
 const filteredNetworkCredentials = computed(() => {
@@ -3523,14 +3575,21 @@ onUpdated(() => {
           <section class="surface wide">
             <div class="module-header">
               <div><p class="eyebrow">Consumer Networking</p><h3 class="yellow-title">Konfigurasi IP</h3></div>
-              <button v-if="canWrite" class="action-button" type="button" @click="openCreate('network-ip-configs')"><Plus :size="17" /> Tambah IP Config</button>
+              <div class="module-actions">
+                <select v-model="networkIpConfigOpdFilter" class="compact-select">
+                  <option value="">Semua OPD / Pemilik</option>
+                  <option v-for="opd in references.opd" :key="opd.id" :value="opd.id">{{ opd.nama }}</option>
+                </select>
+                <button v-if="canWrite" class="action-button" type="button" @click="openCreate('network-ip-configs')"><Plus :size="17" /> Tambah IP Config</button>
+              </div>
             </div>
             <div class="table-wrap">
               <table>
-                <thead><tr><th>Perangkat</th><th>Site</th><th>Interface</th><th>IP / Gateway</th><th>VLAN / SSID</th><th>Status</th><th>Aksi</th></tr></thead>
+                <thead><tr><th>Perangkat</th><th>OPD / Pemilik</th><th>Site</th><th>Interface</th><th>IP / Gateway</th><th>VLAN / SSID</th><th>Status</th><th>Aksi</th></tr></thead>
                 <tbody>
                   <tr v-for="config in filteredNetworkIpConfigs" :key="config.id">
                     <td><strong>{{ config.device?.nama || '-' }}</strong><span>{{ networkDeviceTypeLabel(config.device?.jenis) }}</span></td>
+                    <td>{{ networkIpConfigOwnerName(config) }}</td>
                     <td>{{ config.site?.nama || '-' }}</td>
                     <td>{{ config.interface_name || '-' }}<span>{{ networkIpTypeLabel(config.ip_type) }}</span></td>
                     <td>{{ config.ip_address || config.ip_address_record?.ip || '-' }}<span>{{ config.gateway ? `GW ${config.gateway}` : '' }} {{ config.dhcp_enabled ? ' / DHCP' : '' }}</span></td>
@@ -4648,13 +4707,13 @@ onUpdated(() => {
 
           <div v-if="modal.module === 'network-ip-configs'" class="modal-form">
             <div class="two-col">
-              <select v-model="networkIpConfigForm.device_id" required>
-                <option value="">Perangkat</option>
-                <option v-for="device in networkDevices" :key="device.id" :value="device.id">{{ networkDeviceOptionLabel(device) }}</option>
-              </select>
-              <select v-model="networkIpConfigForm.site_id">
-                <option value="">Site / node terkait</option>
+              <select v-model="networkIpConfigForm.site_id" required @change="handleNetworkIpConfigSiteChange">
+                <option value="">Site / node</option>
                 <option v-for="site in networkSites" :key="site.id" :value="site.id">{{ site.nama }}</option>
+              </select>
+              <select v-model="networkIpConfigForm.device_id" required :disabled="!networkIpConfigForm.site_id">
+                <option value="">{{ networkIpConfigForm.site_id ? 'Perangkat pada site/node' : 'Pilih Site/Node terlebih dahulu' }}</option>
+                <option v-for="device in networkIpConfigDeviceOptions" :key="device.id" :value="device.id">{{ networkDeviceOptionLabel(device) }}</option>
               </select>
             </div>
             <div class="three-col">
