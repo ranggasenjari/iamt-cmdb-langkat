@@ -1591,14 +1591,16 @@ th {
 .report-signature {
   display: flex;
   justify-content: space-between;
-  margin-top: 32px;
+  align-items: flex-start;
+  gap: 28px;
+  margin-top: 36px;
 }
 
 .report-signature-block {
   display: grid;
   gap: 2px;
-  text-align: center;
-  min-width: 220px;
+  text-align: left;
+  min-width: 0;
 }
 
 .report-signature-block span {
@@ -2226,39 +2228,53 @@ th {
 }
 
 .officers-signature-block {
+  flex: 1;
   text-align: left;
 }
-.officers-signature-title {
+
+.officers-signature-block > span:first-child {
   display: block;
-  margin: 10px 0 15px;
+  margin-bottom: 14px;
   color: var(--blue-950);
-  font-weight: 700;
   font-size: 12px;
+  font-weight: 700;
 }
-.officers-signature-list {
-  display: grid;
-  gap: 25px;
+
+.officers-signature-table {
+  border-collapse: collapse;
 }
-.officers-signature-item {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 8px;
-  align-items: end;
-  text-align: left;
-}
-.officer-name {
+
+.officers-signature-table td {
+  padding: 10px 0;
+  vertical-align: bottom;
   font-size: 13px;
   color: var(--blue-950);
+}
+
+.officer-num {
+  padding-right: 4px !important;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.officer-name {
   font-weight: 700;
   white-space: nowrap;
 }
-.officer-dots {
-  font-size: 13px;
-  color: var(--slate-400);
-  white-space: nowrap;
-  overflow: hidden;
+
+.officer-colon {
+  padding: 10px 6px !important;
+  font-weight: 600;
 }
-.text-right {
-  text-align: right;
-  display: block;
+
+.officer-dots {
+  width: 100%;
+  color: var(--slate-400) !important;
+  letter-spacing: 1px;
+}
+
+.pimpinan-signature-block {
+  flex: 0 0 auto;
+  min-width: 240px;
+  text-align: left;
 }

@@ -4998,33 +4998,26 @@ onUpdated(() => {
                 <span>Waktu Pemantauan</span>
                 <strong>{{ formatDateTime(monitoringReportModal.item.monitoring_at) }}</strong>
               </div>
-              <div>
-                <span>Petugas Monitoring</span>
-                <ol class="report-officers-list">
-                  <li v-for="(officer, idx) in (monitoringReportModal.item?.officers || []).filter(Boolean)" :key="idx">
-                    {{ officer }}
-                  </li>
-                </ol>
-              </div>
             </footer>
 
             <div class="report-signature">
-              <div class="report-signature-block">
+              <div class="report-signature-block officers-signature-block">
+                <span>Petugas Monitoring:</span>
+                <table class="officers-signature-table">
+                  <tr v-for="(officer, idx) in (monitoringReportModal.item?.officers || []).filter(Boolean)" :key="idx">
+                    <td class="officer-num">{{ idx + 1 }}.</td>
+                    <td class="officer-name">{{ officer }}</td>
+                    <td class="officer-colon">:</td>
+                    <td class="officer-dots">...................</td>
+                  </tr>
+                </table>
+              </div>
+              <div class="report-signature-block pimpinan-signature-block">
                 <span>Mengetahui,</span>
-                <span>Kepala Bidang Pengembangan Teknologi dan Aplikasi Informatika</span>
+                <span>Kepala Bidang Pengembangan<br>Teknologi dan Aplikasi Informatika</span>
                 <div class="report-signature-space"></div>
                 <strong>IBADI RAHMAN, S.Kom.</strong>
                 <span>NIP. 19871125 201101 1 014</span>
-              </div>
-              <div class="report-signature-block officers-signature-block">
-                <span class="text-right">Langkat, ............................................</span>
-                <span class="officers-signature-title">Petugas Monitoring:</span>
-                <div class="officers-signature-list">
-                  <div v-for="(officer, idx) in (monitoringReportModal.item?.officers || []).filter(Boolean)" :key="idx" class="officers-signature-item">
-                    <span class="officer-name">{{ idx + 1 }}. {{ officer }}</span>
-                    <span class="officer-dots">: .................................................</span>
-                  </div>
-                </div>
               </div>
             </div>
           </article>
