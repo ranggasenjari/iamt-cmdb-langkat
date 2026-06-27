@@ -1590,7 +1590,7 @@ th {
 
 .report-signature {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
   margin-top: 32px;
 }
 
@@ -2223,4 +2223,42 @@ th {
   .network-summary-print {
     padding: 18px;
   }
+}
+
+.officers-signature-block {
+  text-align: left;
+}
+.officers-signature-title {
+  display: block;
+  margin: 10px 0 15px;
+  color: var(--blue-950);
+  font-weight: 700;
+  font-size: 12px;
+}
+.officers-signature-list {
+  display: grid;
+  gap: 25px;
+}
+.officers-signature-item {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px;
+  align-items: end;
+  text-align: left;
+}
+.officer-name {
+  font-size: 13px;
+  color: var(--blue-950);
+  font-weight: 700;
+  white-space: nowrap;
+}
+.officer-dots {
+  font-size: 13px;
+  color: var(--slate-400);
+  white-space: nowrap;
+  overflow: hidden;
+}
+.text-right {
+  text-align: right;
+  display: block;
 }

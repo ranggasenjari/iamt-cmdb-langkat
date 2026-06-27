@@ -5016,6 +5016,16 @@ onUpdated(() => {
                 <strong>IBADI RAHMAN, S.Kom.</strong>
                 <span>NIP. 19871125 201101 1 014</span>
               </div>
+              <div class="report-signature-block officers-signature-block">
+                <span class="text-right">Langkat, ............................................</span>
+                <span class="officers-signature-title">Petugas Monitoring:</span>
+                <div class="officers-signature-list">
+                  <div v-for="(officer, idx) in (monitoringReportModal.item?.officers || []).filter(Boolean)" :key="idx" class="officers-signature-item">
+                    <span class="officer-name">{{ idx + 1 }}. {{ officer }}</span>
+                    <span class="officer-dots">: .................................................</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </article>
         </section>
