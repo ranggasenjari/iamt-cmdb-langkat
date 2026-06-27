@@ -3753,17 +3753,7 @@ onUpdated(() => {
                   <span>Sumber Data</span>
                   <strong>IAMT CMDB Kabupaten Langkat</strong>
                 </div>
-            </footer>
-
-            <div class="report-signature">
-              <div class="report-signature-block">
-                <span>Mengetahui,</span>
-                <span>Kepala Bidang Pengembangan Teknologi dan Aplikasi Informatika</span>
-                <div class="report-signature-space"></div>
-                <strong>IBADI RAHMAN, S.Kom.</strong>
-                <span>NIP. 19871125 201101 1 014</span>
-              </div>
-            </div>
+              </footer>
           </article>
           </section>
         </section>
@@ -5017,6 +5007,16 @@ onUpdated(() => {
                 </ol>
               </div>
             </footer>
+
+            <div class="report-signature">
+              <div class="report-signature-block">
+                <span>Mengetahui,</span>
+                <span>Kepala Bidang Pengembangan Teknologi dan Aplikasi Informatika</span>
+                <div class="report-signature-space"></div>
+                <strong>IBADI RAHMAN, S.Kom.</strong>
+                <span>NIP. 19871125 201101 1 014</span>
+              </div>
+            </div>
           </article>
         </section>
       </div>
