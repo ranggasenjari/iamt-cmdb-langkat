@@ -1810,13 +1810,20 @@ th {
     page-break-inside: avoid;
   }
 
-  .monitoring-report-print,
+  .monitoring-report-print {
+    width: 210mm;
+    margin: 0 auto;
+    padding: 14mm;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
   .network-summary-print {
     position: absolute;
     top: 0;
     left: 0;
     width: 210mm;
-    min-height: 297mm;
     padding: 14mm;
     border: 0;
     border-radius: 0;
