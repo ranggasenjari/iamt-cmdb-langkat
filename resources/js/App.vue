@@ -5000,7 +5000,11 @@ onUpdated(() => {
               </div>
               <div>
                 <span>Petugas Monitoring</span>
-                <strong>{{ monitoringOfficersText(monitoringReportModal.item) }}</strong>
+                <ol class="report-officers-list">
+                  <li v-for="(officer, idx) in (monitoringReportModal.item?.officers || []).filter(Boolean)" :key="idx">
+                    {{ officer }}
+                  </li>
+                </ol>
               </div>
             </footer>
           </article>
