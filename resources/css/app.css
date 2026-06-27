@@ -1588,6 +1588,35 @@ th {
   margin-bottom: 2px;
 }
 
+.report-signature {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 32px;
+}
+
+.report-signature-block {
+  display: grid;
+  gap: 2px;
+  text-align: center;
+  min-width: 220px;
+}
+
+.report-signature-block span {
+  color: var(--slate-600);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.report-signature-block strong {
+  color: var(--blue-950);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.report-signature-space {
+  height: 50px;
+}
+
 .compact-report-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   margin-bottom: 10px;
