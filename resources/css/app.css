@@ -868,7 +868,7 @@ th {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-.picker-grid > div {
+.picker-grid>div {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
@@ -979,7 +979,7 @@ th {
   gap: 12px;
 }
 
-.risk-result > div {
+.risk-result>div {
   display: grid;
   gap: 4px;
   padding: 12px;
@@ -1609,6 +1609,23 @@ th {
   font-weight: 400;
 }
 
+.report-label {
+  display: block;
+  color: var(--blue-950) !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+}
+
+.report-jabatan {
+  display: block;
+  color: var(--blue-950) !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  line-height: 1.4 !important;
+}
+
 .report-signature-block strong {
   color: var(--blue-950);
   font-size: 13px;
@@ -1616,7 +1633,7 @@ th {
 }
 
 .report-signature-space {
-  height: 50px;
+  height: 80px;
 }
 
 .compact-report-grid {
@@ -1630,8 +1647,11 @@ th {
 
 .report-section h2 {
   margin: 0 0 10px;
-  color: var(--blue-950);
-  font-size: 15px;
+  color: var(--blue-950) !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
 }
 
 .report-table {
@@ -1788,6 +1808,27 @@ th {
     visibility: visible !important;
   }
 
+  .modal-backdrop {
+    position: static !important;
+    display: block !important;
+    padding: 0 !important;
+    background: transparent !important;
+    overflow: visible !important;
+  }
+
+  .modal-card {
+    position: static !important;
+    display: block !important;
+    width: auto !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
+    overflow: visible !important;
+  }
+
   .inventory-label-print:not(.bulk-inventory-label) {
     position: fixed;
     top: 0;
@@ -1813,12 +1854,16 @@ th {
   }
 
   .monitoring-report-print {
+    position: absolute;
+    top: 0;
+    left: 0;
     width: 210mm;
-    margin: 0 auto;
+    margin: 0;
     padding: 14mm;
     border: 0;
     border-radius: 0;
     box-shadow: none;
+    background: #fff;
   }
 
   .network-summary-print {
@@ -1923,6 +1968,7 @@ th {
 }
 
 @media (max-width: 720px) {
+
   .login-identity,
   .login-panel {
     padding: 22px;
@@ -1970,7 +2016,7 @@ th {
     border-bottom: 1px solid rgba(148, 163, 184, 0.18);
   }
 
-  .topbar > div:first-of-type {
+  .topbar>div:first-of-type {
     min-width: 0;
   }
 
@@ -1986,7 +2032,7 @@ th {
     width: 100%;
   }
 
-  .top-actions > .action-button {
+  .top-actions>.action-button {
     width: 100%;
   }
 
@@ -2011,7 +2057,7 @@ th {
     width: 100%;
   }
 
-  .module-actions > * {
+  .module-actions>* {
     width: 100%;
   }
 
@@ -2109,7 +2155,7 @@ th {
     text-transform: uppercase;
   }
 
-  .table-wrap td > * {
+  .table-wrap td>* {
     grid-column: 2;
   }
 
@@ -2123,7 +2169,7 @@ th {
     margin-bottom: 2px;
   }
 
-  .table-wrap td[data-label="Aksi"] > * {
+  .table-wrap td[data-label="Aksi"]>* {
     grid-column: 1;
   }
 
@@ -2232,12 +2278,8 @@ th {
   text-align: left;
 }
 
-.officers-signature-block > span:first-child {
-  display: block;
+.officers-signature-block>.report-label {
   margin-bottom: 14px;
-  color: var(--blue-950);
-  font-size: 12px;
-  font-weight: 700;
 }
 
 .officers-signature-table {
