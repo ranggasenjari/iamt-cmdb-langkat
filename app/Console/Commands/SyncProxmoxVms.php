@@ -32,25 +32,36 @@ class SyncProxmoxVms extends Command
     protected function handleStdin(): int
     {
         $json = file_get_contents('php://stdin');
-        $data = json_decode($json, true);
+        $allData = json_decode($json, true);
 
-        if (!$data || !isset($data['node'])) {
-            $this->error('Invalid JSON — expected {"node":"...","label":"...","vms":[...]}');
+        if (!$allData) {
+            $this->error('Invalid JSON');
             return 1;
         }
 
-        $server = Server::firstOrCreate(
-            ['nama' => $data['label']],
-            ['nama' => $data['label'], 'status' => 'aktif']
-        );
+        // Accept both single node object or array of nodes
+        $nodes = isset($allData['node']) ? [$allData] : $allData;
+        $total = 0;
 
-        $count = 0;
-        foreach ($data['vms'] as $vm) {
-            $this->syncVm($vm, $server->id);
-            $count++;
+        foreach ($nodes as $data) {
+            if (!isset($data['node'], $data['vms'])) continue;
+
+            $server = Server::firstOrCreate(
+                ['nama' => $data['label'] ?? $data['node']],
+                ['nama' => $data['label'] ?? $data['node'], 'status' => 'aktif']
+            );
+
+            $count = 0;
+            foreach ($data['vms'] as $vm) {
+                $this->syncVm($vm, $server->id);
+                $count++;
+                $total++;
+            }
+
+            $this->line("  {$data['label']}: {$count} VM");
         }
 
-        $this->info("  {$data['label']}: {$count} VM tersinkronisasi.");
+        $this->info("Total {$total} VM tersinkronisasi.");
         return 0;
     }
 
