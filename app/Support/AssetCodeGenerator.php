@@ -25,6 +25,7 @@ class AssetCodeGenerator
         'consumer_network_devices' => 'NET',
         'consumer_network_sites' => 'SITE',
         'consumer_network_monitorings' => 'MON',
+        'app_database_docs' => 'DBD',
     ];
 
     public static function next(string $table): string

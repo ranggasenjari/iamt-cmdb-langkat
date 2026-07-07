@@ -72,4 +72,9 @@ class Aplikasi extends Model
     {
         return $this->hasMany(BackupJob::class, 'aplikasi_id');
     }
+
+    public function databaseDocs(): HasMany
+    {
+        return $this->hasMany(AppDatabaseDoc::class, 'aplikasi_id');
+    }
 }

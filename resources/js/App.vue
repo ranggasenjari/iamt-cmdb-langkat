@@ -53,6 +53,7 @@ const menuSections = [
       { id: 'application-documents', label: 'Dokumen', icon: FileCheck2 },
       { id: 'data-assets', label: 'Klasifikasi Data', icon: FileCheck2 },
       { id: 'app-integrations', label: 'Interoperabilitas', icon: GitBranch },
+      { id: 'app-database-docs', label: 'Dok. Basis Data', icon: Database },
     ],
   },
   {
@@ -174,6 +175,7 @@ const applications = ref([]);
 const dataAssets = ref([]);
 const applicationDocuments = ref([]);
 const appIntegrations = ref([]);
+const appDatabaseDocs = ref([]);
 const backupMedia = ref([]);
 const backupJobs = ref([]);
 const upsDevices = ref([]);
@@ -210,6 +212,7 @@ const printableLabelModules = new Set([
   'data-assets',
   'application-documents',
   'app-integrations',
+  'app-database-docs',
   'backup-media',
   'backup-jobs',
   'ups-devices',
@@ -312,6 +315,19 @@ const appIntegrationForm = reactive({
   external_endpoints: '',
   data_asset_ids: [],
   documents: [],
+});
+
+const appDatabaseDocForm = reactive({
+  aplikasi_id: '',
+  nama_database: '',
+  tipe_dbms: '',
+  versi: '',
+  host: '',
+  port: null,
+  nama_db_asli: '',
+  jumlah_tabel: null,
+  file: [],
+  keterangan: '',
 });
 
 const backupMediaForm = reactive({
@@ -719,7 +735,7 @@ async function loadAll() {
   loading.value = true;
   error.value = '';
   try {
-    const [dash, refs, dcRows, rackRows, ispRows, ipRows, serverRows, vmRows, appRows, dataAssetRows, documentRows, integrationRows, backupMediaRows, backupJobRows, upsRows, socRows, networkSiteRows, networkRows, networkInstallationRows, networkIpConfigRows, networkCredentialRows, networkMonitoringRows, userRows, mapRows, complianceRows, auditRows, changeRows] = await Promise.all([
+    const [dash, refs, dcRows, rackRows, ispRows, ipRows, serverRows, vmRows, appRows, dataAssetRows, documentRows, integrationRows, dbDocRows, backupMediaRows, backupJobRows, upsRows, socRows, networkSiteRows, networkRows, networkInstallationRows, networkIpConfigRows, networkCredentialRows, networkMonitoringRows, userRows, mapRows, complianceRows, auditRows, changeRows] = await Promise.all([
       api('/dashboard'),
       api('/references'),
       api('/data-centers'),
@@ -732,6 +748,7 @@ async function loadAll() {
       api('/data-assets'),
       api('/application-documents'),
       api('/app-integrations'),
+      api('/app-database-docs'),
       api('/backup-media'),
       api('/backup-jobs'),
       api('/ups-devices'),
@@ -761,6 +778,7 @@ async function loadAll() {
     dataAssets.value = dataAssetRows;
     applicationDocuments.value = documentRows;
     appIntegrations.value = integrationRows;
+    appDatabaseDocs.value = dbDocRows;
     backupMedia.value = backupMediaRows;
     backupJobs.value = backupJobRows;
     upsDevices.value = upsRows;
@@ -801,6 +819,7 @@ const moduleLabels = {
   'data-assets': 'Data Aplikasi',
   'application-documents': 'Dokumen',
   'app-integrations': 'Interoperabilitas',
+  'app-database-docs': 'Dok. Basis Data',
   'backup-media': 'Media Pencadangan',
   'backup-jobs': 'Pencadangan',
   'ups-devices': 'UPS / Power Backup',
@@ -826,6 +845,7 @@ const bulkLabelModuleOptions = [
   'data-assets',
   'application-documents',
   'app-integrations',
+  'app-database-docs',
   'backup-media',
   'backup-jobs',
   'ups-devices',
@@ -861,6 +881,7 @@ function itemsForLabelModule(module) {
     'data-assets': dataAssets.value,
     'application-documents': applicationDocuments.value,
     'app-integrations': appIntegrations.value,
+    'app-database-docs': appDatabaseDocs.value,
     'backup-media': backupMedia.value,
     'backup-jobs': backupJobs.value,
     'ups-devices': upsDevices.value,
@@ -882,6 +903,7 @@ function assetName(row, module = '') {
   if (module === 'application-documents') return row.original_name || row.nama || '-';
   if (module === 'backup-jobs') return row.aplikasi?.nama ? `Backup ${row.aplikasi.nama}` : `Pencadangan #${row.id}`;
   if (module === 'app-integrations') return row.aplikasi?.nama ? `Integrasi ${row.aplikasi.nama}` : `Integrasi #${row.id}`;
+  if (module === 'app-database-docs') return `${row.nama_database || 'DB'} / ${row.aplikasi?.nama || '-'}`;
   if (module === 'network-installations') return `${row.device?.nama || '-'} @ ${row.site?.nama || '-'}`;
   if (module === 'network-ip-configs') return `${row.device?.nama || '-'} / ${row.ip_address || row.ip_address_record?.ip || '-'}`;
   if (module === 'network-credentials') return `${row.label || 'Akses'} / ${row.device?.nama || '-'}`;
@@ -905,6 +927,7 @@ function assetLocation(module, row) {
   if (module === 'data-assets') return row.aplikasi?.nama || '-';
   if (module === 'application-documents') return row.aplikasi?.nama || '-';
   if (module === 'app-integrations') return (row.target_applications || []).map((app) => app.nama).join(', ') || row.aplikasi?.nama || '-';
+  if (module === 'app-database-docs') return row.aplikasi?.nama || row.host || '-';
   if (module === 'backup-media') return row.location || '-';
   if (module === 'backup-jobs') return row.media?.nama || '-';
   if (module === 'ups-devices') return row.data_center?.nama || row.dc_id || '-';
@@ -1477,6 +1500,12 @@ function resetModuleForm(module) {
       documents: [],
     });
   }
+  if (module === 'app-database-docs') {
+    Object.assign(appDatabaseDocForm, {
+      aplikasi_id: '', nama_database: '', tipe_dbms: '', versi: '', host: '',
+      port: null, nama_db_asli: '', jumlah_tabel: null, file: [], keterangan: '',
+    });
+  }
   if (module === 'backup-media') {
     Object.assign(backupMediaForm, { nama: '', location: '', jenis_media: '', kapasitas_gb: null, address_url: '' });
   }
@@ -1608,6 +1637,7 @@ function formFor(module) {
     'data-assets': dataAssetForm,
     'application-documents': applicationDocumentForm,
     'app-integrations': appIntegrationForm,
+    'app-database-docs': appDatabaseDocForm,
     'backup-media': backupMediaForm,
     'backup-jobs': backupJobForm,
     'ups-devices': upsDeviceForm,
@@ -1713,6 +1743,20 @@ function openEdit(module, row) {
       external_endpoints: row.external_endpoints || '',
       data_asset_ids: (row.data_assets || []).map((asset) => asset.id),
       documents: [],
+    });
+  }
+  if (module === 'app-database-docs') {
+    Object.assign(appDatabaseDocForm, {
+      aplikasi_id: row.aplikasi_id || '',
+      nama_database: row.nama_database || '',
+      tipe_dbms: row.tipe_dbms || '',
+      versi: row.versi || '',
+      host: row.host || '',
+      port: row.port ?? null,
+      nama_db_asli: row.nama_db_asli || '',
+      jumlah_tabel: row.jumlah_tabel ?? null,
+      file: [],
+      keterangan: row.keterangan || '',
     });
   }
   if (module === 'backup-media') {
@@ -1931,7 +1975,7 @@ async function saveModal() {
   error.value = '';
   saving.value = true;
   try {
-    if (['application-documents', 'app-integrations', 'network-monitorings'].includes(modal.module)) {
+    if (['application-documents', 'app-integrations', 'app-database-docs', 'network-monitorings'].includes(modal.module)) {
       const formData = formDataFor(modal.module);
       const endpoint = modal.mode === 'edit' ? `/${modal.module}/${modal.id}` : `/${modal.module}`;
       await apiForm(endpoint, formData, modal.mode === 'edit' ? 'PUT' : 'POST');
@@ -2013,6 +2057,19 @@ function formDataFor(module) {
     }))));
     appendValue(formData, 'remove_attachment_ids', JSON.stringify(networkMonitoringForm.remove_attachment_ids));
     networkMonitoringForm.attachments.forEach((file) => formData.append('attachments[]', file));
+  }
+
+  if (module === 'app-database-docs') {
+    appendValue(formData, 'aplikasi_id', appDatabaseDocForm.aplikasi_id);
+    appendValue(formData, 'nama_database', appDatabaseDocForm.nama_database);
+    appendValue(formData, 'tipe_dbms', appDatabaseDocForm.tipe_dbms);
+    appendValue(formData, 'versi', appDatabaseDocForm.versi);
+    appendValue(formData, 'host', appDatabaseDocForm.host);
+    appendValue(formData, 'port', appDatabaseDocForm.port);
+    appendValue(formData, 'nama_db_asli', appDatabaseDocForm.nama_db_asli);
+    appendValue(formData, 'jumlah_tabel', appDatabaseDocForm.jumlah_tabel);
+    appendValue(formData, 'keterangan', appDatabaseDocForm.keterangan);
+    appDatabaseDocForm.file.forEach((file) => formData.append('file', file));
   }
 
   return formData;
@@ -2294,6 +2351,11 @@ const filteredApplicationDocuments = computed(() => {
 const filteredAppIntegrations = computed(() => {
   const needle = query.value.toLowerCase();
   return appIntegrations.value.filter((row) => JSON.stringify(row).toLowerCase().includes(needle));
+});
+
+const filteredAppDatabaseDocs = computed(() => {
+  const needle = query.value.toLowerCase();
+  return appDatabaseDocs.value.filter((row) => JSON.stringify(row).toLowerCase().includes(needle));
 });
 
 const filteredBackupMedia = computed(() => {
@@ -3391,6 +3453,43 @@ onUpdated(() => {
         </section>
       </section>
 
+      <section v-if="activeTab === 'app-database-docs'" class="content-grid">
+        <section class="surface wide">
+          <div class="module-header">
+            <div><p class="eyebrow">Dokumentasi Basis Data</p><h3 class="yellow-title">Dok. Basis Data</h3></div>
+            <button v-if="canWrite" class="action-button" type="button" @click="openCreate('app-database-docs')"><Plus :size="17" /> Tambah Database</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>No</th><th>Aplikasi</th><th>Nama DB</th><th>DBMS</th><th>Host</th><th>Port</th><th>Tabel</th><th>Dokumen</th><th>Aksi</th></tr></thead>
+              <tbody>
+                <tr v-for="(doc, index) in filteredAppDatabaseDocs" :key="doc.id">
+                  <td>{{ index + 1 }}</td>
+                  <td><strong>{{ doc.aplikasi?.nama || '-' }}</strong></td>
+                  <td><strong>{{ doc.nama_database }}</strong><span>{{ doc.nama_db_asli ? `(${doc.nama_db_asli})` : '' }}</span><span>{{ assetCode(doc) }}</span></td>
+                  <td><span class="status">{{ doc.tipe_dbms }}</span><span>{{ doc.versi || '' }}</span></td>
+                  <td>{{ doc.host || '-' }}</td>
+                  <td>{{ doc.port ?? '-' }}</td>
+                  <td>{{ doc.jumlah_tabel ?? '-' }}</td>
+                  <td>{{ doc.original_name ? (Math.round(doc.size_bytes / 1024) + ' KB') : '-' }}</td>
+                  <td>
+                    <div class="row-actions">
+                      <button class="icon-button" title="Cetak label database" @click="openLabel('app-database-docs', doc)"><Printer :size="16" /></button>
+                      <button v-if="canWrite" class="icon-button" title="Edit database" @click="openEdit('app-database-docs', doc)"><Pencil :size="16" /></button>
+                      <button v-if="canWrite" class="icon-button" title="Salin database" @click="openCopy('app-database-docs', doc)"><Copy :size="16" /></button>
+                      <button v-if="canWrite" class="icon-button danger" title="Hapus database" @click="removeRow('app-database-docs', doc.id)"><Trash2 :size="16" /></button>
+                    </div>
+                  </td>
+                </tr>
+                <tr v-if="filteredAppDatabaseDocs.length === 0">
+                  <td colspan="9">Belum ada data basis data. Klik "Tambah Database" untuk menambahkan.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+
       <section v-if="activeTab === 'backup-media'" class="content-grid">
         <section class="surface wide">
           <div class="module-header">
@@ -4394,6 +4493,39 @@ onUpdated(() => {
               </button>
             </div>
             <input type="file" multiple @change="setFiles(appIntegrationForm, $event)" />
+          </div>
+
+          <div v-if="modal.module === 'app-database-docs'" class="modal-form">
+            <select v-model="appDatabaseDocForm.aplikasi_id" required>
+              <option value="">Aplikasi</option>
+              <option v-for="app in applications" :key="app.id" :value="app.id">{{ app.nama }}</option>
+            </select>
+            <input v-model="appDatabaseDocForm.nama_database" required placeholder="Nama basis data" />
+            <div class="two-col">
+              <select v-model="appDatabaseDocForm.tipe_dbms" required>
+                <option value="">Tipe DBMS</option>
+                <option value="MySQL">MySQL</option>
+                <option value="MariaDB">MariaDB</option>
+                <option value="PostgreSQL">PostgreSQL</option>
+                <option value="SQL Server">SQL Server</option>
+                <option value="Oracle">Oracle</option>
+                <option value="MongoDB">MongoDB</option>
+                <option value="SQLite">SQLite</option>
+                <option value="Firebird">Firebird</option>
+              </select>
+              <input v-model="appDatabaseDocForm.versi" placeholder="Versi" />
+            </div>
+            <div class="two-col">
+              <input v-model="appDatabaseDocForm.host" placeholder="Host / Server" />
+              <input v-model.number="appDatabaseDocForm.port" type="number" min="1" max="65535" placeholder="Port" />
+            </div>
+            <div class="two-col">
+              <input v-model="appDatabaseDocForm.nama_db_asli" placeholder="Nama database sebenarnya" />
+              <input v-model.number="appDatabaseDocForm.jumlah_tabel" type="number" min="0" placeholder="Jumlah tabel" />
+            </div>
+            <textarea v-model="appDatabaseDocForm.keterangan" placeholder="Keterangan"></textarea>
+            <div class="field-label"><span>Dokumen Rancangan Basis Data</span></div>
+            <input type="file" accept=".pdf,.doc,.docx,.drawio,.sql,.png,.jpg" @change="setFiles(appDatabaseDocForm, $event)" />
           </div>
 
           <div v-if="modal.module === 'backup-media'" class="modal-form">

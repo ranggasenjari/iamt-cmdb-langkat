@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Aplikasi;
+use App\Models\AppDatabaseDoc;
 use App\Models\AppIntegration;
 use App\Models\ApplicationDocument;
 use App\Models\BackupJob;
@@ -51,6 +52,7 @@ class PublicAssetController extends Controller
             'data-assets' => DataAsset::query()->with(['aplikasi:id,nama,asset_code', 'classification:id,code,name,risk_level']),
             'application-documents' => ApplicationDocument::query()->with('aplikasi:id,nama,asset_code'),
             'app-integrations' => AppIntegration::query()->with(['aplikasi:id,nama,asset_code', 'targetApplications:id,nama', 'dataAssets:id,name']),
+            'app-database-docs' => AppDatabaseDoc::query()->with('aplikasi:id,nama,asset_code'),
             'backup-media' => BackupMedia::query()->withCount('backupJobs'),
             'backup-jobs' => BackupJob::query()->with(['aplikasi:id,nama,asset_code', 'media:id,nama,asset_code']),
             'ups-devices' => UpsDevice::query()->with('dataCenter:id,nama,lokasi'),
@@ -89,6 +91,7 @@ class PublicAssetController extends Controller
             'data-assets' => 'Data Aplikasi',
             'application-documents' => 'Dokumen',
             'app-integrations' => 'Interoperabilitas',
+            'app-database-docs' => 'Dok. Basis Data',
             'backup-media' => 'Media Pencadangan',
             'backup-jobs' => 'Pencadangan',
             'ups-devices' => 'UPS / Power Backup',
@@ -109,6 +112,7 @@ class PublicAssetController extends Controller
             'data-assets' => $row->name ?? '-',
             'application-documents' => $row->original_name ?? $row->nama ?? '-',
             'app-integrations' => 'Integrasi '.$row->aplikasi?->nama,
+            'app-database-docs' => $row->nama_database ?? '-',
             'backup-jobs' => 'Backup '.$row->aplikasi?->nama,
             'network-installations' => collect([$row->device?->nama, $row->site?->nama])->filter()->join(' @ ') ?: '-',
             'network-ip-configs' => collect([$row->device?->nama, $row->ip_address ?: ($row->ipAddressRecord?->ip)])->filter()->join(' / ') ?: '-',
@@ -129,6 +133,7 @@ class PublicAssetController extends Controller
             'data-assets' => $row->classification?->name ?? '-',
             'application-documents' => $row->document_category ?? $row->jenis ?? '-',
             'app-integrations' => trim(($row->jenis_integrasi ?? '-').' / '.($row->metode_integrasi ?? '-')),
+            'app-database-docs' => $row->tipe_dbms ?? '-',
             'backup-media' => trim(($row->jenis_media ?? '-').' / '.($row->location ?? '-')),
             'backup-jobs' => trim(($row->repetisi_n ?? '-').' '.($row->repetisi_unit ?? '')),
             'ups-devices' => $row->kondisi ?? '-',
@@ -156,6 +161,7 @@ class PublicAssetController extends Controller
             'data-assets' => $row->aplikasi?->nama ?? '-',
             'application-documents' => $row->aplikasi?->nama ?? '-',
             'app-integrations' => $row->targetApplications->pluck('nama')->join(', ') ?: '-',
+            'app-database-docs' => $row->aplikasi?->nama ?? '-',
             'backup-media' => $row->location ?? '-',
             'backup-jobs' => $row->media?->nama ?? '-',
             'ups-devices' => collect([$row->dataCenter?->nama, $row->dataCenter?->lokasi])->filter()->join(' / ') ?: '-',

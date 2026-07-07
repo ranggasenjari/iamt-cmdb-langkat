@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\ApplicationController;
 use App\Http\Controllers\Api\ApplicationDocumentController;
+use App\Http\Controllers\Api\AppDatabaseDocController;
 use App\Http\Controllers\Api\AppIntegrationController;
 use App\Http\Controllers\Api\AssetChangeLogController;
 use App\Http\Controllers\Api\AuthController;
@@ -48,6 +49,7 @@ Route::middleware('auth.api_token')->group(function () {
     Route::apiResource('/applications', ApplicationController::class)->only(['index', 'show']);
     Route::apiResource('/application-documents', ApplicationDocumentController::class)->parameters(['application-documents' => 'applicationDocument'])->only(['index', 'show']);
     Route::apiResource('/app-integrations', AppIntegrationController::class)->parameters(['app-integrations' => 'appIntegration'])->only(['index', 'show']);
+    Route::apiResource('/app-database-docs', AppDatabaseDocController::class)->parameters(['app-database-docs' => 'appDatabaseDoc'])->only(['index', 'show']);
     Route::apiResource('/backup-media', BackupMediaController::class)->parameters(['backup-media' => 'backupMedia'])->only(['index', 'show']);
     Route::apiResource('/backup-jobs', BackupJobController::class)->parameters(['backup-jobs' => 'backupJob'])->only(['index', 'show']);
     Route::apiResource('/ups-devices', UpsDeviceController::class)->parameters(['ups-devices' => 'upsDevice'])->only(['index', 'show']);
@@ -72,6 +74,7 @@ Route::middleware('auth.api_token')->group(function () {
         Route::apiResource('/applications', ApplicationController::class)->only(['store', 'update', 'destroy']);
         Route::apiResource('/application-documents', ApplicationDocumentController::class)->parameters(['application-documents' => 'applicationDocument'])->only(['store', 'update', 'destroy']);
         Route::apiResource('/app-integrations', AppIntegrationController::class)->parameters(['app-integrations' => 'appIntegration'])->only(['store', 'update', 'destroy']);
+        Route::apiResource('/app-database-docs', AppDatabaseDocController::class)->parameters(['app-database-docs' => 'appDatabaseDoc'])->only(['store', 'update', 'destroy']);
         Route::apiResource('/backup-media', BackupMediaController::class)->parameters(['backup-media' => 'backupMedia'])->only(['store', 'update', 'destroy']);
         Route::apiResource('/backup-jobs', BackupJobController::class)->parameters(['backup-jobs' => 'backupJob'])->only(['store', 'update', 'destroy']);
         Route::apiResource('/ups-devices', UpsDeviceController::class)->parameters(['ups-devices' => 'upsDevice'])->only(['store', 'update', 'destroy']);
