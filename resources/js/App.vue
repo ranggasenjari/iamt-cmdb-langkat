@@ -2559,7 +2559,7 @@ onUpdated(() => {
         </button>
         <div>
           <p class="eyebrow">Single Source of Truth</p>
-          <h2>Manajemen Aset Digital</h2>
+          <h4>Manajemen Aset Digital</h4>
         </div>
         <div class="top-actions">
           <div class="user-pill">
@@ -3369,7 +3369,6 @@ onUpdated(() => {
                     <th>Risiko</th>
                     <th>K/I/K</th>
                     <th>Data Pribadi</th>
-                    <th>Kontrol</th>
                     <th>Aksi</th>
                   </tr>
                 </thead>
@@ -3383,11 +3382,6 @@ onUpdated(() => {
                   <td><span :class="statusClass(asset.classification?.risk_level)">{{ asset.risk_total || 0 }} / {{ asset.classification?.risk_level || '-' }}</span></td>
                   <td>{{ asset.confidentiality_score || '-' }}/{{ asset.integrity_score || '-' }}/{{ asset.availability_score || '-' }}</td>
                   <td>{{ yesNo(asset.contains_personal_data) }}<span>{{ asset.personal_data_type || '' }}</span></td>
-                  <td>
-                    <span>Enkripsi: {{ yesNo(asset.classification?.requires_encryption) }}</span>
-                    <span>MFA: {{ yesNo(asset.classification?.requires_mfa) }}</span>
-                    <span>Audit: {{ yesNo(asset.classification?.requires_audit_log) }}</span>
-                  </td>
                   <td>
                     <div class="row-actions">
                       <button class="icon-button" title="Cetak label data aplikasi" @click="openLabel('data-assets', asset)"><Printer :size="16" /></button>
