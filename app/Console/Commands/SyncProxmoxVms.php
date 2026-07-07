@@ -8,9 +8,9 @@ use Illuminate\Console\Command;
 
 class SyncProxmoxVms extends Command
 {
-    protected $signature = 'proxmox:sync-vms';
+    protected $signature = 'proxmox:sync-vms {--stdin : Read VM data as JSON from STDIN}';
 
-    protected $description = 'Sync VM data from Proxmox nodes via SSH';
+    protected $description = 'Sync VM data from Proxmox nodes via SSH or STDIN';
 
     protected array $nodes = [
         ['host' => '192.168.4.1',  'label' => 'Node 1'],
@@ -22,6 +22,40 @@ class SyncProxmoxVms extends Command
 
     public function handle(): int
     {
+        if ($this->option('stdin')) {
+            return $this->handleStdin();
+        }
+
+        return $this->handleSsh();
+    }
+
+    protected function handleStdin(): int
+    {
+        $json = file_get_contents('php://stdin');
+        $data = json_decode($json, true);
+
+        if (!$data || !isset($data['node'])) {
+            $this->error('Invalid JSON — expected {"node":"...","label":"...","vms":[...]}');
+            return 1;
+        }
+
+        $server = Server::firstOrCreate(
+            ['nama' => $data['label']],
+            ['nama' => $data['label'], 'status' => 'aktif']
+        );
+
+        $count = 0;
+        foreach ($data['vms'] as $vm) {
+            $this->syncVm($vm, $server->id);
+            $count++;
+        }
+
+        $this->info("  {$data['label']}: {$count} VM tersinkronisasi.");
+        return 0;
+    }
+
+    protected function handleSsh(): int
+    {
         $this->info('Memulai sinkronisasi VM dari Proxmox...');
         $total = 0;
 
@@ -30,7 +64,7 @@ class SyncProxmoxVms extends Command
             $vms = $this->fetchVms($node['host']);
 
             if ($vms === null) {
-                $this->warn("    Gagal terkoneksi, lewati.");
+                $this->warn('    Gagal terkoneksi, lewati.');
                 continue;
             }
 
