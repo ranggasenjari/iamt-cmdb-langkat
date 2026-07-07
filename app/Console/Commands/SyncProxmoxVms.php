@@ -100,10 +100,14 @@ class SyncProxmoxVms extends Command
 
     protected function fetchVms(string $host): ?array
     {
-        $ssh = sprintf('ssh -tt -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new root@%s', $host);
-        $list = shell_exec("{$ssh} 'qm list' 2>/dev/null");
+        $sshBase = sprintf('ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new root@%s', $host);
+        $list = shell_exec("{$sshBase} 'qm list' 2>/dev/null");
 
-        // null means command failed (connection error)
+        // Retry with TTY if first attempt failed (e.g. empty node)
+        if ($list === null) {
+            $list = shell_exec("{$sshBase} -tt 'qm list' 2>/dev/null");
+        }
+
         if ($list === null) return null;
 
         $lines = explode("\n", trim($list));
@@ -121,7 +125,7 @@ class SyncProxmoxVms extends Command
             $name = $parts[1] ?? '';
             $status = $parts[2] ?? '';
 
-            $config = shell_exec("{$ssh} 'qm config {$vmid}' 2>/dev/null");
+            $config = shell_exec("{$sshBase} 'qm config {$vmid}' 2>/dev/null");
             $specs = $this->parseConfig($config ?? '');
 
             $vms[] = [
