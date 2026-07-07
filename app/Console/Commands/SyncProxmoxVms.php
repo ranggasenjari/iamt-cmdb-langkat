@@ -100,7 +100,7 @@ class SyncProxmoxVms extends Command
 
     protected function fetchVms(string $host): ?array
     {
-        $ssh = sprintf('ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new root@%s', $host);
+        $ssh = sprintf('ssh -tt -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new root@%s', $host);
         $list = shell_exec("{$ssh} 'qm list' 2>/dev/null");
 
         // null means command failed (connection error)
