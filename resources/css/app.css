@@ -547,6 +547,8 @@ td span,
   border: 1px solid var(--blue-100);
   border-radius: 8px;
   background: var(--blue-50);
+  display: flex;
+  flex-direction: column;
 }
 
 .capacity-grid div {
@@ -919,6 +921,11 @@ th {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+}
+
+.dependency-head > div {
+  display: flex;
+  flex-direction: column;
 }
 
 .dependency-flow {
