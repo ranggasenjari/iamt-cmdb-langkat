@@ -3925,11 +3925,33 @@ onUpdated(() => {
         </section>
 
         <section v-if="activeTab === 'map'" class="content-grid">
+        <div class="metrics-row">
+          <article class="metric-card blue">
+            <span>Total Aplikasi</span>
+            <strong>{{ dependencyMap.length }}</strong>
+            <small>Dengan mapping</small>
+          </article>
+          <article class="metric-card cyan">
+            <span>Virtual Machine</span>
+            <strong>{{ dependencyMap.reduce((s, a) => s + a.vms.length, 0) }}</strong>
+            <small>Terpetakan</small>
+          </article>
+          <article class="metric-card yellow">
+            <span>Server</span>
+            <strong>{{ new Set(dependencyMap.flatMap(a => a.vms.map(v => v.server?.id)).filter(Boolean)).size }}</strong>
+            <small>Terlibat</small>
+          </article>
+          <article class="metric-card green">
+            <span>IP Address</span>
+            <strong>{{ dependencyMap.reduce((s, a) => s + a.ips.length, 0) }}</strong>
+            <small>Terdaftar</small>
+          </article>
+        </div>
         <section class="surface wide">
           <div class="section-heading">
             <div>
               <p class="eyebrow">Dependency Graph</p>
-              <h3 class="yellow-title">Aplikasi â†’ VM â†’ Server â†’ IP</h3>
+              <h3 class="yellow-title">Aplikasi → VM → Server → IP</h3>
             </div>
             <GitBranch :size="30" />
           </div>
@@ -3944,14 +3966,20 @@ onUpdated(() => {
               </div>
               <div class="dependency-flow">
                 <div class="node app-node"><AppWindow :size="18" />{{ app.nama }}</div>
-                <div v-for="vm in app.vms" :key="vm.id" class="node vm-node">
-                  <Server :size="18" />{{ vm.nama }}
-                  <small>{{ vm.server?.nama || 'host belum dipetakan' }}</small>
-                </div>
-                <div v-for="ip in app.ips" :key="ip.id" class="node ip-node">
-                  <Network :size="18" />{{ ip.ip }}
-                  <small>{{ ip.jenis }}</small>
-                </div>
+                <span v-if="app.vms.length" class="flow-arrow">→</span>
+                <template v-for="vm in app.vms" :key="vm.id">
+                  <div class="node vm-node">
+                    <Server :size="18" />{{ vm.nama }}
+                    <small>{{ vm.server?.nama || 'host belum dipetakan' }}</small>
+                  </div>
+                </template>
+                <span v-if="app.vms.length && app.ips.length" class="flow-arrow">→</span>
+                <template v-for="ip in app.ips" :key="ip.id">
+                  <div class="node ip-node">
+                    <Network :size="18" />{{ ip.ip }}
+                    <small>{{ ip.jenis }}</small>
+                  </div>
+                </template>
               </div>
             </article>
           </div>
