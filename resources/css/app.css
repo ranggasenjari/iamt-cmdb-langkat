@@ -210,7 +210,7 @@ button {
 .mobile-menu-button,
 .mobile-sidebar-close,
 .mobile-nav-backdrop {
-  display: none;
+  display: none !important;
 }
 
 .sidebar {
@@ -2260,12 +2260,12 @@ th {
   }
 
   .mobile-menu-button {
-    display: inline-flex;
+    display: inline-flex !important;
     flex: 0 0 auto;
   }
 
   .mobile-sidebar-close {
-    display: inline-flex;
+    display: inline-flex !important;
     margin-left: auto;
     background: rgba(255, 255, 255, 0.1);
     color: #fff;
