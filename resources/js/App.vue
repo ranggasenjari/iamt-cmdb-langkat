@@ -2559,7 +2559,7 @@ onUpdated(() => {
         </button>
         <div>
           <p class="eyebrow">Single Source of Truth</p>
-          <h4>Manajemen Aset Digital</h4>
+          <h3>Manajemen Aset Digital</h3>
         </div>
         <div class="top-actions">
           <div class="user-pill">
