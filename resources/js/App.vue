@@ -2797,6 +2797,7 @@ onUpdated(() => {
               <table>
                 <thead>
                   <tr>
+                    <th>No</th>
                     <th>Data Center</th>
                     <th>Lokasi</th>
                     <th>Tipe</th>
@@ -2805,7 +2806,8 @@ onUpdated(() => {
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="dc in filteredDataCenters" :key="dc.id">
+                  <tr v-for="(dc, index) in filteredDataCenters" :key="dc.id">
+                    <td>{{ index + 1 }}</td>
                     <td><strong>{{ dc.nama }}</strong></td>
                     <td>{{ dc.lokasi || '-' }}</td>
                     <td><span :class="statusClass(dc.tipe)">{{ dc.tipe }}</span></td>
@@ -2820,6 +2822,7 @@ onUpdated(() => {
               <table>
                 <thead>
                   <tr>
+                    <th>No</th>
                     <th>Rack</th>
                     <th>Data Center</th>
                     <th>Kapasitas</th>
@@ -2828,7 +2831,8 @@ onUpdated(() => {
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="rack in filteredRacks" :key="rack.id">
+                  <tr v-for="(rack, index) in filteredRacks" :key="rack.id">
+                    <td>{{ index + 1 }}</td>
                     <td><strong>{{ rack.nama }}</strong></td>
                     <td>{{ rack.data_center?.nama || '-' }}</td>
                     <td>{{ rack.kapasitas_u || 0 }}U</td>
@@ -2851,6 +2855,7 @@ onUpdated(() => {
               <table>
                 <thead>
                   <tr>
+                    <th>No</th>
                     <th>IP Address</th>
                     <th>Jenis</th>
                     <th>ISP</th>
@@ -2859,7 +2864,8 @@ onUpdated(() => {
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="ip in filteredIpAddresses" :key="ip.id">
+                  <tr v-for="(ip, index) in filteredIpAddresses" :key="ip.id">
+                    <td>{{ index + 1 }}</td>
                     <td><strong>{{ ip.ip }}</strong></td>
                     <td><span :class="statusClass(ip.jenis)">{{ ip.jenis }}</span></td>
                     <td>{{ ip.isp?.nama || '-' }}<span>{{ ip.isp?.bandwidth || '' }}</span></td>
@@ -2874,6 +2880,7 @@ onUpdated(() => {
               <table>
                 <thead>
                   <tr>
+                    <th>No</th>
                     <th>ISP</th>
                     <th>Tipe</th>
                     <th>Bandwidth</th>
@@ -2882,7 +2889,8 @@ onUpdated(() => {
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="isp in filteredIsps" :key="isp.id">
+                  <tr v-for="(isp, index) in filteredIsps" :key="isp.id">
+                    <td>{{ index + 1 }}</td>
                     <td><strong>{{ isp.nama }}</strong><span>{{ isp.kontak || '-' }}</span></td>
                     <td>{{ isp.tipe || '-' }}</td>
                     <td>{{ isp.bandwidth || '-' }}</td>
@@ -2900,17 +2908,19 @@ onUpdated(() => {
             <table>
               <thead>
                 <tr>
-                  <th>Server</th>
-                  <th>Lokasi</th>
-                  <th>Kapasitas</th>
-                  <th>Status</th>
-                  <th>VM</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="server in filteredServers" :key="server.id">
-                  <td><strong>{{ server.nama }}</strong><span>{{ server.merk }} {{ server.tipe }} / {{ server.tahun || '-' }}</span></td>
+                    <th>No</th>
+                    <th>Server</th>
+                    <th>Lokasi</th>
+                    <th>Kapasitas</th>
+                    <th>Status</th>
+                    <th>VM</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(server, index) in filteredServers" :key="server.id">
+                    <td>{{ index + 1 }}</td>
+                    <td><strong>{{ server.nama }}</strong><span>{{ server.merk }} {{ server.tipe }} / {{ server.tahun || '-' }}</span></td>
                   <td>{{ server.data_center?.nama || '-' }}<span>{{ server.rack?.nama || '-' }}{{ server.rack_size_u ? ` / ${server.rack_size_u}U` : '' }}</span></td>
                   <td>{{ server.cpu_core }} core / {{ server.ram_gb }} GB<span>{{ server.merk_processor || 'Processor belum diisi' }} / {{ server.storage_gb }} GB storage</span></td>
                   <td><span :class="statusClass(server.status)">{{ server.status }}</span></td>
@@ -2927,17 +2937,19 @@ onUpdated(() => {
             <table>
               <thead>
                 <tr>
-                  <th>VM</th>
-                  <th>Host</th>
-                  <th>OS</th>
-                  <th>Kapasitas</th>
-                  <th>Status</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="vm in filteredVms" :key="vm.id">
-                  <td><strong>{{ vm.nama }}</strong></td>
+                    <th>No</th>
+                    <th>VM</th>
+                    <th>Host</th>
+                    <th>OS</th>
+                    <th>Kapasitas</th>
+                    <th>Status</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(vm, index) in filteredVms" :key="vm.id">
+                    <td>{{ index + 1 }}</td>
+                    <td><strong>{{ vm.nama }}</strong></td>
                   <td>{{ vm.server?.nama || '-' }}</td>
                   <td>{{ vm.os }}</td>
                   <td>{{ vm.vcpu }} vCPU / {{ vm.ram_gb }} GB<span>{{ vm.storage_gb }} GB storage</span></td>
@@ -2963,16 +2975,18 @@ onUpdated(() => {
             <table>
               <thead>
                 <tr>
-                  <th>Data Center</th>
-                  <th>Lokasi</th>
-                  <th>Tipe</th>
-                  <th>Jumlah Rack</th>
-                  <th>Aksi</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="dc in filteredDataCenters" :key="dc.id">
-                  <td><strong>{{ dc.nama }}</strong><span>{{ assetCode(dc) }}</span></td>
+                    <th>No</th>
+                    <th>Data Center</th>
+                    <th>Lokasi</th>
+                    <th>Tipe</th>
+                    <th>Jumlah Rack</th>
+                    <th>Aksi</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(dc, index) in filteredDataCenters" :key="dc.id">
+                    <td>{{ index + 1 }}</td>
+                    <td><strong>{{ dc.nama }}</strong><span>{{ assetCode(dc) }}</span></td>
                   <td>{{ dc.lokasi || '-' }}</td>
                   <td><span :class="statusClass(dc.tipe)">{{ dc.tipe }}</span></td>
                   <td>{{ dc.racks_count || 0 }}</td>
@@ -3003,16 +3017,18 @@ onUpdated(() => {
             <table>
               <thead>
                 <tr>
-                  <th>Rack</th>
-                  <th>Data Center</th>
-                  <th>Kapasitas</th>
-                  <th>Jumlah Server</th>
-                  <th>Aksi</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="rack in filteredRacks" :key="rack.id">
-                  <td><strong>{{ rack.nama }}</strong><span>{{ assetCode(rack) }}</span></td>
+                    <th>No</th>
+                    <th>Rack</th>
+                    <th>Data Center</th>
+                    <th>Kapasitas</th>
+                    <th>Jumlah Server</th>
+                    <th>Aksi</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(rack, index) in filteredRacks" :key="rack.id">
+                    <td>{{ index + 1 }}</td>
+                    <td><strong>{{ rack.nama }}</strong><span>{{ assetCode(rack) }}</span></td>
                   <td>{{ rack.data_center?.nama || '-' }}<span>{{ rack.data_center?.lokasi || '' }}</span></td>
                   <td>{{ rack.kapasitas_u || 0 }}U</td>
                   <td>{{ rack.servers_count || 0 }}</td>
@@ -3043,18 +3059,20 @@ onUpdated(() => {
             <table>
               <thead>
                 <tr>
-                  <th>Server</th>
-                  <th>Lokasi</th>
-                  <th>Kapasitas</th>
-                  <th>Kondisi</th>
-                  <th>Status</th>
-                  <th>VM</th>
-                  <th>Aksi</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="server in filteredServers" :key="server.id">
-                  <td><strong>{{ server.nama }}</strong><span>{{ assetCode(server) }}</span><span>{{ server.merk }} {{ server.tipe }} / {{ server.tahun || '-' }}</span></td>
+                    <th>No</th>
+                    <th>Server</th>
+                    <th>Lokasi</th>
+                    <th>Kapasitas</th>
+                    <th>Kondisi</th>
+                    <th>Status</th>
+                    <th>VM</th>
+                    <th>Aksi</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(server, index) in filteredServers" :key="server.id">
+                    <td>{{ index + 1 }}</td>
+                    <td><strong>{{ server.nama }}</strong><span>{{ assetCode(server) }}</span><span>{{ server.merk }} {{ server.tipe }} / {{ server.tahun || '-' }}</span></td>
                   <td>{{ server.data_center?.nama || '-' }}<span>{{ server.rack?.nama || '-' }}{{ server.rack_size_u ? ` / ${server.rack_size_u}U` : '' }}</span></td>
                   <td>{{ server.cpu_core }} core / {{ server.ram_gb }} GB<span>{{ server.merk_processor || 'Processor belum diisi' }} / {{ server.storage_gb }} GB storage</span></td>
                   <td><span :class="statusClass(server.kondisi)">{{ server.kondisi || '-' }}</span></td>
@@ -3087,18 +3105,20 @@ onUpdated(() => {
             <table>
               <thead>
                 <tr>
-                  <th>VM</th>
-                  <th>Host</th>
-                  <th>OS</th>
-                  <th>Kapasitas</th>
-                  <th>IP Address</th>
-                  <th>Status</th>
-                  <th>Aksi</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="vm in filteredVms" :key="vm.id">
-                  <td><strong>{{ vm.nama }}</strong><span>{{ assetCode(vm) }}</span></td>
+                    <th>No</th>
+                    <th>VM</th>
+                    <th>Host</th>
+                    <th>OS</th>
+                    <th>Kapasitas</th>
+                    <th>IP Address</th>
+                    <th>Status</th>
+                    <th>Aksi</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(vm, index) in filteredVms" :key="vm.id">
+                    <td>{{ index + 1 }}</td>
+                    <td><strong>{{ vm.nama }}</strong><span>{{ assetCode(vm) }}</span></td>
                   <td>{{ vm.server?.nama || '-' }}</td>
                   <td>{{ vm.os || '-' }}</td>
                   <td>{{ vm.vcpu }} vCPU / {{ vm.ram_gb }} GB<span>{{ vm.storage_gb }} GB storage</span></td>
@@ -3134,18 +3154,20 @@ onUpdated(() => {
             <table>
               <thead>
                 <tr>
-                  <th>IP Address</th>
-                  <th>Jenis</th>
-                  <th>Assignment</th>
-                  <th>ISP</th>
-                  <th>Ping</th>
-                  <th>VM Terkait</th>
-                  <th>Aksi</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="ip in filteredIpAddresses" :key="ip.id">
-                  <td><strong>{{ ip.ip }}</strong><span>{{ assetCode(ip) }}</span></td>
+                    <th>No</th>
+                    <th>IP Address</th>
+                    <th>Jenis</th>
+                    <th>Assignment</th>
+                    <th>ISP</th>
+                    <th>Ping</th>
+                    <th>VM Terkait</th>
+                    <th>Aksi</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(ip, index) in filteredIpAddresses" :key="ip.id">
+                    <td>{{ index + 1 }}</td>
+                    <td><strong>{{ ip.ip }}</strong><span>{{ assetCode(ip) }}</span></td>
                   <td><span :class="statusClass(ip.jenis)">{{ ip.jenis }}</span></td>
                   <td>{{ ip.assignment || '-' }}</td>
                   <td>{{ ip.isp?.nama || '-' }}<span>{{ ip.isp?.bandwidth || '' }}</span></td>
@@ -3179,17 +3201,19 @@ onUpdated(() => {
             <table>
               <thead>
                 <tr>
-                  <th>ISP</th>
-                  <th>Tipe</th>
-                  <th>Bandwidth</th>
-                  <th>Kontak</th>
-                  <th>Jumlah IP</th>
-                  <th>Aksi</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="isp in filteredIsps" :key="isp.id">
-                  <td><strong>{{ isp.nama }}</strong><span>{{ assetCode(isp) }}</span></td>
+                    <th>No</th>
+                    <th>ISP</th>
+                    <th>Tipe</th>
+                    <th>Bandwidth</th>
+                    <th>Kontak</th>
+                    <th>Jumlah IP</th>
+                    <th>Aksi</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(isp, index) in filteredIsps" :key="isp.id">
+                    <td>{{ index + 1 }}</td>
+                    <td><strong>{{ isp.nama }}</strong><span>{{ assetCode(isp) }}</span></td>
                   <td>{{ isp.tipe || '-' }}</td>
                   <td>{{ isp.bandwidth || '-' }}</td>
                   <td>{{ isp.kontak || '-' }}</td>
@@ -3221,22 +3245,24 @@ onUpdated(() => {
             <table>
               <thead>
                 <tr>
-                  <th>Aplikasi</th>
-                  <th>OPD</th>
-                  <th>Jenis</th>
-                  <th>Pengembang</th>
-                  <th>Fungsi</th>
-                  <th>Tech Stack</th>
-                  <th>Target SLA</th>
-                  <th>Aset Data</th>
-                  <th>Relasi</th>
-                  <th>Status</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="app in filteredApplications" :key="app.id">
-                  <td><strong>{{ app.nama }}</strong><span>{{ assetCode(app) }}</span><span>{{ app.url || '-' }}</span></td>
+                    <th>No</th>
+                    <th>Aplikasi</th>
+                    <th>OPD</th>
+                    <th>Jenis</th>
+                    <th>Pengembang</th>
+                    <th>Fungsi</th>
+                    <th>Tech Stack</th>
+                    <th>Target SLA</th>
+                    <th>Aset Data</th>
+                    <th>Relasi</th>
+                    <th>Status</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(app, index) in filteredApplications" :key="app.id">
+                    <td>{{ index + 1 }}</td>
+                    <td><strong>{{ app.nama }}</strong><span>{{ assetCode(app) }}</span><span>{{ app.url || '-' }}</span></td>
                   <td>{{ app.opd?.nama || '-' }}</td>
                   <td><span class="status">{{ app.jenis_aplikasi || '-' }}</span></td>
                   <td>{{ app.pengembang ? developerLabel(app.pengembang) : '-' }}</td>
@@ -3273,20 +3299,22 @@ onUpdated(() => {
             <table>
               <thead>
                 <tr>
-                  <th>Aset Data</th>
-                  <th>Aplikasi</th>
-                  <th>Tipe</th>
-                  <th>Klasifikasi</th>
-                  <th>Risiko</th>
-                  <th>K/I/K</th>
-                  <th>Data Pribadi</th>
-                  <th>Kontrol</th>
-                  <th>Aksi</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="asset in filteredDataAssets" :key="asset.id">
-                  <td><strong>{{ asset.name }}</strong><span>{{ assetCode(asset) }}</span><span>{{ [asset.table_name, asset.column_name].filter(Boolean).join('.') || asset.description || '-' }}</span></td>
+                    <th>No</th>
+                    <th>Aset Data</th>
+                    <th>Aplikasi</th>
+                    <th>Tipe</th>
+                    <th>Klasifikasi</th>
+                    <th>Risiko</th>
+                    <th>K/I/K</th>
+                    <th>Data Pribadi</th>
+                    <th>Kontrol</th>
+                    <th>Aksi</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(asset, index) in filteredDataAssets" :key="asset.id">
+                    <td>{{ index + 1 }}</td>
+                    <td><strong>{{ asset.name }}</strong><span>{{ assetCode(asset) }}</span><span>{{ [asset.table_name, asset.column_name].filter(Boolean).join('.') || asset.description || '-' }}</span></td>
                   <td>{{ asset.aplikasi?.nama || '-' }}<span>{{ asset.aplikasi?.jenis_aplikasi || '' }}</span></td>
                   <td><span class="status">{{ asset.type }}</span></td>
                   <td>{{ asset.classification?.name || '-' }}<span>{{ asset.classification?.code || '' }}</span></td>
@@ -3320,9 +3348,10 @@ onUpdated(() => {
           </div>
           <div class="table-wrap">
             <table>
-              <thead><tr><th>Aplikasi</th><th>Kategori</th><th>File</th><th>Ukuran</th><th>Tanggal</th><th>Aksi</th></tr></thead>
+                <thead><tr><th>No</th><th>Aplikasi</th><th>Kategori</th><th>File</th><th>Ukuran</th><th>Tanggal</th><th>Aksi</th></tr></thead>
               <tbody>
-                <tr v-for="doc in filteredApplicationDocuments" :key="doc.id">
+                <tr v-for="(doc, index) in filteredApplicationDocuments" :key="doc.id">
+                  <td>{{ index + 1 }}</td>
                   <td>{{ doc.aplikasi?.nama || '-' }}</td>
                   <td><span class="status">{{ doc.document_category || doc.jenis }}</span></td>
                   <td><strong>{{ doc.original_name || doc.nama }}</strong><span>{{ assetCode(doc) }}</span><span>{{ doc.path || '-' }}</span></td>
@@ -3344,9 +3373,10 @@ onUpdated(() => {
           </div>
           <div class="table-wrap">
             <table>
-              <thead><tr><th>Aplikasi</th><th>Jenis</th><th>Metode</th><th>Target</th><th>Data</th><th>Dokumen</th><th>Aksi</th></tr></thead>
+                <thead><tr><th>No</th><th>Aplikasi</th><th>Jenis</th><th>Metode</th><th>Target</th><th>Data</th><th>Dokumen</th><th>Aksi</th></tr></thead>
               <tbody>
-                <tr v-for="integration in filteredAppIntegrations" :key="integration.id">
+                <tr v-for="(integration, index) in filteredAppIntegrations" :key="integration.id">
+                  <td>{{ index + 1 }}</td>
                   <td><strong>{{ integration.aplikasi?.nama || '-' }}</strong><span>{{ assetCode(integration) }}</span><span>{{ integration.deskripsi || '-' }}</span></td>
                   <td><span class="status">{{ integration.jenis_integrasi }}</span></td>
                   <td><span class="status">{{ integration.metode_integrasi }}</span></td>
@@ -3369,9 +3399,10 @@ onUpdated(() => {
           </div>
           <div class="table-wrap">
             <table>
-              <thead><tr><th>Media</th><th>Lokasi</th><th>Jenis</th><th>Kapasitas</th><th>Address / URL</th><th>Job</th><th>Aksi</th></tr></thead>
+                <thead><tr><th>No</th><th>Media</th><th>Lokasi</th><th>Jenis</th><th>Kapasitas</th><th>Address / URL</th><th>Job</th><th>Aksi</th></tr></thead>
               <tbody>
-                <tr v-for="media in filteredBackupMedia" :key="media.id">
+                <tr v-for="(media, index) in filteredBackupMedia" :key="media.id">
+                  <td>{{ index + 1 }}</td>
                   <td><strong>{{ media.nama }}</strong><span>{{ assetCode(media) }}</span></td>
                   <td><span class="status">{{ media.location }}</span></td>
                   <td>{{ media.jenis_media }}</td>
@@ -3394,9 +3425,10 @@ onUpdated(() => {
           </div>
           <div class="table-wrap">
             <table>
-              <thead><tr><th>Aplikasi</th><th>Media</th><th>Retensi</th><th>Repetisi</th><th>Aksi</th></tr></thead>
+                <thead><tr><th>No</th><th>Aplikasi</th><th>Media</th><th>Retensi</th><th>Repetisi</th><th>Aksi</th></tr></thead>
               <tbody>
-                <tr v-for="job in filteredBackupJobs" :key="job.id">
+                <tr v-for="(job, index) in filteredBackupJobs" :key="job.id">
+                  <td>{{ index + 1 }}</td>
                   <td><strong>{{ job.aplikasi?.nama || '-' }}</strong><span>{{ assetCode(job) }}</span></td>
                   <td>{{ job.media?.nama || '-' }}<span>{{ job.media?.jenis_media || '' }}</span></td>
                   <td>{{ job.retensi_n }} {{ job.retensi_unit }}</td>
@@ -3417,9 +3449,10 @@ onUpdated(() => {
           </div>
           <div class="table-wrap">
             <table>
-              <thead><tr><th>Nama</th><th>Kapasitas</th><th>Kondisi</th><th>Lokasi DC</th><th>Aksi</th></tr></thead>
+                <thead><tr><th>No</th><th>Nama</th><th>Kapasitas</th><th>Kondisi</th><th>Lokasi DC</th><th>Aksi</th></tr></thead>
               <tbody>
-                <tr v-for="ups in filteredUpsDevices" :key="ups.id">
+                <tr v-for="(ups, index) in filteredUpsDevices" :key="ups.id">
+                  <td>{{ index + 1 }}</td>
                   <td><strong>{{ ups.nama }}</strong><span>{{ assetCode(ups) }}</span></td>
                   <td>{{ ups.kapasitas_va }} VA</td>
                   <td><span :class="statusClass(ups.kondisi)">{{ ups.kondisi }}</span></td>
@@ -3440,9 +3473,10 @@ onUpdated(() => {
           </div>
           <div class="table-wrap">
             <table>
-              <thead><tr><th>Nama</th><th>Jenis</th><th>Fungsi</th><th>Cakupan</th><th>Aksi</th></tr></thead>
+                <thead><tr><th>No</th><th>Nama</th><th>Jenis</th><th>Fungsi</th><th>Cakupan</th><th>Aksi</th></tr></thead>
               <tbody>
-                <tr v-for="tool in filteredSocTools" :key="tool.id">
+                <tr v-for="(tool, index) in filteredSocTools" :key="tool.id">
+                  <td>{{ index + 1 }}</td>
                   <td><strong>{{ tool.nama }}</strong><span>{{ assetCode(tool) }}</span></td>
                   <td><span class="status">{{ tool.jenis }}</span></td>
                   <td>{{ tool.deskripsi_fungsi || '-' }}</td>
@@ -3468,9 +3502,10 @@ onUpdated(() => {
             </div>
             <div class="table-wrap">
               <table>
-                <thead><tr><th>Site / Node</th><th>Jenis</th><th>Relasi Lokasi</th><th>PIC</th><th>Status</th><th>Aksi</th></tr></thead>
+                <thead><tr><th>No</th><th>Site / Node</th><th>Jenis</th><th>Relasi Lokasi</th><th>PIC</th><th>Status</th><th>Aksi</th></tr></thead>
                 <tbody>
-                  <tr v-for="site in filteredNetworkSites" :key="site.id">
+                  <tr v-for="(site, index) in filteredNetworkSites" :key="site.id">
+                    <td>{{ index + 1 }}</td>
                     <td><strong>{{ site.nama }}</strong><span>{{ assetCode(site) }}</span><span>{{ site.kode || '-' }}</span></td>
                     <td><span class="status">{{ networkSiteTypeLabel(site.jenis) }}</span><span>{{ site.lokasi_detail || site.alamat || '' }}</span></td>
                     <td>{{ assetLocation('network-sites', site) }}</td>
@@ -3492,9 +3527,10 @@ onUpdated(() => {
             </div>
             <div class="table-wrap">
               <table>
-                <thead><tr><th>Site / Periode</th><th>Speedtest</th><th>Menara</th><th>Petugas</th><th>Checklist</th><th>Lampiran</th><th>Aksi</th></tr></thead>
+                <thead><tr><th>No</th><th>Site / Periode</th><th>Speedtest</th><th>Menara</th><th>Petugas</th><th>Checklist</th><th>Lampiran</th><th>Aksi</th></tr></thead>
                 <tbody>
-                  <tr v-for="row in filteredNetworkMonitorings" :key="row.id">
+                  <tr v-for="(row, index) in filteredNetworkMonitorings" :key="row.id">
+                    <td>{{ index + 1 }}</td>
                     <td><strong>{{ monitoringScopeLabel(row) }}</strong><span>{{ assetCode(row) }}</span><span>{{ formatDateTime(row.monitoring_at) }} / {{ row.period_month || '-' }}</span></td>
                     <td>{{ monitoringSpeedSummary(row) }}</td>
                     <td>{{ monitoringTowerSummary(row) }}<span>{{ row.tower_notes || '' }}</span></td>
@@ -3529,9 +3565,10 @@ onUpdated(() => {
             </div>
             <div class="table-wrap">
               <table>
-                <thead><tr><th>Perangkat</th><th>OPD / Pemilik</th><th>Jenis</th><th>Spesifikasi Ringkas</th><th>Site Aktif</th><th>Status</th><th>Aksi</th></tr></thead>
+                <thead><tr><th>No</th><th>Perangkat</th><th>OPD / Pemilik</th><th>Jenis</th><th>Spesifikasi Ringkas</th><th>Site Aktif</th><th>Status</th><th>Aksi</th></tr></thead>
                 <tbody>
-                  <tr v-for="device in filteredNetworkDevices" :key="device.id">
+                  <tr v-for="(device, index) in filteredNetworkDevices" :key="device.id">
+                    <td>{{ index + 1 }}</td>
                     <td><strong>{{ device.nama }}</strong><span>{{ assetCode(device) }}</span><span>{{ device.serial_number || device.mac_address || '-' }}</span></td>
                     <td>{{ networkDeviceOwnerName(device) }}</td>
                     <td><span class="status">{{ networkDeviceTypeLabel(device.jenis) }}</span><span>{{ device.merk || '-' }} {{ device.model || '' }}</span></td>
@@ -3554,9 +3591,10 @@ onUpdated(() => {
             </div>
             <div class="table-wrap">
               <table>
-                <thead><tr><th>Site / Node</th><th>Perangkat</th><th>Role</th><th>Periode</th><th>Pengganti</th><th>Status</th><th>Aksi</th></tr></thead>
+                <thead><tr><th>No</th><th>Site / Node</th><th>Perangkat</th><th>Role</th><th>Periode</th><th>Pengganti</th><th>Status</th><th>Aksi</th></tr></thead>
                 <tbody>
-                  <tr v-for="row in filteredNetworkInstallations" :key="row.id">
+                  <tr v-for="(row, index) in filteredNetworkInstallations" :key="row.id">
+                    <td>{{ index + 1 }}</td>
                     <td><strong>{{ row.site?.nama || '-' }}</strong><span>{{ row.site?.kode || row.site?.asset_code || '' }}</span></td>
                     <td>{{ row.device?.nama || '-' }}<span>{{ [row.device?.asset_code, networkDeviceTypeLabel(row.device?.jenis)].filter(Boolean).join(' / ') }}</span></td>
                     <td>{{ networkInstallationRoleLabel(row.role) }}<span>{{ row.installed_by || '' }}</span></td>
@@ -3585,9 +3623,10 @@ onUpdated(() => {
             </div>
             <div class="table-wrap">
               <table>
-                <thead><tr><th>Perangkat</th><th>OPD / Pemilik</th><th>Site</th><th>Interface</th><th>IP / Gateway</th><th>VLAN / SSID</th><th>Status</th><th>Aksi</th></tr></thead>
+                <thead><tr><th>No</th><th>Perangkat</th><th>OPD / Pemilik</th><th>Site</th><th>Interface</th><th>IP / Gateway</th><th>VLAN / SSID</th><th>Status</th><th>Aksi</th></tr></thead>
                 <tbody>
-                  <tr v-for="config in filteredNetworkIpConfigs" :key="config.id">
+                  <tr v-for="(config, index) in filteredNetworkIpConfigs" :key="config.id">
+                    <td>{{ index + 1 }}</td>
                     <td><strong>{{ config.device?.nama || '-' }}</strong><span>{{ networkDeviceTypeLabel(config.device?.jenis) }}</span></td>
                     <td>{{ networkIpConfigOwnerName(config) }}</td>
                     <td>{{ config.site?.nama || '-' }}</td>
@@ -3611,9 +3650,10 @@ onUpdated(() => {
             </div>
             <div class="table-wrap">
               <table>
-                <thead><tr><th>Label</th><th>Perangkat</th><th>Metode</th><th>URL / Username</th><th>Password</th><th>Rotasi</th><th>Aksi</th></tr></thead>
+                <thead><tr><th>No</th><th>Label</th><th>Perangkat</th><th>Metode</th><th>URL / Username</th><th>Password</th><th>Rotasi</th><th>Aksi</th></tr></thead>
                 <tbody>
-                  <tr v-for="credential in filteredNetworkCredentials" :key="credential.id">
+                  <tr v-for="(credential, index) in filteredNetworkCredentials" :key="credential.id">
+                    <td>{{ index + 1 }}</td>
                     <td><strong>{{ credential.label }}</strong><span>{{ credential.site?.nama || '' }}</span></td>
                     <td>{{ credential.device?.nama || '-' }}<span>{{ networkDeviceTypeLabel(credential.device?.jenis) }}</span></td>
                     <td>{{ networkAccessMethodLabel(credential.access_method) }}</td>
@@ -3711,9 +3751,10 @@ onUpdated(() => {
                     <small>{{ [row.site.lokasi_detail, row.site.alamat].filter(Boolean).join(' / ') || '-' }}</small>
                   </div>
                   <table class="report-table">
-                    <thead><tr><th>Perangkat</th><th>Kode</th><th>Jenis / Role</th><th>Merk / Model</th><th>Status</th></tr></thead>
+                    <thead><tr><th>No</th><th>Perangkat</th><th>Kode</th><th>Jenis / Role</th><th>Merk / Model</th><th>Status</th></tr></thead>
                     <tbody v-if="row.devices.length">
-                      <tr v-for="{ installation, device } in row.devices" :key="installation.id">
+                      <tr v-for="({ installation, device }, index) in row.devices" :key="installation.id">
+                        <td>{{ index + 1 }}</td>
                         <td><strong>{{ device.nama }}</strong><span>{{ device.serial_number || device.mac_address || '-' }}</span></td>
                         <td>{{ assetCode(device) }}</td>
                         <td>{{ networkDeviceTypeLabel(device.jenis) }}<span>{{ networkInstallationRoleLabel(installation.role) }}</span></td>
@@ -3722,7 +3763,7 @@ onUpdated(() => {
                       </tr>
                     </tbody>
                     <tbody v-else>
-                      <tr><td colspan="5">Belum ada perangkat aktif tercatat pada site/node ini.</td></tr>
+                      <tr><td colspan="6">Belum ada perangkat aktif tercatat pada site/node ini.</td></tr>
                     </tbody>
                   </table>
                 </div>
@@ -3731,9 +3772,10 @@ onUpdated(() => {
               <section v-if="networkSummaryUnassignedDevices.length" class="report-section">
                 <h2>Perangkat Belum Terpasang di Site Aktif</h2>
                 <table class="report-table">
-                  <thead><tr><th>Perangkat</th><th>Kode</th><th>Jenis</th><th>Merk / Model</th><th>Status</th></tr></thead>
+                  <thead><tr><th>No</th><th>Perangkat</th><th>Kode</th><th>Jenis</th><th>Merk / Model</th><th>Status</th></tr></thead>
                   <tbody>
-                    <tr v-for="device in networkSummaryUnassignedDevices" :key="device.id">
+                    <tr v-for="(device, index) in networkSummaryUnassignedDevices" :key="device.id">
+                      <td>{{ index + 1 }}</td>
                       <td><strong>{{ device.nama }}</strong><span>{{ device.serial_number || device.mac_address || '-' }}</span></td>
                       <td>{{ assetCode(device) }}</td>
                       <td>{{ networkDeviceTypeLabel(device.jenis) }}</td>
@@ -3766,9 +3808,10 @@ onUpdated(() => {
             </div>
             <div class="table-wrap">
               <table>
-                <thead><tr><th>Nama</th><th>Email</th><th>Role</th><th>Status</th><th>Login Terakhir</th><th>Aksi</th></tr></thead>
+                <thead><tr><th>No</th><th>Nama</th><th>Email</th><th>Role</th><th>Status</th><th>Login Terakhir</th><th>Aksi</th></tr></thead>
                 <tbody>
-                  <tr v-for="user in filteredUsers" :key="user.id">
+                  <tr v-for="(user, index) in filteredUsers" :key="user.id">
+                    <td>{{ index + 1 }}</td>
                     <td><strong>{{ user.nama }}</strong></td>
                     <td>{{ user.email }}</td>
                     <td><span :class="statusClass(user.role)">{{ user.role === 'full' ? 'Full' : 'Read Only' }}</span></td>
@@ -3882,16 +3925,18 @@ onUpdated(() => {
             <table>
               <thead>
                 <tr>
-                  <th>Aplikasi</th>
-                  <th>OPD</th>
-                  <th>Target SLA</th>
-                  <th>Kontrol</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="item in compliance?.items || []" :key="item.id">
-                  <td><strong>{{ item.nama }}</strong><span>Data pribadi: {{ yesNo(item.data_pribadi) }}</span></td>
+                    <th>No</th>
+                    <th>Aplikasi</th>
+                    <th>OPD</th>
+                    <th>Target SLA</th>
+                    <th>Kontrol</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(item, index) in compliance?.items || []" :key="item.id">
+                    <td>{{ index + 1 }}</td>
+                    <td><strong>{{ item.nama }}</strong><span>Data pribadi: {{ yesNo(item.data_pribadi) }}</span></td>
                   <td>{{ item.opd || '-' }}</td>
                   <td>{{ item.sla || 0 }}%</td>
                   <td>
@@ -3935,17 +3980,19 @@ onUpdated(() => {
             <table>
               <thead>
                 <tr>
-                  <th>Waktu</th>
-                  <th>Aset</th>
-                  <th>Jenis</th>
-                  <th>Alasan</th>
-                  <th>Field Berubah</th>
-                  <th>Operator</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="log in assetChangeLogs" :key="log.id">
-                  <td>
+                    <th>No</th>
+                    <th>Waktu</th>
+                    <th>Aset</th>
+                    <th>Jenis</th>
+                    <th>Alasan</th>
+                    <th>Field Berubah</th>
+                    <th>Operator</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(log, index) in assetChangeLogs" :key="log.id">
+                    <td>{{ index + 1 }}</td>
+                    <td>
                     <strong>{{ new Date(log.created_at).toLocaleDateString('id-ID') }}</strong>
                     <span>{{ new Date(log.created_at).toLocaleTimeString('id-ID') }}</span>
                   </td>
@@ -3966,7 +4013,7 @@ onUpdated(() => {
                   </td>
                 </tr>
                 <tr v-if="assetChangeLogs.length === 0">
-                  <td colspan="6">Belum ada perubahan spesifikasi Server atau VM.</td>
+                  <td colspan="7">Belum ada perubahan spesifikasi Server atau VM.</td>
                 </tr>
               </tbody>
             </table>
