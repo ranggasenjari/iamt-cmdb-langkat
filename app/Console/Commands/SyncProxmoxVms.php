@@ -79,6 +79,11 @@ class SyncProxmoxVms extends Command
                 continue;
             }
 
+            if (empty($vms)) {
+                $this->line('    Tidak ada VM.');
+                continue;
+            }
+
             $server = $this->resolveServer($node);
 
             foreach ($vms as $vmData) {
@@ -98,7 +103,8 @@ class SyncProxmoxVms extends Command
         $ssh = sprintf('ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new root@%s', $host);
         $list = shell_exec("{$ssh} 'qm list' 2>/dev/null");
 
-        if (!$list) return null;
+        // null means command failed (connection error)
+        if ($list === null) return null;
 
         $lines = explode("\n", trim($list));
         $header = true;
