@@ -101,16 +101,16 @@ class SyncProxmoxVms extends Command
     protected function fetchVms(string $host): ?array
     {
         $sshBase = sprintf('ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new root@%s', $host);
-        $list = shell_exec("{$sshBase} 'qm list' 2>/dev/null");
-
-        // Retry with TTY if first attempt failed (e.g. empty node)
-        if ($list === null) {
-            $list = shell_exec("{$sshBase} -tt 'qm list' 2>/dev/null");
-        }
+        $list = shell_exec("{$sshBase} 'qm list 2>&1; echo __END__' 2>/dev/null");
 
         if ($list === null) return null;
 
-        $lines = explode("\n", trim($list));
+        // Strip the sentinel and trailing whitespace
+        $list = str_replace("__END__\n", '', $list);
+        $list = str_replace("__END__", '', $list);
+        $list = trim($list);
+
+        $lines = explode("\n", $list);
         $header = true;
         $vms = [];
 
