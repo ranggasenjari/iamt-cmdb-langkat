@@ -4303,7 +4303,7 @@ onUpdated(() => {
 
           <div v-if="modal.module === 'applications'" class="modal-form">
             <input v-model="appForm.nama" required placeholder="Nama aplikasi" />
-            <input v-model="appForm.url" type="url" placeholder="URL aplikasi" />
+            <input v-model="appForm.url" type="text" inputmode="url" placeholder="URL aplikasi (opsional)" />
             <input v-model="appForm.tech_stack" placeholder="Tech Stack, contoh: Laravel, Vue, MySQL" />
             <select v-model="appForm.opd_id">
               <option value="">OPD pemilik</option>
