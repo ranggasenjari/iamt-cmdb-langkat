@@ -57,8 +57,8 @@ class SyncProxmoxServerSpecs extends Command
 
         $proc = shell_exec("{$sshBase} 'cat /proc/cpuinfo | grep -m1 \"model name\" | cut -d: -f2 | xargs' 2>/dev/null");
         $cores = shell_exec("{$sshBase} 'grep -c processor /proc/cpuinfo' 2>/dev/null");
-        $ram = shell_exec("{$sshBase} 'free -m | awk \"/Mem:/{print int(\$2/1024+0.5)}\"' 2>/dev/null");
-        $storage = shell_exec("{$sshBase} 'lsblk -b -d -o SIZE | awk \"NR>1 {s+=\$1} END {print int(s/1024/1024/1024+0.5)}\"' 2>/dev/null");
+        $ram = shell_exec("{$sshBase} 'free -m | awk \"/Mem:/{print int(\\\$2/1024+0.5)}\"' 2>/dev/null");
+        $storage = shell_exec("{$sshBase} 'lsblk -b -d -o SIZE | awk \"NR>1 {s+=\\\$1} END {print int(s/1024/1024/1024+0.5)}\"' 2>/dev/null");
 
         if ($proc === null && $cores === null) return null;
 
