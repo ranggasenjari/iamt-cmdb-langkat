@@ -3,11 +3,11 @@
 # Usage: ./sync-proxmox.sh | ssh iamt@192.168.4.10 "cd /home/iamt/public_html && php artisan proxmox:sync-vms --stdin"
 
 NODES=(
-  "192.168.4.1:Node 1"
-  "192.168.4.3:Node 3"
-  "192.168.4.4:Node 4"
-  "192.168.4.5:Node 5"
-  "192.168.4.6:Node 6"
+  "192.168.4.1:Node 1:NODE-01"
+  "192.168.4.3:Node 3:NODE-03"
+  "192.168.4.4:Node 4:NODE-04"
+  "192.168.4.5:Node 5:NODE-05"
+  "192.168.4.6:Node 6:NODE-06"
 )
 
 SSH_OPTS="-o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new"
@@ -17,11 +17,13 @@ echo "["
 
 for entry in "${NODES[@]}"; do
   HOST="${entry%%:*}"
-  LABEL="${entry##*:}"
+  REST="${entry#*:}"
+  LABEL="${REST%%:*}"
+  SERVER="${REST#*:}"
 
   LIST=$(ssh $SSH_OPTS "root@$HOST" 'qm list' 2>/dev/null) || {
     $FIRST || echo ","
-    echo "{\"node\":\"$HOST\",\"label\":\"$LABEL\",\"vms\":[]}"
+    echo "{\"node\":\"$HOST\",\"label\":\"$LABEL\",\"server_nama\":\"$SERVER\",\"vms\":[]}"
     FIRST=false
     continue
   }
@@ -53,7 +55,7 @@ for entry in "${NODES[@]}"; do
   $FIRST || echo ","
   FIRST=false
 
-  echo -n "{\"node\":\"$HOST\",\"label\":\"$LABEL\",\"vms\":["
+  echo -n "{\"node\":\"$HOST\",\"label\":\"$LABEL\",\"server_nama\":\"$SERVER\",\"vms\":["
   for i in "${!VMS[@]}"; do
     [ $i -gt 0 ] && echo -n ","
     echo -n "${VMS[$i]}"

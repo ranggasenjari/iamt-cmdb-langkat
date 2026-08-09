@@ -13,11 +13,11 @@ class SyncProxmoxVms extends Command
     protected $description = 'Sync VM data from Proxmox nodes via SSH or STDIN';
 
     protected array $nodes = [
-        ['host' => '192.168.4.1',  'label' => 'Node 1'],
-        ['host' => '192.168.4.3',  'label' => 'Node 3'],
-        ['host' => '192.168.4.4',  'label' => 'Node 4'],
-        ['host' => '192.168.4.5',  'label' => 'Node 5'],
-        ['host' => '192.168.4.6',  'label' => 'Node 6'],
+        ['host' => '192.168.4.1',  'label' => 'Node 1', 'server_nama' => 'NODE-01'],
+        ['host' => '192.168.4.3',  'label' => 'Node 3', 'server_nama' => 'NODE-03'],
+        ['host' => '192.168.4.4',  'label' => 'Node 4', 'server_nama' => 'NODE-04'],
+        ['host' => '192.168.4.5',  'label' => 'Node 5', 'server_nama' => 'NODE-05'],
+        ['host' => '192.168.4.6',  'label' => 'Node 6', 'server_nama' => 'NODE-06'],
     ];
 
     public function handle(): int
@@ -47,8 +47,8 @@ class SyncProxmoxVms extends Command
             if (!isset($data['node'], $data['vms'])) continue;
 
             $server = Server::firstOrCreate(
-                ['nama' => $data['label'] ?? $data['node']],
-                ['nama' => $data['label'] ?? $data['node'], 'status' => 'aktif']
+                ['nama' => $data['server_nama'] ?? $data['label'] ?? $data['node']],
+                ['nama' => $data['server_nama'] ?? $data['label'] ?? $data['node'], 'status' => 'aktif']
             );
 
             $count = 0;
@@ -167,10 +167,10 @@ class SyncProxmoxVms extends Command
 
     protected function resolveServer(array $node): Server
     {
-        $label = $node['label'];
+        $nama = $node['server_nama'] ?? $node['label'];
         return Server::firstOrCreate(
-            ['nama' => $label],
-            ['nama' => $label, 'status' => 'aktif']
+            ['nama' => $nama],
+            ['nama' => $nama, 'status' => 'aktif']
         );
     }
 
