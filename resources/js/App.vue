@@ -12,7 +12,6 @@ import {
   FileCheck2,
   GitBranch,
   HardDrive,
-  Key,
   LayoutDashboard,
   Menu,
   Network,
@@ -101,7 +100,6 @@ const menuSections = [
       { id: "map", label: "Mapping", icon: GitBranch },
       { id: "compliance", label: "Compliance", icon: FileCheck2 },
       { id: "audit", label: "Audit", icon: Activity },
-      { id: "api-keys", label: "API Keys", icon: Key },
     ],
   },
 ];
@@ -217,7 +215,6 @@ const networkIpConfigs = ref([]);
 const networkCredentials = ref([]);
 const networkMonitorings = ref([]);
 const users = ref([]);
-const apiKeys = ref([]);
 const dependencyMap = ref([]);
 const compliance = ref(null);
 const auditLog = ref([]);
@@ -225,6 +222,18 @@ const assetChangeLogs = ref([]);
 const impact = ref(null);
 
 const canWrite = computed(() => Boolean(currentUser.value?.can_write));
+// Boleh tambah/ubah/hapus di modul tertentu. Role full = semua modul,
+// operator = modul di writable_modules (saat ini hanya "applications").
+function canWriteModule(module) {
+  if (canWrite.value) return true;
+  const modules = currentUser.value?.writable_modules || [];
+  return modules.includes("*") || (Boolean(module) && modules.includes(module));
+}
+function roleLabel(role, short = false) {
+  if (role === "full") return short ? "Full" : "Full Access";
+  if (role === "operator") return "Operator";
+  return "Read Only";
+}
 
 const labelSizeOptions = [
   { value: "50x30", label: "50 x 30 mm", width: 50, height: 30 },
@@ -829,7 +838,6 @@ async function loadAll() {
       networkCredentialRows,
       networkMonitoringRows,
       userRows,
-      apiKeyRows,
       mapRows,
       complianceRows,
       auditRows,
@@ -859,7 +867,6 @@ async function loadAll() {
       api("/network-credentials"),
       api("/network-monitorings"),
       api("/users"),
-      api("/api-keys"),
       api("/dependency-map"),
       api("/compliance"),
       api("/audit-log"),
@@ -890,7 +897,6 @@ async function loadAll() {
     networkCredentials.value = networkCredentialRows;
     networkMonitorings.value = networkMonitoringRows;
     users.value = userRows;
-    apiKeys.value = apiKeyRows;
     dependencyMap.value = mapRows;
     compliance.value = complianceRows;
     auditLog.value = auditRows;
@@ -933,7 +939,6 @@ const moduleLabels = {
   "network-monitorings": "Monitoring Site",
   "network-owner-summary": "Relasi OPD Consumer Networking",
   users: "Pengguna & Role",
-  "api-keys": "API Key",
 };
 
 const bulkLabelModuleOptions = [
@@ -2135,13 +2140,13 @@ function formFor(module) {
 }
 
 function openCreate(module) {
-  if (!canWrite.value) return;
+  if (!canWriteModule(module)) return;
   resetModuleForm(module);
   Object.assign(modal, { open: true, module, mode: "create", id: null });
 }
 
 function openEdit(module, row) {
-  if (!canWrite.value) return;
+  if (!canWriteModule(module)) return;
   resetModuleForm(module);
   if (module === "data-centers") {
     Object.assign(dataCenterForm, {
@@ -2462,7 +2467,7 @@ function openEdit(module, row) {
 }
 
 function openCopy(module, row) {
-  if (!canWrite.value) return;
+  if (!canWriteModule(module)) return;
   openEdit(module, row);
 
   if (module === "ip-addresses") ipAddressForm.ip = "";
@@ -2486,7 +2491,7 @@ function closeAlert() {
 
 async function saveModal() {
   if (saving.value) return;
-  if (!canWrite.value) {
+  if (!canWriteModule(modal.module)) {
     error.value = "Akses read only tidak dapat mengubah data.";
     return;
   }
@@ -2813,7 +2818,7 @@ async function createApplication() {
 }
 
 async function removeRow(kind, id) {
-  if (!canWrite.value) {
+  if (!canWriteModule(kind)) {
     error.value = "Akses read only tidak dapat menghapus data.";
     return;
   }
@@ -2826,35 +2831,18 @@ async function removeRow(kind, id) {
   });
 }
 
-async function createApiKey() {
-  if (!canWrite.value || saving.value) return;
-
-  saving.value = true;
-  error.value = "";
-  try {
-    const response = await api("/api-keys", {
-      method: "POST",
-      body: JSON.stringify({}),
-    });
-    await loadAll();
-    showAlert(
-      "API key baru",
-      `Salin dan simpan API key ini sekarang. Demi keamanan, key ini tidak dapat ditampilkan lagi: ${response.api_key}`,
-    );
-  } catch (err) {
-    error.value = err.message;
-  } finally {
-    saving.value = false;
-  }
-}
-
 function closeDeleteModal() {
   if (deleting.value) return;
   Object.assign(deleteModal, { open: false, kind: "", id: null, label: "" });
 }
 
 async function confirmDelete() {
-  if (!canWrite.value || deleting.value || !deleteModal.kind || !deleteModal.id)
+  if (
+    !canWriteModule(deleteModal.kind) ||
+    deleting.value ||
+    !deleteModal.kind ||
+    !deleteModal.id
+  )
     return;
   deleting.value = true;
   error.value = "";
@@ -3129,13 +3117,6 @@ const filteredUsers = computed(() => {
   );
 });
 
-const filteredApiKeys = computed(() => {
-  const needle = query.value.toLowerCase();
-  return apiKeys.value.filter((row) =>
-    JSON.stringify(row).toLowerCase().includes(needle),
-  );
-});
-
 const dataAssetRiskTotal = computed(
   () =>
     Number(dataAssetForm.confidentiality_score) +
@@ -3343,9 +3324,7 @@ onUpdated(() => {
         <div class="top-actions">
           <div class="user-pill">
             <strong>{{ currentUser.nama }}</strong>
-            <span>{{
-              currentUser.role === "full" ? "Full Access" : "Read Only"
-            }}</span>
+            <span>{{ roleLabel(currentUser.role) }}</span>
           </div>
           <label class="search">
             <Search :size="17" />
@@ -4678,7 +4657,7 @@ onUpdated(() => {
               <h3 class="yellow-title">Aplikasi dan Relasi Infrastruktur</h3>
             </div>
             <button
-              v-if="canWrite"
+              v-if="canWriteModule('applications')"
               class="action-button"
               type="button"
               @click="openCreate('applications')"
@@ -4748,14 +4727,14 @@ onUpdated(() => {
                         <Printer :size="16" />
                       </button>
                       <button
-                        v-if="canWrite"
+                        v-if="canWriteModule('applications')"
                         class="icon-button"
                         title="Edit aplikasi"
                         @click="openEdit('applications', app)"
                       >
                         <Pencil :size="16" /></button
                       ><button
-                        v-if="canWrite"
+                        v-if="canWriteModule('applications')"
                         class="icon-button"
                         title="Salin aplikasi"
                         @click="openCopy('applications', app)"
@@ -4763,7 +4742,7 @@ onUpdated(() => {
                         <Copy :size="16" />
                       </button>
                       <button
-                        v-if="canWrite"
+                        v-if="canWriteModule('applications')"
                         class="icon-button danger"
                         title="Hapus aplikasi"
                         @click="removeRow('applications', app.id)"
@@ -6567,7 +6546,7 @@ onUpdated(() => {
                   <td>{{ user.email }}</td>
                   <td>
                     <span :class="statusClass(user.role)">{{
-                      user.role === "full" ? "Full" : "Read Only"
+                      roleLabel(user.role, true)
                     }}</span>
                   </td>
                   <td>
@@ -6930,56 +6909,6 @@ onUpdated(() => {
                 >
               </div>
             </article>
-          </div>
-        </section>
-      </section>
-
-      <section v-if="activeTab === 'api-keys'" class="content-grid">
-        <section class="surface wide">
-          <div class="module-header">
-            <div>
-              <p class="eyebrow">API Keys</p>
-              <h3 class="yellow-title">Buat API Key</h3>
-            </div>
-            <button
-              v-if="canWrite"
-              class="action-button"
-              type="button"
-              :disabled="saving"
-              @click="createApiKey"
-            >
-              <Plus :size="17" /> Tambah API Key
-            </button>
-          </div>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>No</th>
-                  <th>API KEY</th>
-                  <th>Aksi</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="(apiKey, index) in filteredApiKeys" :key="apiKey.id">
-                  <td>{{ index + 1 }}</td>
-                  <td>
-                    <strong>{{ apiKey.api_key_masked }}</strong>
-                  </td>
-                  <td>
-                    <div v-if="canWrite" class="row-actions">
-                      <button
-                        class="icon-button danger"
-                        title="Hapus Token"
-                        @click="removeRow('api-keys', apiKey.id)"
-                      >
-                        <Trash2 :size="16" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
           </div>
         </section>
       </section>
@@ -8640,6 +8569,7 @@ onUpdated(() => {
               <select v-model="userForm.role" required>
                 <option value="">Role</option>
                 <option value="full">Full</option>
+                <option value="operator">Operator (hanya ubah Aplikasi)</option>
                 <option value="read_only">Read Only</option>
               </select>
               <select v-model="userForm.status" required>
