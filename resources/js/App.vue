@@ -24,6 +24,7 @@ import {
   Server,
   ShieldCheck,
   Trash2,
+  UserCheck,
   Users,
   X,
 } from "lucide-vue-next";
@@ -64,6 +65,10 @@ const menuSections = [
       { id: "app-integrations", label: "Interoperabilitas", icon: GitBranch },
       { id: "app-database-docs", label: "Dok. Basis Data", icon: Database },
     ],
+  },
+  {
+    label: "SDM",
+    items: [{ id: "sdm", label: "SDM", icon: UserCheck }],
   },
   {
     label: "Keamanan Informasi",
@@ -204,6 +209,7 @@ const vms = ref([]);
 const applications = ref([]);
 const dataAssets = ref([]);
 const applicationDocuments = ref([]);
+const sdmList = ref([]);
 const appIntegrations = ref([]);
 const appDatabaseDocs = ref([]);
 const backupMedia = ref([]);
@@ -237,6 +243,41 @@ function roleLabel(role, short = false) {
   if (role === "operator") return "Operator";
   return "Read Only";
 }
+
+// Operator hanya mengelola data OPD-nya sendiri; pilihan OPD di form dikunci.
+const isOperator = computed(() => currentUser.value?.role === "operator");
+const ownOpdId = computed(() => currentUser.value?.opd_id || "");
+
+// Menu yang tampil untuk role operator. Role lain melihat semua menu.
+const OPERATOR_MENU_IDS = ["applications", "servers", "sdm"];
+
+const visibleMenuSections = computed(() => {
+  if (currentUser.value?.role !== "operator") return menuSections;
+  return menuSections
+    .map((section) => ({
+      ...section,
+      items: section.items.filter((item) => OPERATOR_MENU_IDS.includes(item.id)),
+    }))
+    .filter((section) => section.items.length);
+});
+
+const visibleMenuIds = computed(() =>
+  visibleMenuSections.value.flatMap((section) =>
+    section.items.map((item) => item.id),
+  ),
+);
+
+// Kalau tab aktif tidak ada di menu yang boleh dilihat (misal operator
+// baru login dan tab default "dashboard"), pindah ke menu pertama yang boleh.
+watch(
+  [visibleMenuIds, () => activeTab.value],
+  ([ids]) => {
+    if (ids.length && !ids.includes(activeTab.value)) {
+      activeTab.value = ids[0];
+    }
+  },
+  { immediate: true },
+);
 
 const labelSizeOptions = [
   { value: "50x30", label: "50 x 30 mm", width: 50, height: 30 },
@@ -348,6 +389,20 @@ const applicationDocumentForm = reactive({
   document_category: "",
   files: [],
 });
+
+const SDM_PENDIDIKAN_OPTIONS = ["SD", "SMP", "SMA", "S1", "S2", "S3"];
+
+const sdmForm = reactive({
+  opd_id: "",
+  nama: "",
+  jabatan: "",
+  pendidikan: "",
+  sertifikasi: [], // file baru yang akan diunggah
+  existing_sertifikasi: [], // sertifikasi yang sudah tersimpan (saat edit)
+  hapus_sertifikasi_ids: [], // sertifikasi lama yang ditandai untuk dihapus
+});
+
+const SDM_MAX_FILES = 10;
 
 const appIntegrationForm = reactive({
   aplikasi_id: "",
@@ -807,7 +862,7 @@ function syncTableCardLabels() {
 }
 
 function selectMenu(item) {
-  if (item.disabled) return;
+  if (item.disabled || !visibleMenuIds.value.includes(item.id)) return;
   activeTab.value = item.id;
   mobileNavOpen.value = false;
 }
@@ -842,6 +897,7 @@ async function loadAll() {
       networkMonitoringRows,
       userRows,
       apiKeyRows,
+      sdmRows,
       mapRows,
       complianceRows,
       auditRows,
@@ -872,6 +928,7 @@ async function loadAll() {
       api("/network-monitorings"),
       api("/users"),
       api("/api-keys"),
+      api("/sdm"),
       api("/dependency-map"),
       api("/compliance"),
       api("/audit-log"),
@@ -903,6 +960,7 @@ async function loadAll() {
     networkMonitorings.value = networkMonitoringRows;
     users.value = userRows;
     apiKeys.value = apiKeyRows;
+    sdmList.value = sdmRows;
     dependencyMap.value = mapRows;
     compliance.value = complianceRows;
     auditLog.value = auditRows;
@@ -946,6 +1004,7 @@ const moduleLabels = {
   "network-owner-summary": "Relasi OPD Consumer Networking",
   users: "Pengguna & Role",
   "api-keys": "API Key",
+  sdm: "SDM",
 };
 
 const bulkLabelModuleOptions = [
@@ -1154,8 +1213,18 @@ function formatFileSize(bytes) {
 // Nilai dari API: "2026-10-27 14:30:00" (waktu lokal). Diurai manual supaya
 // tidak bergeser zona waktu. Jam 00:00 dianggap "tanpa jam" (data lama).
 const INSTALLATION_MONTHS = [
-  "Jan", "Feb", "Mar", "Apr", "Mei", "Jun",
-  "Jul", "Agu", "Sep", "Okt", "Nov", "Des",
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "Mei",
+  "Jun",
+  "Jul",
+  "Agu",
+  "Sep",
+  "Okt",
+  "Nov",
+  "Des",
 ];
 
 function parseInstallationDate(value) {
@@ -1252,7 +1321,9 @@ async function viewDocument(path, name = "Dokumen") {
     if (!response.ok) {
       const body = await response.json().catch(() => ({}));
       if (response.status === 401) clearAuth();
-      throw new Error(body.message || `Gagal membuka dokumen (${response.status})`);
+      throw new Error(
+        body.message || `Gagal membuka dokumen (${response.status})`,
+      );
     }
 
     const blobUrl = URL.createObjectURL(await response.blob());
@@ -1895,7 +1966,7 @@ function resetModuleForm(module) {
     Object.assign(appForm, {
       nama: "",
       url: "",
-      opd_id: "",
+      opd_id: isOperator.value ? ownOpdId.value : "",
       jenis_aplikasi: "",
       pengembang: "",
       klasifikasi_fungsi: [],
@@ -1938,6 +2009,17 @@ function resetModuleForm(module) {
       aplikasi_id: "",
       document_category: "",
       files: [],
+    });
+  }
+  if (module === "sdm") {
+    Object.assign(sdmForm, {
+      opd_id: isOperator.value ? ownOpdId.value : "",
+      nama: "",
+      jabatan: "",
+      pendidikan: "",
+      sertifikasi: [],
+      existing_sertifikasi: [],
+      hapus_sertifikasi_ids: [],
     });
   }
   if (module === "app-integrations") {
@@ -2143,6 +2225,7 @@ function formFor(module) {
     "network-credentials": networkCredentialForm,
     "network-monitorings": networkMonitoringForm,
     users: userForm,
+    sdm: sdmForm,
   }[module];
 }
 
@@ -2223,7 +2306,7 @@ function openEdit(module, row) {
     Object.assign(appForm, {
       nama: row.nama || "",
       url: row.url || "",
-      opd_id: row.opd_id || "",
+      opd_id: isOperator.value ? ownOpdId.value : row.opd_id || "",
       jenis_aplikasi: row.jenis_aplikasi || "",
       pengembang: row.pengembang || "",
       klasifikasi_fungsi: row.klasifikasi_fungsi || [],
@@ -2246,6 +2329,17 @@ function openEdit(module, row) {
       aplikasi_id: row.aplikasi_id || "",
       document_category: row.document_category || "",
       files: [],
+    });
+  }
+  if (module === "sdm") {
+    Object.assign(sdmForm, {
+      opd_id: isOperator.value ? ownOpdId.value : row.opd_id || "",
+      nama: row.nama || "",
+      jabatan: row.jabatan || "",
+      pendidikan: row.pendidikan || "",
+      sertifikasi: [],
+      existing_sertifikasi: [...(row.sertifikasi || [])],
+      hapus_sertifikasi_ids: [],
     });
   }
   if (module === "app-integrations") {
@@ -2511,6 +2605,7 @@ async function saveModal() {
         "app-integrations",
         "app-database-docs",
         "network-monitorings",
+        "sdm",
       ].includes(modal.module)
     ) {
       const formData = formDataFor(modal.module);
@@ -2683,6 +2778,19 @@ function formDataFor(module) {
     appendValue(formData, "jumlah_tabel", appDatabaseDocForm.jumlah_tabel);
     appendValue(formData, "keterangan", appDatabaseDocForm.keterangan);
     appDatabaseDocForm.file.forEach((file) => formData.append("file", file));
+  }
+
+  if (module === "sdm") {
+    appendValue(formData, "opd_id", sdmForm.opd_id);
+    appendValue(formData, "nama", sdmForm.nama);
+    appendValue(formData, "jabatan", sdmForm.jabatan);
+    appendValue(formData, "pendidikan", sdmForm.pendidikan);
+    sdmForm.sertifikasi.forEach((file) =>
+      formData.append("sertifikasi[]", file),
+    );
+    sdmForm.hapus_sertifikasi_ids.forEach((id) =>
+      formData.append("hapus_sertifikasi_ids[]", id),
+    );
   }
 
   return formData;
@@ -3038,6 +3146,47 @@ const filteredDataAssets = computed(() => {
   );
 });
 
+const filteredSdm = computed(() => {
+  const needle = query.value.toLowerCase();
+  return sdmList.value.filter((row) =>
+    JSON.stringify(row).toLowerCase().includes(needle),
+  );
+});
+
+// Pilih file sertifikasi SDM (bisa lebih dari satu); hanya PDF yang diterima.
+// File yang dipilih DITAMBAHKAN ke daftar, jadi bisa memilih berkali-kali.
+function setSdmSertifikasi(event) {
+  const picked = Array.from(event.target.files || []);
+  const isPdf = (file) =>
+    file.type === "application/pdf" || /\.pdf$/i.test(file.name);
+  const rejected = picked.filter((file) => !isPdf(file));
+  const merged = [...sdmForm.sertifikasi, ...picked.filter(isPdf)];
+
+  if (rejected.length) {
+    showAlert(
+      "File tidak valid",
+      `Sertifikasi harus berupa file PDF. Dilewati: ${rejected.map((f) => f.name).join(", ")}`,
+    );
+  }
+  if (merged.length > SDM_MAX_FILES) {
+    showAlert(
+      "Terlalu banyak file",
+      `Maksimal ${SDM_MAX_FILES} file sertifikasi sekali simpan.`,
+    );
+  }
+
+  sdmForm.sertifikasi = merged.slice(0, SDM_MAX_FILES);
+  event.target.value = "";
+}
+
+function removeNewSdmSertifikasi(index) {
+  sdmForm.sertifikasi.splice(index, 1);
+}
+
+function toggleRemoveSdmSertifikasi(id) {
+  toggleInArray(sdmForm.hapus_sertifikasi_ids, id);
+}
+
 const filteredApplicationDocuments = computed(() => {
   const needle = query.value.toLowerCase();
   return applicationDocuments.value.filter((row) =>
@@ -3313,7 +3462,7 @@ onUpdated(() => {
 
       <nav class="nav-list">
         <section
-          v-for="(section, index) in menuSections"
+          v-for="(section, index) in visibleMenuSections"
           :key="section.label || index"
           class="nav-section"
         >
@@ -4291,7 +4440,7 @@ onUpdated(() => {
               <h3 class="yellow-title">Server Baremetal</h3>
             </div>
             <button
-              v-if="canWrite"
+              v-if="canWriteModule('servers')"
               class="action-button"
               type="button"
               @click="openCreate('servers')"
@@ -4360,14 +4509,14 @@ onUpdated(() => {
                         <Printer :size="16" />
                       </button>
                       <button
-                        v-if="canWrite"
+                        v-if="canWriteModule('servers')"
                         class="icon-button"
                         title="Edit server"
                         @click="openEdit('servers', server)"
                       >
                         <Pencil :size="16" /></button
                       ><button
-                        v-if="canWrite"
+                        v-if="canWriteModule('servers')"
                         class="icon-button"
                         title="Salin server"
                         @click="openCopy('servers', server)"
@@ -4375,7 +4524,7 @@ onUpdated(() => {
                         <Copy :size="16" />
                       </button>
                       <button
-                        v-if="canWrite"
+                        v-if="canWriteModule('servers')"
                         class="icon-button danger"
                         title="Hapus server"
                         @click="removeRow('servers', server.id)"
@@ -5250,6 +5399,93 @@ onUpdated(() => {
         </section>
       </section>
 
+      <section v-if="activeTab === 'sdm'" class="content-grid">
+        <section class="surface wide">
+          <div class="module-header">
+            <div>
+              <p class="eyebrow">Sumber Daya Manusia</p>
+              <h3 class="yellow-title">SDM</h3>
+            </div>
+            <button
+              v-if="canWriteModule('sdm')"
+              class="action-button"
+              type="button"
+              @click="openCreate('sdm')"
+            >
+              <Plus :size="17" /> Tambah SDM
+            </button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>No</th>
+                  <th>Nama</th>
+                  <th>OPD</th>
+                  <th>Jabatan</th>
+                  <th>Pendidikan</th>
+                  <th>Sertifikasi</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-if="!filteredSdm.length">
+                  <td colspan="7">Belum ada data SDM.</td>
+                </tr>
+                <tr v-for="(person, index) in filteredSdm" :key="person.id">
+                  <td>{{ index + 1 }}</td>
+                  <td>
+                    <strong>{{ person.nama }}</strong>
+                  </td>
+                  <td>{{ person.opd?.nama || "-" }}</td>
+                  <td>{{ person.jabatan }}</td>
+                  <td>
+                    <span class="status">{{ person.pendidikan }}</span>
+                  </td>
+                  <td>
+                    <button
+                      v-for="cert in person.sertifikasi || []"
+                      :key="cert.id"
+                      class="doc-link-button"
+                      type="button"
+                      :title="`Lihat ${cert.original_name}`"
+                      @click="
+                        viewDocument(
+                          `/sdm/${person.id}/sertifikasi/${cert.id}`,
+                          cert.original_name,
+                        )
+                      "
+                    >
+                      <Eye :size="14" />
+                      {{ cert.original_name }}
+                    </button>
+                    <template v-if="!person.sertifikasi?.length">-</template>
+                  </td>
+                  <td>
+                    <div v-if="canWriteModule('sdm')" class="row-actions">
+                      <button
+                        class="icon-button"
+                        title="Edit SDM"
+                        @click="openEdit('sdm', person)"
+                      >
+                        <Pencil :size="16" /></button
+                      ><button
+                        class="icon-button danger"
+                        title="Hapus SDM"
+                        @click="removeRow('sdm', person.id)"
+                      >
+                        <Trash2 :size="16" />
+                      </button>
+                    </div>
+                    <template v-else>-</template>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+
       <section v-if="activeTab === 'backup-media'" class="content-grid">
         <section class="surface wide">
           <div class="module-header">
@@ -5988,21 +6224,28 @@ onUpdated(() => {
                       <div
                         v-if="
                           row.reported_at &&
-                          installationDuration(row.reported_at, row.installed_at)
+                          installationDuration(
+                            row.reported_at,
+                            row.installed_at,
+                          )
                         "
                         class="install-period-note is-response"
                       >
                         Ditangani dalam
-                        {{ installationDuration(row.reported_at, row.installed_at) }}
+                        {{
+                          installationDuration(
+                            row.reported_at,
+                            row.installed_at,
+                          )
+                        }}
                       </div>
-                      <div
-                        v-if="row.removed_at"
-                        class="install-period-note"
-                      >
+                      <div v-if="row.removed_at" class="install-period-note">
                         Terpakai
                         {{
-                          installationDuration(row.installed_at, row.removed_at) ||
-                          "-"
+                          installationDuration(
+                            row.installed_at,
+                            row.removed_at,
+                          ) || "-"
                         }}
                       </div>
                       <div
@@ -7280,7 +7523,7 @@ onUpdated(() => {
               v-model="appForm.tech_stack"
               placeholder="Tech Stack, contoh: Laravel, Vue, MySQL"
             />
-            <select v-model="appForm.opd_id">
+            <select v-model="appForm.opd_id" :disabled="isOperator">
               <option value="">OPD pemilik</option>
               <option
                 v-for="opd in references.opd"
@@ -7685,6 +7928,115 @@ onUpdated(() => {
               accept=".pdf,.doc,.docx,.drawio,.sql,.png,.jpg"
               @change="setFiles(appDatabaseDocForm, $event)"
             />
+          </div>
+
+          <div v-if="modal.module === 'sdm'" class="modal-form">
+            <label class="field-label">
+              <span>OPD</span>
+              <select
+                v-model="sdmForm.opd_id"
+                :required="!isOperator"
+                :disabled="isOperator"
+              >
+                <option value="">Pilih OPD</option>
+                <option
+                  v-for="opd in references.opd"
+                  :key="opd.id"
+                  :value="opd.id"
+                >
+                  {{ opd.nama }}
+                </option>
+              </select>
+              <small v-if="isOperator" class="install-field-hint">
+                OPD otomatis mengikuti akun Anda{{
+                  currentUser?.opd_nama ? `: ${currentUser.opd_nama}` : ""
+                }}.
+              </small>
+            </label>
+            <label class="field-label">
+              <span>Nama</span>
+              <input v-model="sdmForm.nama" required maxlength="255" placeholder="Nama lengkap" />
+            </label>
+            <div class="two-col">
+              <label class="field-label">
+                <span>Jabatan</span>
+                <input v-model="sdmForm.jabatan" required maxlength="255" placeholder="Jabatan" />
+              </label>
+              <label class="field-label">
+                <span>Pendidikan</span>
+                <select v-model="sdmForm.pendidikan" required>
+                  <option value="">Pilih pendidikan</option>
+                  <option
+                    v-for="option in SDM_PENDIDIKAN_OPTIONS"
+                    :key="option"
+                    :value="option"
+                  >
+                    {{ option }}
+                  </option>
+                </select>
+              </label>
+            </div>
+            <div
+              v-if="modal.mode === 'edit' && sdmForm.existing_sertifikasi.length"
+              class="field-label"
+            >
+              <span>Sertifikasi tersimpan</span>
+              <div class="sdm-cert-list">
+                <div
+                  v-for="cert in sdmForm.existing_sertifikasi"
+                  :key="cert.id"
+                  class="sdm-cert-item"
+                  :class="{
+                    'is-removed': sdmForm.hapus_sertifikasi_ids.includes(cert.id),
+                  }"
+                >
+                  <span class="sdm-cert-name">{{ cert.original_name }}</span>
+                  <button
+                    class="doc-link-button"
+                    type="button"
+                    @click="toggleRemoveSdmSertifikasi(cert.id)"
+                  >
+                    {{
+                      sdmForm.hapus_sertifikasi_ids.includes(cert.id)
+                        ? "Batal hapus"
+                        : "Hapus"
+                    }}
+                  </button>
+                </div>
+              </div>
+              <small class="install-field-hint">
+                Sertifikasi yang ditandai akan dihapus saat disimpan.
+              </small>
+            </div>
+            <label class="field-label">
+              <span>Tambah Sertifikasi (PDF, opsional, bisa lebih dari 1, maks. 20 MB per file)</span>
+              <input
+                type="file"
+                multiple
+                accept="application/pdf,.pdf"
+                @change="setSdmSertifikasi"
+              />
+              <small class="install-field-hint">
+                Pilih beberapa file sekaligus, atau pilih lagi untuk menambah. Maks.
+                {{ SDM_MAX_FILES }} file sekali simpan.
+              </small>
+            </label>
+            <div v-if="sdmForm.sertifikasi.length" class="sdm-cert-list">
+              <div
+                v-for="(file, index) in sdmForm.sertifikasi"
+                :key="`${file.name}-${index}`"
+                class="sdm-cert-item is-new"
+              >
+                <span class="sdm-cert-name">{{ file.name }}</span>
+                <button
+                  class="doc-link-button"
+                  type="button"
+                  @click="removeNewSdmSertifikasi(index)"
+                >
+                  Batal
+                </button>
+              </div>
+            </div>
           </div>
 
           <div v-if="modal.module === 'backup-media'" class="modal-form">
